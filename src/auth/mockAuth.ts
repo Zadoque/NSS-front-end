@@ -24,7 +24,7 @@ export const mockAuth = {
     if (email.trim().toLowerCase() !== DEMO_EMAIL || password !== DEMO_PASSWORD) {
       throw new Error("Credenciais DEMO inválidas.");
     }
-    session = { email: DEMO_EMAIL, displayName: "Usuário demonstrador" };
+    session = { email: DEMO_EMAIL, displayName: "Usuário demonstrador", permissions: [] };
     notify();
     return session;
   },

@@ -1,4 +1,4 @@
-export type Session = { email: string; displayName: string };
+export type Session = { email: string; displayName: string; permissions: string[] };
 export type AuthClient = {
   getSession(): Session | null;
   subscribe(listener: () => void): () => void;
@@ -11,6 +11,7 @@ type LoginResponse = {
   accessToken?: string;
   token?: string;
   user?: { email?: string; name?: string; nome?: string };
+  permissions?: string[];
 };
 
 const runtimeEnv = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env ?? {};
@@ -29,6 +30,7 @@ function setSession(response: LoginResponse): Session {
   session = {
     email: response.user?.email ?? "",
     displayName: response.user?.name ?? response.user?.nome ?? response.user?.email ?? "Usuário",
+    permissions: response.permissions ?? [],
   };
   notify();
   return session;

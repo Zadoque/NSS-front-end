@@ -5,6 +5,8 @@ import { LoginPage } from "../features/auth/LoginPage";
 import { mockAuth } from "../auth/mockAuth";
 import { realAuth, type AuthClient } from "../auth/realAuth";
 import { isDemo } from "../data/dataSource";
+import { AdminUsersPage } from "../features/admin/AdminUsersPage";
+import { FirstAccessPage } from "../features/auth/FirstAccessPage";
 
 export function App() {
   const auth: AuthClient = isDemo ? mockAuth : realAuth;
@@ -27,6 +29,8 @@ export function App() {
         ? "Mapa | NSS — UENF"
         : path === "/login"
           ? "Login | NSS — UENF"
+        : path === "/admin/usuarios"
+          ? "Usuários | NSS — UENF"
         : "NSS — Núcleo de Situação de Saúde";
     document.querySelector("h1")?.setAttribute("tabindex", "-1");
     document.querySelector("h1")?.focus();
@@ -47,7 +51,7 @@ export function App() {
     const url = new URL(link.href);
     if (
       url.origin !== window.location.origin ||
-      !["/", "/mapa", "/login"].includes(url.pathname)
+      !["/", "/mapa", "/login", "/admin/usuarios", "/primeiro-acesso"].includes(url.pathname)
     )
       return;
     event.preventDefault();
@@ -63,10 +67,12 @@ export function App() {
   if (!authReady && path !== "/") return <main><p role="status">Verificando sessão…</p></main>;
   return (
     <div onClick={followLink}>
-      {path === "/mapa" ? (
-        session ? <DashboardPage onLogout={logout} /> : <LoginPage auth={auth} demo={isDemo} onSuccess={() => { window.history.pushState(null, "", "/mapa"); setPath("/mapa"); }} />
+      {path === "/primeiro-acesso" ? <FirstAccessPage onDone={() => { window.history.pushState(null, "", "/login"); setPath("/login"); }} /> : path === "/admin/usuarios" ? (
+        session?.permissions.includes("USER_MANAGEMENT") ? <AdminUsersPage onBack={() => { window.history.pushState(null, "", "/mapa"); setPath("/mapa"); }} /> : <main><h1>Acesso negado</h1></main>
+      ) : path === "/mapa" ? (
+        session ? <DashboardPage onLogout={logout} onAdmin={session.permissions.includes("USER_MANAGEMENT") ? () => { window.history.pushState(null, "", "/admin/usuarios"); setPath("/admin/usuarios"); } : undefined} /> : <LoginPage auth={auth} demo={isDemo} onSuccess={() => { window.history.pushState(null, "", "/mapa"); setPath("/mapa"); }} />
       ) : path === "/login" ? (
-        session ? <DashboardPage onLogout={logout} /> : <LoginPage auth={auth} demo={isDemo} onSuccess={() => { window.history.pushState(null, "", "/mapa"); setPath("/mapa"); }} />
+        session ? <DashboardPage onLogout={logout} onAdmin={session.permissions.includes("USER_MANAGEMENT") ? () => { window.history.pushState(null, "", "/admin/usuarios"); setPath("/admin/usuarios"); } : undefined} /> : <LoginPage auth={auth} demo={isDemo} onSuccess={() => { window.history.pushState(null, "", "/mapa"); setPath("/mapa"); }} />
       ) : path === "/" ? (
         <HomePage />
       ) : (

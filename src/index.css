@@ -213,6 +213,10 @@ p {
 .auth-card form { display: grid; gap: 8px; margin-top: 24px; }
 .auth-card input { min-height: 46px; padding: 10px; border: 1px solid #a8bcc8; border-radius: 7px; margin-bottom: 8px; }
 .form-error { color: #9c321f; background: #fff0ed; padding: 10px; border-radius: 6px; }
+.admin-form { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+.admin-form input, .admin-form select { min-height: 42px; padding: 8px; border: 1px solid #a8bcc8; border-radius: 7px; }
+.admin-row { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid #e4ebef; }
+.admin-row small { color: #71828c; }
 .geo {
   cursor: pointer;
   outline: none;

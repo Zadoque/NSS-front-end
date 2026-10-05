@@ -16,7 +16,7 @@ import { FilterPanel } from "./components/FilterPanel";
 import { FilterDrawer } from "./components/FilterDrawer";
 import { MunicipalityRanking } from "./components/MunicipalityRanking";
 import { TerritoryRanking } from "./components/TerritoryRanking";
-export function DashboardPage({ onLogout }: { onLogout: () => void }) {
+export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onAdmin?: () => void }) {
   const navigation = useMapNavigation();
   const { mapLevel, selectedGeography, select, navigate, goBack } = navigation;
   const diseases = useDiseases();
@@ -112,6 +112,7 @@ export function DashboardPage({ onLogout }: { onLogout: () => void }) {
           <p>UENF · Vigilância epidemiológica</p>
         </div>
         {isDemo && <span className="badge">DEMO</span>}
+        {onAdmin && <button className="header-action" type="button" onClick={onAdmin}>Usuários</button>}
         <button className="header-action" type="button" onClick={onLogout}>Sair</button>
       </header>
       <main>
