@@ -3,16 +3,24 @@ import { DashboardPage } from "../features/dashboard/DashboardPage";
 import { HomePage } from "../features/home/HomePage";
 import { LoginPage } from "../features/auth/LoginPage";
 import { mockAuth } from "../auth/mockAuth";
+import { realAuth, type AuthClient } from "../auth/realAuth";
+import { isDemo } from "../data/dataSource";
 
 export function App() {
+  const auth: AuthClient = isDemo ? mockAuth : realAuth;
   const [path, setPath] = useState(window.location.pathname);
-  const [session, setSession] = useState(mockAuth.getSession());
+  const [session, setSession] = useState(auth.getSession());
+  const [authReady, setAuthReady] = useState(isDemo);
   useEffect(() => {
     const update = () => setPath(window.location.pathname);
     window.addEventListener("popstate", update);
     return () => window.removeEventListener("popstate", update);
   }, []);
-  useEffect(() => mockAuth.subscribe(() => setSession(mockAuth.getSession())), []);
+  useEffect(() => {
+    const unsubscribe = auth.subscribe(() => setSession(auth.getSession()));
+    void auth.restore().finally(() => setAuthReady(true));
+    return unsubscribe;
+  }, [auth]);
   useEffect(() => {
     document.title =
       path === "/mapa"
@@ -47,12 +55,18 @@ export function App() {
     setPath(url.pathname);
     window.scrollTo(0, 0);
   }
+  function logout() {
+    void auth.logout();
+    window.history.pushState(null, "", "/");
+    setPath("/");
+  }
+  if (!authReady) return <main><p role="status">Verificando sessão…</p></main>;
   return (
     <div onClick={followLink}>
       {path === "/mapa" ? (
-        session ? <DashboardPage onLogout={() => { mockAuth.logout(); window.history.pushState(null, "", "/"); setPath("/"); }} /> : <LoginPage onSuccess={() => { window.history.pushState(null, "", "/mapa"); setPath("/mapa"); }} />
+        session ? <DashboardPage onLogout={logout} /> : <LoginPage auth={auth} demo={isDemo} onSuccess={() => { window.history.pushState(null, "", "/mapa"); setPath("/mapa"); }} />
       ) : path === "/login" ? (
-        session ? <DashboardPage onLogout={() => { mockAuth.logout(); window.history.pushState(null, "", "/"); setPath("/"); }} /> : <LoginPage onSuccess={() => { window.history.pushState(null, "", "/mapa"); setPath("/mapa"); }} />
+        session ? <DashboardPage onLogout={logout} /> : <LoginPage auth={auth} demo={isDemo} onSuccess={() => { window.history.pushState(null, "", "/mapa"); setPath("/mapa"); }} />
       ) : path === "/" ? (
         <HomePage />
       ) : (

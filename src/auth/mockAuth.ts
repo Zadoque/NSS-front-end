@@ -1,4 +1,5 @@
-export type Session = { email: string; displayName: string };
+import type { Session } from "./realAuth";
+export type { Session } from "./realAuth";
 
 const DEMO_EMAIL = "demo@nss.local";
 const DEMO_PASSWORD = "NSS-DEMO-2026";
@@ -27,6 +28,7 @@ export const mockAuth = {
     notify();
     return session;
   },
+  async restore() { return session; },
   logout() {
     session = null;
     notify();

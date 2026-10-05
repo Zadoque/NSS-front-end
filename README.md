@@ -36,7 +36,9 @@ VITE_USE_MOCKS=false
 VITE_API_BASE_URL=http://localhost:8080
 ```
 
-Reinicie o Vite após alterar o ambiente. Em produção essas variáveis são incorporadas no build. O adapter usa exclusivamente:
+Reinicie o Vite após alterar o ambiente. Em produção essas variáveis são incorporadas no build. Com `VITE_USE_MOCKS=false`, o login usa `POST /api/v1/auth/login`, mantém o access JWT apenas em memória, usa o refresh HttpOnly em `POST /api/v1/auth/refresh`, envia `Authorization: Bearer` nas consultas e faz uma única renovação coordenada quando recebe `401`. Logout chama `POST /api/v1/auth/logout`. O frontend não armazena tokens em `localStorage` ou `sessionStorage`.
+
+O adapter usa exclusivamente:
 
 - `GET /api/v1/diseases` → `{ "items": ["DENG"] }`
 - `GET /api/v1/epidemiology/municipalities?disease=DENG&year=2026&month=1` → resposta documentada em `main.tex`.

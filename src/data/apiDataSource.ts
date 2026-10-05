@@ -13,6 +13,9 @@ export function parseCases(value: unknown, filters: EpidemiologyFilters): Epidem
   });
   if (new Set(items.map((item) => item.code)).size !== items.length) throw new Error("Territórios duplicados na resposta epidemiológica.");
   const x = value as Record<string, unknown>;
+  const responseFilters = x.filters && typeof x.filters === "object" ? x.filters as Record<string, unknown> : x;
+  if (responseFilters.year !== undefined && responseFilters.year !== null && responseFilters.year !== filters.year) throw new Error("Filtros divergentes na resposta epidemiológica.");
+  if (responseFilters.month !== undefined && responseFilters.month !== null && responseFilters.month !== filters.month) throw new Error("Filtros divergentes na resposta epidemiológica.");
   return {
     metric: "notifications", geography: "MUNICIPALITY", filters,
     totalNotifications: typeof x.totalNotifications === "number" ? x.totalNotifications : null,
