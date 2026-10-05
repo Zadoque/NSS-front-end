@@ -1,21 +1,21 @@
 import { municipalities } from "../../../data/coverage";
 import type {
   GeographySelection,
-  MunicipalityCases,
+  EpidemiologyItem,
 } from "../../../types/epidemiology";
 export function MunicipalityRanking({
   items,
   onSelect,
   selected,
 }: {
-  items: MunicipalityCases[];
+  items: EpidemiologyItem[];
   onSelect: (selection: GeographySelection) => void;
   selected: GeographySelection | null;
 }) {
-  const byCode = new Map(items.map((item) => [item.cdMun, item]));
+  const byCode = new Map(items.map((item) => [item.code, item]));
   const rows = municipalities
-    .map((m) => ({ ...m, casesTotal: byCode.get(m.cdMun)?.casesTotal }))
-    .sort((a, b) => (b.casesTotal ?? -1) - (a.casesTotal ?? -1));
+    .map((m) => ({ ...m, notificationsTotal: byCode.get(m.cdMun)?.notificationsTotal }))
+    .sort((a, b) => (b.notificationsTotal ?? -1) - (a.notificationsTotal ?? -1));
   return (
     <section className="ranking card">
       <div className="section-label">COBERTURA PARCIAL · 4 MUNICÍPIOS</div>
@@ -37,9 +37,9 @@ export function MunicipalityRanking({
               <span className="rank-number">{i + 1}</span>
               <span>{item.nmMun}</span>
               <strong>
-                {item.casesTotal === undefined
+                {item.notificationsTotal === undefined
                   ? "Sem registros"
-                  : `${item.casesTotal} casos`}
+                  : `${item.notificationsTotal} notificações`}
               </strong>
             </button>
           </li>

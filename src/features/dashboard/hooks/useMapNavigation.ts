@@ -37,9 +37,17 @@ export function useMapNavigation() {
           ? null
           : selection,
       });
+    } else if (selection.level === "municipality") {
+      if (selection.code === "3301009") {
+        setNavigation({ mapLevel: "CAMPOS_DISTRICTS", selectedGeography: selection });
+      } else {
+        setNavigation({ mapLevel: "RJ_MUNICIPALITIES", selectedGeography: selection });
+      }
+    } else if (selection.level === "district") {
+      setNavigation({ mapLevel: "CAMPOS_NEIGHBORHOODS", selectedGeography: selection });
     } else {
       setNavigation({
-        mapLevel: "RJ_MUNICIPALITIES",
+        mapLevel: "CAMPOS_NEIGHBORHOODS",
         selectedGeography: selection,
       });
     }

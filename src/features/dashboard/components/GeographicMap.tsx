@@ -5,7 +5,7 @@ import { loadMap, mapViews } from "../../../data/maps";
 import type {
   GeographySelection,
   MapLevel,
-  MunicipalityCases,
+  EpidemiologyItem,
 } from "../../../types/epidemiology";
 import { demoCoverage } from "../../../data/coverage";
 import { caseColor } from "./MapLegend";
@@ -13,7 +13,7 @@ import { caseColor } from "./MapLegend";
 type Props = {
   level: MapLevel;
   selected: GeographySelection | null;
-  items: MunicipalityCases[];
+  items: EpidemiologyItem[];
   dataStatus: "loading" | "error" | "success";
   onSelect: (value: GeographySelection) => void;
 };
@@ -44,7 +44,7 @@ export function GeographicMap({
         <button onClick={() => void map.refetch()}>Tentar novamente</button>
       </div>
     );
-  const byCode = new Map(items.map((item) => [item.cdMun, item]));
+  const byCode = new Map(items.map((item) => [item.code, item]));
   return (
     <>
       <ComposableMap
@@ -71,11 +71,15 @@ export function GeographicMap({
                         code: String(p.abbrev_state),
                         name: String(p.name_state),
                       }
-                    : {
-                        level: "municipality",
-                        code: String(p.code_muni),
-                        name: String(p.name_muni),
-                      };
+                    : level === "RJ_MUNICIPALITIES"
+                    ? {
+                      level: "municipality",
+                      code: String(p.code_muni),
+                      name: String(p.name_muni),
+                    }
+                    : level === "CAMPOS_DISTRICTS"
+                      ? { level: "district", code: String(p.territoryId), name: String(p.name), municipalityCode: "3301009" }
+                      : { level: "neighborhood", code: String(p.territoryId), name: String(p.name), municipalityCode: "3301009", districtCode: String(p.parentDistrictId) };
               const navigable =
                 geography.level === "region"
                   ? demoCoverage.drilldownEnabled.regions.includes(
@@ -85,7 +89,10 @@ export function GeographicMap({
                     demoCoverage.drilldownEnabled.states.includes(
                       geography.code,
                     );
-              const covered =
+              const territorial = geography.level === "district" || geography.level === "neighborhood";
+              const covered = territorial
+                ? Boolean(byCode.get(geography.code))
+                :
                 geography.level === "municipality" &&
                 demoCoverage.caseDataAvailableForMunicipalities.includes(
                   geography.code,
@@ -94,13 +101,15 @@ export function GeographicMap({
               const detail = navigable
                 ? "Toque ou pressione Enter para explorar"
                 : !covered
-                  ? "Sem cobertura nesta V1"
+                ? territorial
+                  ? "Sem notificações mapeadas nesta geometria"
+                  : "Sem cobertura nesta V1"
                   : dataStatus === "loading"
                     ? "Carregando dados"
                     : dataStatus === "error"
                       ? "Dados indisponíveis: erro na consulta"
                       : item
-                        ? `${item.casesTotal} casos`
+                        ? `${item.notificationsTotal} notificações da unidade notificadora`
                         : "Sem registros neste recorte";
               const label = `${geography.name} · ${detail}`;
               return (
@@ -116,7 +125,7 @@ export function GeographicMap({
                   }
                   fill={
                     item
-                      ? caseColor(item.casesTotal)
+                      ? caseColor(item.notificationsTotal)
                       : covered
                         ? "#f6f0d8"
                         : navigable

@@ -22,6 +22,18 @@ export const mapViews: Record<
     center: [-42.5, -22.1],
     scale: 7800,
   },
+  CAMPOS_DISTRICTS: {
+    file: "campos-districts",
+    title: "Distritos de Campos dos Goytacazes",
+    center: [-41.35, -21.75],
+    scale: 32000,
+  },
+  CAMPOS_NEIGHBORHOODS: {
+    file: "campos-neighborhoods",
+    title: "Bairros/localidades da notificação",
+    center: [-41.35, -21.75],
+    scale: 65000,
+  },
 };
 export async function loadMap(level: MapLevel): Promise<FeatureCollection> {
   const response = await fetch(

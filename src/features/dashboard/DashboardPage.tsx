@@ -5,6 +5,7 @@ import { mapViews } from "../../data/maps";
 import type { EpidemiologyFilters } from "../../types/epidemiology";
 import {
   useDiseases,
+  useMetadata,
   useEpidemiologyQuery,
 } from "./hooks/useEpidemiologyQuery";
 import { useMapNavigation } from "./hooks/useMapNavigation";
@@ -14,10 +15,12 @@ import { GeographySelector } from "./components/GeographySelector";
 import { FilterPanel } from "./components/FilterPanel";
 import { FilterDrawer } from "./components/FilterDrawer";
 import { MunicipalityRanking } from "./components/MunicipalityRanking";
+import { TerritoryRanking } from "./components/TerritoryRanking";
 export function DashboardPage() {
   const navigation = useMapNavigation();
   const { mapLevel, selectedGeography, select, navigate } = navigation;
   const diseases = useDiseases();
+  const metadata = useMetadata();
   const [filterInput, setFilters] = useState<EpidemiologyFilters>({
     disease: "DENG",
     year: 2026,
@@ -29,16 +32,29 @@ export function DashboardPage() {
       ? filterInput.disease
       : (diseases.data?.[0] ?? ""),
   };
-  const query = useEpidemiologyQuery(filters);
+  const geography = mapLevel === "CAMPOS_DISTRICTS"
+    ? "DISTRICT"
+    : mapLevel === "CAMPOS_NEIGHBORHOODS"
+      ? "NEIGHBORHOOD"
+      : mapLevel === "RJ_MUNICIPALITIES"
+        ? "MUNICIPALITY"
+        : "REGION";
+  const query = useEpidemiologyQuery({
+    ...filters,
+    geography,
+    municipalityCode: selectedGeography?.municipalityCode ?? (selectedGeography?.level === "municipality" ? selectedGeography.code : undefined),
+    districtCode: selectedGeography?.districtCode ?? (selectedGeography?.level === "district" ? selectedGeography.code : undefined),
+  });
   const items = query.isSuccess ? query.data.items : [];
   const municipal = mapLevel === "RJ_MUNICIPALITIES";
+  const territorial = municipal || mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS";
   const covered =
-    selectedGeography?.level === "municipality" &&
-    demoCoverage.caseDataAvailableForMunicipalities.includes(
-      selectedGeography.code,
-    );
+    selectedGeography?.level === "district" || selectedGeography?.level === "neighborhood"
+      ? true
+      : selectedGeography?.level === "municipality" &&
+        demoCoverage.caseDataAvailableForMunicipalities.includes(selectedGeography.code);
   const selectedItem = items.find(
-    (item) => item.cdMun === selectedGeography?.code,
+    (item) => item.code === selectedGeography?.code,
   );
   const selectionInfo = selectedGeography
     ? !covered
@@ -48,10 +64,10 @@ export function DashboardPage() {
         : query.isPending
           ? "Carregando dados…"
           : selectedItem
-            ? `${selectedItem.casesTotal} casos no mês selecionado.`
+            ? `${selectedItem.notificationsTotal} notificações da unidade notificadora no mês selecionado.`
             : "Sem registros neste recorte. Isso não equivale a zero casos."
-    : municipal
-      ? "4 municípios com cobertura nesta V1. Selecione um município para consultar."
+    : territorial
+      ? "Selecione um município, distrito ou bairro da notificação para consultar."
       : "Explore o Sudeste e o Rio de Janeiro. Cobertura parcial, sem total agregado.";
   const panel = {
     municipal,
@@ -66,6 +82,8 @@ export function DashboardPage() {
     selectionName: selectedGeography?.name ?? mapViews[mapLevel].title,
     selectionInfo,
     demo: isDemo,
+    availableYears: metadata.data?.availableYears ?? [],
+    availableMonths: metadata.data?.availableMonthsByYear[String(filters.year)] ?? [],
   };
   return (
     <>
@@ -88,15 +106,19 @@ export function DashboardPage() {
             Explore o mapa e consulte os casos mensais nos municípios cobertos.
           </p>
         </div>
-        <GeographyBreadcrumb level={mapLevel} navigate={navigate} />
+        <GeographyBreadcrumb level={mapLevel} navigate={navigate} selected={selectedGeography} />
         <GeographySelector key={mapLevel} navigation={navigation} />
         <div className="dashboard-grid">
           <section className="card map-card" aria-label="Exploração geográfica">
             <div className="map-heading">
               <div>
                 <div className="section-label">
-                  {municipal
-                    ? "MUNICÍPIOS"
+                  {mapLevel === "CAMPOS_NEIGHBORHOODS"
+                    ? "BAIRROS DA NOTIFICAÇÃO"
+                    : mapLevel === "CAMPOS_DISTRICTS"
+                      ? "DISTRITOS DA NOTIFICAÇÃO"
+                      : municipal
+                        ? "MUNICÍPIOS"
                     : mapLevel === "BRAZIL_REGIONS"
                       ? "REGIÕES"
                       : "ESTADOS"}
@@ -130,6 +152,9 @@ export function DashboardPage() {
                     : "Navegação pelo território")}
               </strong>
               <p>{selectionInfo}</p>
+              {query.isSuccess && query.data.coverage.status === "PARTIAL" && (
+                <p role="status">Cobertura territorial parcial: {query.data.coverage.unmappedNotificationsTotal} notificações da unidade notificadora sem distrito/bairro oficial mapeado. Elas permanecem no total municipal.</p>
+              )}
             </div>
           </section>
           <aside className="card desktop-panel">
@@ -137,7 +162,7 @@ export function DashboardPage() {
           </aside>
         </div>
         <FilterDrawer panel={panel} />
-        {municipal && (
+        {territorial && (
           <div className="query-state" aria-live="polite">
             {query.isPending && (
               <p role="status">
@@ -157,14 +182,17 @@ export function DashboardPage() {
             {query.isSuccess && !items.length && (
               <p>Sem registros para este recorte nos municípios cobertos.</p>
             )}
+            {query.isSuccess && (
+              <p>
+                Total oficial do recorte: {query.data.totalNotifications === null ? "indisponível" : query.data.totalNotifications} notificações.
+                {query.data.coverage.status === "PARTIAL" && ` Mapeadas no território: ${query.data.coverage.mappedNotificationsTotal}; não mapeadas: ${query.data.coverage.unmappedNotificationsTotal}.`}
+              </p>
+            )}
           </div>
         )}
-        {municipal && query.isSuccess && (
-          <MunicipalityRanking
-            items={items}
-            onSelect={select}
-            selected={selectedGeography}
-          />
+        {municipal && query.isSuccess && <MunicipalityRanking items={items} onSelect={select} selected={selectedGeography} />}
+        {(mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS") && query.isSuccess && (
+          <TerritoryRanking level={mapLevel === "CAMPOS_DISTRICTS" ? "district" : "neighborhood"} items={items} onSelect={select} selected={selectedGeography} />
         )}
         <footer>
           NSS / UENF{" "}

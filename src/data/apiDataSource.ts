@@ -1,65 +1,24 @@
 import { getJson } from "../api/http";
-import type {
-  EpidemiologyDataSource,
-  EpidemiologyFilters,
-  MunicipalityCases,
-  MunicipalityCasesResponse,
-} from "../types/epidemiology";
-function object(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-function validItem(value: unknown): value is MunicipalityCases {
-  return (
-    object(value) &&
-    typeof value.cdUf === "string" &&
-    /^\d{2}$/.test(value.cdUf) &&
-    typeof value.nmUf === "string" &&
-    typeof value.cdMun === "string" &&
-    /^\d{7}$/.test(value.cdMun) &&
-    typeof value.nmMun === "string" &&
-    typeof value.casesTotal === "number" &&
-    Number.isSafeInteger(value.casesTotal) &&
-    value.casesTotal >= 0
-  );
-}
-export function parseCases(
-  value: unknown,
-  filters: EpidemiologyFilters,
-): MunicipalityCasesResponse {
-  if (
-    !object(value) ||
-    value.disease !== filters.disease ||
-    value.year !== filters.year ||
-    value.month !== filters.month ||
-    !Array.isArray(value.items) ||
-    !value.items.every(validItem) ||
-    new Set(value.items.map((item) => item.cdMun)).size !== value.items.length
-  )
-    throw new Error("Resposta epidemiológica inválida.");
-  return { ...filters, items: value.items };
-}
+import type { EpidemiologyDataSource, EpidemiologyRequest, EpidemiologyResponse } from "../types/epidemiology";
+
 export const apiDataSource: EpidemiologyDataSource = {
   async listDiseases() {
-    const data = await getJson("/diseases");
-    if (
-      !object(data) ||
-      !Array.isArray(data.items) ||
-      !data.items.every(
-        (d): d is string => typeof d === "string" && d.trim().length > 0,
-      )
-    )
-      throw new Error("Lista de doenças inválida.");
-    return [...new Set(data.items)];
+    const value = await getJson("/diseases");
+    if (!value || typeof value !== "object" || !Array.isArray((value as { items?: unknown }).items)) throw new Error("Lista de doenças inválida.");
+    return (value as { items: unknown[] }).items.filter((item): item is string => typeof item === "string");
   },
-  async getMunicipalityCases(filters) {
-    const params = new URLSearchParams({
-      disease: filters.disease,
-      year: String(filters.year),
-      month: String(filters.month),
-    });
-    return parseCases(
-      await getJson(`/epidemiology/municipalities?${params}`),
-      filters,
-    );
+  async getMetadata() {
+    const value = await getJson("/metadata");
+    if (!value || typeof value !== "object") throw new Error("Metadata inválida.");
+    return value as { availableYears: number[]; availableMonthsByYear: Record<string, number[]> };
+  },
+  async getEpidemiology(request: EpidemiologyRequest): Promise<EpidemiologyResponse> {
+    const params = new URLSearchParams({ geography: request.geography, disease: request.disease, year: String(request.year), month: String(request.month) });
+    if (request.sex) params.set("sex", request.sex);
+    if (request.ageBand) params.set("ageBand", request.ageBand);
+    if (request.municipalityCode) params.set("municipalityCode", request.municipalityCode);
+    if (request.districtCode) params.set("districtCode", request.districtCode);
+    const value = await getJson(`/epidemiology/${request.geography.toLowerCase()}?${params}`);
+    return value as EpidemiologyResponse;
   },
 };
