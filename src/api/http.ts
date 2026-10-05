@@ -1,7 +1,5 @@
 export async function getJson(path: string): Promise<unknown> {
-  const base = (
-    import.meta.env.VITE_API_BASE_URL || "http://localhost:8080"
-  ).replace(/\/$/, "");
+  const base = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
   const response = await fetch(`${base}/api/v1${path}`, {
     headers: { Accept: "application/json" },
     signal: AbortSignal.timeout(15_000),

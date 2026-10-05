@@ -1,4 +1,5 @@
 import { mockDataSource } from "./mockDataSource";
 import { apiDataSource } from "./apiDataSource";
-export const isDemo = import.meta.env.VITE_USE_MOCKS !== "false";
+const configuredSource = import.meta.env.VITE_DATA_SOURCE;
+export const isDemo = configuredSource ? configuredSource === "mock" : !import.meta.env.PROD;
 export const dataSource = isDemo ? mockDataSource : apiDataSource;
