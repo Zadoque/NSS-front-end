@@ -81,3 +81,19 @@ Os IDs NSS `CG_DIST_*` e `CG_LOC_*` permanecem a identidade lógica. Códigos IB
 - 45 possuem ponto oficial IBGE, sem polígono.
 - O portal municipal não ofereceu vetor público adicional durante a investigação.
 - A camada V2 deve distinguir `POLYGON_OFFICIAL`, `POINT_ONLY` e `NO_GEOMETRY` de cobertura epidemiológica.
+
+## Final status
+
+```text
+PHASE1_COMPLETE=YES
+DISTRICT_GEOMETRY=COMPLETE
+NEIGHBORHOOD_GEOMETRY=PARTIAL_OFFICIAL
+CIDAC_DISTRICTS_TOTAL=14
+CIDAC_LOCALITIES_TOTAL=209
+IBGE_DISTRICT_POLYGONS_FOR_CAMPOS=14
+IBGE_NEIGHBORHOOD_POLYGONS_FOR_CAMPOS=78
+CIDAC_LOCALITIES_WITH_POLYGON=73
+CIDAC_LOCALITIES_POINT_ONLY=45
+CIDAC_LOCALITIES_NO_GEOMETRY=91
+OUTPUT_GEOJSONS=public/maps/campos-districts.geojson, public/maps/campos-neighborhoods.geojson
+```

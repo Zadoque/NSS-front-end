@@ -196,7 +196,7 @@ def main() -> int:
         write(MAP_PATH / "campos-neighborhoods.geojson", {"type": "FeatureCollection", "features": neighborhoods_out})
         write(REFERENCE_PATH / "cidac-ibge-district-crosswalk.json", {"source": "IBGE Censo 2022 + CIDAC 2019", "items": district_crosswalk})
         write(REFERENCE_PATH / "cidac-ibge-territory-crosswalk.json", {"source": "IBGE Censo 2022 + IBGE Localidades do Brasil 2022 + CIDAC 2019", "items": crosswalk})
-        manifest = {"generatedAt": TODAY, "sources": [{"id": source_id, "organization": "IBGE", "year": 2022, "sourceUrl": SOURCES[source_id], "sha256": sha256(path), "crsInput": "EPSG:4674", "crsOutput": "EPSG:4326"} for source_id, path in raw.items()]}
+        manifest = {"generatedAt": TODAY, "sources": [{"id": source_id, "organization": "IBGE", "license": "Dados públicos do IBGE", "year": 2022, "sourceUrl": SOURCES[source_id], "downloadedAt": TODAY, "sha256": sha256(path), "crsInput": "EPSG:4674", "crsOutput": "EPSG:4326"} for source_id, path in raw.items()]}
         write(REFERENCE_PATH / "geospatial-sources.json", manifest)
         print(json.dumps({"districtPolygons": len(districts_out), "ibgeNeighborhoodPolygonsInCampos": len(neighborhoods), "cidacNeighborhoodPolygons": len(neighborhoods_out), "cidacLocalities": len(localities), **counts}, indent=2))
     if not args.keep_raw:
