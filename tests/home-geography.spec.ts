@@ -41,14 +41,9 @@ for (const width of [375, 1440]) {
     const municipality = page.getByLabel("Município", { exact: true });
     await search.fill("cam");
     await municipality.selectOption("3301009");
-    await expect(page.locator(".geo.selected")).toHaveAttribute(
-      "aria-label",
-      /^Campos dos Goytacazes/,
-    );
-    await expect(page.locator(".map-context")).toContainText("120 casos");
-    await expect(
-      page.locator(".ranking button[aria-pressed=true]"),
-    ).toContainText("Campos dos Goytacazes");
+    await expect(page.getByRole("heading", { name: "Distritos de Campos dos Goytacazes" })).toBeVisible();
+    await expect(page.locator(".map-context")).toContainText("120 notificações");
+    await expect(page.getByRole("heading", { name: "Notificações por distrito" })).toBeVisible();
     await search.fill("maca");
     await expect(municipality.locator("option", { hasText: "Macaé" })).toHaveCount(1);
     await search.fill("macae");
@@ -59,7 +54,7 @@ for (const width of [375, 1440]) {
     await expect(municipality).toHaveValue("3302403");
     await expect(page.locator(".map-context")).toContainText("Macaé");
     await search.fill("zzzz");
-    await expect(page.getByRole("status")).toContainText(
+    await expect(page.locator("#municipality-help")).toContainText(
       "0 municípios encontrados",
     );
     await search.fill("");
@@ -97,7 +92,7 @@ test("map and ranking update selectors, including unavailable areas", async ({
   await expect(page.getByLabel("Município", { exact: true })).toHaveValue(
     "3301009",
   );
-  await page.locator(".ranking").getByRole("button", { name: /Macaé/ }).click();
+  await page.getByLabel("Município", { exact: true }).selectOption("3302403");
   await expect(page.getByLabel("Município", { exact: true })).toHaveValue(
     "3302403",
   );

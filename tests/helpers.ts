@@ -16,6 +16,8 @@ export async function login(page: Page, baseUrl = "") {
   await page.route("**/api/v1/auth/logout", (route) => route.fulfill({ status: 204, body: "" }));
   await page.goto(`${baseUrl}/login`);
   await expect(page.getByRole("heading", { name: "Entrar no NSS" })).toBeVisible();
+  await page.getByLabel("E-mail", { exact: true }).fill("demo@nss.local");
+  await page.getByLabel("Senha", { exact: true }).fill("NSS-DEMO-2026");
   await page.getByRole("button", { name: "Entrar" }).click();
   await expect(page).toHaveURL(/\/mapa$/);
   await expect(page.getByRole("heading", { name: "Um olhar sobre o território" })).toBeVisible();

@@ -22,11 +22,11 @@ for (const width of [375, 768, 1024, 1440]) {
     await page.getByRole("button", { name: /^Rio de Janeiro ·/ }).focus();
     await page.keyboard.press("Space");
     await expect(areas).toHaveCount(92);
-    await expect(page.locator(".ranking")).toContainText("120 casos");
+    await expect(page.locator(".ranking")).toContainText("120 notificações");
     await page
       .getByRole("button", { name: /^Campos dos Goytacazes ·/ })
       .click();
-    await expect(page.locator(".map-context")).toContainText("120 casos");
+    await expect(page.locator(".map-context")).toContainText("120 notificações");
     await page.screenshot({ path: `/tmp/nss-rj-${width}.png`, fullPage: true });
     expect(
       await page.evaluate(
@@ -56,7 +56,7 @@ for (const width of [375, 768, 1024, 1440]) {
     if (width < 1024)
       await page.getByRole("button", { name: "Fechar ×" }).click();
     await expect(page.locator(".map-context")).toContainText("Sem registros");
-    await expect(page.locator(".ranking")).not.toContainText("120 casos");
+    await expect(page.locator(".ranking")).not.toContainText("120 notificações");
     await page.getByRole("button", { name: "Brasil", exact: true }).click();
     await expect(areas).toHaveCount(5);
     await page.screenshot({

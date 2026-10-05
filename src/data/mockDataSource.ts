@@ -17,6 +17,9 @@ export const mockDataSource: EpidemiologyDataSource = {
   async getMetadata() { return { availableYears: [2023, 2024, 2025, 2026], availableMonthsByYear: { "2023": Array.from({ length: 12 }, (_, i) => i + 1), "2024": Array.from({ length: 12 }, (_, i) => i + 1), "2025": Array.from({ length: 12 }, (_, i) => i + 1), "2026": Array.from({ length: 10 }, (_, i) => i + 1) } }; },
   async getEpidemiology(request) {
     await new Promise((resolve) => setTimeout(resolve, 180));
+    if (request.disease !== "DENG" || request.year !== 2026 || request.month !== 1) {
+      return response(request, [], null, 0, 0, "UNAVAILABLE");
+    }
     if (request.geography === "MUNICIPALITY") {
       const items = municipalities.map((item) => ({ code: item.cdMun, name: item.nmMun, notificationsTotal: item.casesTotal }));
       return response(request, items, 265, 265, 0, "AVAILABLE");

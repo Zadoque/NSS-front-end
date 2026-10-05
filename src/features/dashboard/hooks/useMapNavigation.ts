@@ -90,7 +90,7 @@ export function useMapNavigation() {
       ? "SE"
       : (navigation.selectedGeography?.code ?? "");
   const state =
-    navigation.mapLevel === "RJ_MUNICIPALITIES"
+    ["RJ_MUNICIPALITIES", "CAMPOS_DISTRICTS", "CAMPOS_NEIGHBORHOODS"].includes(navigation.mapLevel)
       ? "RJ"
       : navigation.selectedGeography?.level === "state"
         ? navigation.selectedGeography.code

@@ -60,7 +60,7 @@ export function App() {
     window.history.pushState(null, "", "/");
     setPath("/");
   }
-  if (!authReady) return <main><p role="status">Verificando sessão…</p></main>;
+  if (!authReady && path !== "/") return <main><p role="status">Verificando sessão…</p></main>;
   return (
     <div onClick={followLink}>
       {path === "/mapa" ? (

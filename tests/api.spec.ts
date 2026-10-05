@@ -8,6 +8,9 @@ test("Java adapter uses filters, zero, empty, loading and retry without demo fal
   await page.route("**/api/v1/diseases", (route) =>
     route.fulfill({ json: { items: ["DENG", "TEST"] } }),
   );
+  await page.route("**/api/v1/metadata", (route) =>
+    route.fulfill({ json: { availableYears: [2025, 2026], availableMonthsByYear: { "2025": [1], "2026": [1] } } }),
+  );
   let failing = false;
   await page.route(
     "**/api/v1/epidemiology/municipalities?**",
@@ -37,15 +40,26 @@ test("Java adapter uses filters, zero, empty, loading and retry without demo fal
       return route.fulfill({ json: { ...filters, items } });
     },
   );
+  await page.route("**/api/v1/epidemiology/districts?**", async (route) => {
+    if (failing) return route.fulfill({ status: 503, body: "" });
+    const params = new URL(route.request().url()).searchParams;
+    const isDeng = params.get("disease") === "DENG" && params.get("year") === "2026" && params.get("month") === "1";
+    return route.fulfill({ json: {
+      metric: "notifications",
+      geography: "DISTRICT",
+      filters: { disease: params.get("disease"), year: Number(params.get("year")), month: Number(params.get("month")) },
+      totalNotifications: isDeng ? 0 : null,
+      coverage: { status: isDeng ? "AVAILABLE" : "UNAVAILABLE", mappedNotificationsTotal: 0, unmappedNotificationsTotal: 0 },
+      items: isDeng ? [{ code: "CG_DIST_SEDE", name: "Distrito Sede", notificationsTotal: 0, parentDistrictId: null }] : [],
+    } });
+  });
   await login(page, "http://127.0.0.1:5174");
   await expect(page.locator(".badge")).toHaveCount(0);
   await page.getByRole("button", { name: /^Sudeste ·/ }).click();
   await page.getByRole("button", { name: /^Rio de Janeiro ·/ }).click();
   await page.getByRole("button", { name: /^Campos dos Goytacazes ·/ }).click();
-  await expect(page.locator(".map-context")).toContainText("0 casos");
-  await expect(
-    page.getByRole("button", { name: /^Angra dos Reis ·/ }),
-  ).toHaveAttribute("fill", "#dce2e6");
+  await expect(page.locator(".map-context")).toContainText("0 notificações");
+  await expect(page.getByRole("heading", { name: "Distritos de Campos dos Goytacazes" })).toBeVisible();
   await page
     .locator("aside")
     .getByLabel("Doença", { exact: true })

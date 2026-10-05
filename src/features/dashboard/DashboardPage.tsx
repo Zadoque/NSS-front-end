@@ -56,6 +56,9 @@ export function DashboardPage({ onLogout }: { onLogout: () => void }) {
   const selectedItem = items.find(
     (item) => item.code === selectedGeography?.code,
   );
+  const selectedTotal = selectedGeography?.level === "municipality" && query.isSuccess
+    ? query.data.totalNotifications
+    : selectedItem?.notificationsTotal;
   const periodDescription =
     filters.year === "ALL" && filters.month === "ALL"
       ? "no período selecionado"
@@ -73,8 +76,8 @@ export function DashboardPage({ onLogout }: { onLogout: () => void }) {
         ? "Não foi possível consultar os dados."
           : query.isPending
           ? "Carregando dados…"
-          : selectedItem
-            ? `${selectedItem.notificationsTotal} notificações da unidade notificadora ${periodDescription}.`
+          : selectedTotal !== undefined && selectedTotal !== null
+            ? `${selectedTotal} notificações da unidade notificadora ${periodDescription}.`
             : "Sem registros neste recorte. Isso não equivale a zero casos."
     : territorial
       ? "Selecione um município, distrito ou bairro da notificação para consultar."

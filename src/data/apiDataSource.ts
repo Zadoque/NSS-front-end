@@ -43,7 +43,13 @@ export const apiDataSource: EpidemiologyDataSource = {
     if (request.ageBand) params.set("ageBand", request.ageBand);
     if (request.municipalityCode) params.set("municipalityCode", request.municipalityCode);
     if (request.districtCode) params.set("districtCode", request.districtCode);
-    const endpoint = request.geography === "MUNICIPALITY" ? "municipalities" : request.geography.toLowerCase();
+    const endpoint = request.geography === "MUNICIPALITY"
+      ? "municipalities"
+      : request.geography === "DISTRICT"
+        ? "districts"
+        : request.geography === "NEIGHBORHOOD"
+          ? "neighborhoods"
+          : request.geography.toLowerCase();
     const value = await getJson(`/epidemiology/${endpoint}?${params}`);
     return parseCases(value, request);
   },
