@@ -7,6 +7,8 @@ import { realAuth, type AuthClient } from "../auth/realAuth";
 import { isDemo } from "../data/dataSource";
 import { AdminUsersPage } from "../features/admin/AdminUsersPage";
 import { FirstAccessPage } from "../features/auth/FirstAccessPage";
+import { ForgotPasswordPage } from "../features/auth/ForgotPasswordPage";
+import { ResetPasswordPage } from "../features/auth/ResetPasswordPage";
 
 export function App() {
   const auth: AuthClient = isDemo ? mockAuth : realAuth;
@@ -51,7 +53,7 @@ export function App() {
     const url = new URL(link.href);
     if (
       url.origin !== window.location.origin ||
-      !["/", "/mapa", "/login", "/admin/usuarios", "/primeiro-acesso"].includes(url.pathname)
+      !["/", "/mapa", "/login", "/admin/usuarios", "/primeiro-acesso", "/esqueci-senha", "/redefinir-senha"].includes(url.pathname)
     )
       return;
     event.preventDefault();
@@ -67,7 +69,7 @@ export function App() {
   if (!authReady && path !== "/") return <main><p role="status">Verificando sessão…</p></main>;
   return (
     <div onClick={followLink}>
-      {path === "/primeiro-acesso" ? <FirstAccessPage onDone={() => { window.history.pushState(null, "", "/login"); setPath("/login"); }} /> : path === "/admin/usuarios" ? (
+      {path === "/primeiro-acesso" ? <FirstAccessPage onDone={() => { window.history.pushState(null, "", "/login"); setPath("/login"); }} /> : path === "/redefinir-senha" ? <ResetPasswordPage onDone={() => { window.history.pushState(null, "", "/login"); setPath("/login"); }} /> : path === "/esqueci-senha" ? <ForgotPasswordPage onBack={() => { window.history.pushState(null, "", "/login"); setPath("/login"); }} /> : path === "/admin/usuarios" ? (
         session?.permissions.includes("USER_MANAGEMENT") ? <AdminUsersPage onBack={() => { window.history.pushState(null, "", "/mapa"); setPath("/mapa"); }} /> : <main><h1>Acesso negado</h1></main>
       ) : path === "/mapa" ? (
         session ? <DashboardPage onLogout={logout} onAdmin={session.permissions.includes("USER_MANAGEMENT") ? () => { window.history.pushState(null, "", "/admin/usuarios"); setPath("/admin/usuarios"); } : undefined} /> : <LoginPage auth={auth} demo={isDemo} onSuccess={() => { window.history.pushState(null, "", "/mapa"); setPath("/mapa"); }} />

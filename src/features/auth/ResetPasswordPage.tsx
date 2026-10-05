@@ -1,0 +1,8 @@
+import { useState, type FormEvent } from "react";
+import { requestJson } from "../../api/http";
+
+export function ResetPasswordPage({ onDone }: { onDone: () => void }) {
+  const token = new URLSearchParams(window.location.search).get("token") || ""; const [email, setEmail] = useState(""); const [password, setPassword] = useState(""); const [confirmation, setConfirmation] = useState(""); const [error, setError] = useState(""); const [done, setDone] = useState(false);
+  async function submit(event: FormEvent) { event.preventDefault(); if (password !== confirmation) { setError("As senhas não coincidem."); return; } try { await requestJson("/auth/password-reset/complete", { method: "POST", body: JSON.stringify({ token, email, password }) }); setDone(true); } catch (e) { setError(e instanceof Error ? e.message : "Link inválido ou expirado."); } }
+  return <main className="auth-page"><section className="card auth-card"><h1>Nova senha</h1>{done ? <><p>Senha redefinida com sucesso.</p><button className="primary" onClick={onDone}>Ir para o login</button></> : <form onSubmit={submit}><label>E-mail</label><input type="email" value={email} onChange={e => setEmail(e.target.value)} required /><label>Nova senha</label><input type="password" minLength={12} value={password} onChange={e => setPassword(e.target.value)} required /><label>Confirme a senha</label><input type="password" minLength={12} value={confirmation} onChange={e => setConfirmation(e.target.value)} required />{error && <p className="form-error">{error}</p>}<button className="primary">Redefinir senha</button></form>}</section></main>;
+}

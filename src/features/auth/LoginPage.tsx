@@ -36,6 +36,7 @@ export function LoginPage({ auth, demo, onSuccess }: { auth: AuthClient; demo: b
           {error && <p className="form-error" role="alert">{error}</p>}
           <button className="primary" type="submit" disabled={loading}>{loading ? "Entrando…" : "Entrar"}</button>
         </form>
+        {!demo && <a href="/esqueci-senha">Esqueci minha senha</a>}
         {demo && <p className="demo-note"><strong>Credenciais DEMO</strong>demo@nss.local · NSS-DEMO-2026</p>}
         <a href="/">← Voltar à página inicial</a>
       </section>

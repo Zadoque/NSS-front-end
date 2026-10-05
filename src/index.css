@@ -217,6 +217,7 @@ p {
 .admin-form input, .admin-form select { min-height: 42px; padding: 8px; border: 1px solid #a8bcc8; border-radius: 7px; }
 .admin-row { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid #e4ebef; }
 .admin-row small { color: #71828c; }
+.admin-section { padding: 20px; margin-top: 20px; }
 .geo {
   cursor: pointer;
   outline: none;
