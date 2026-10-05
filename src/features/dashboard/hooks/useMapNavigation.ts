@@ -61,6 +61,30 @@ export function useMapNavigation() {
       });
     }
   }
+  function goBack() {
+    const current = navigation.selectedGeography;
+    const camposMunicipality: GeographySelection = {
+      level: "municipality",
+      code: "3301009",
+      name: "Campos dos Goytacazes",
+    };
+    const municipality =
+      current?.level === "municipality"
+        ? current
+        : current?.municipalityCode === "3301009"
+          ? camposMunicipality
+          : null;
+
+    if (navigation.mapLevel === "CAMPOS_NEIGHBORHOODS") {
+      setNavigation({ mapLevel: "CAMPOS_DISTRICTS", selectedGeography: municipality });
+    } else if (navigation.mapLevel === "CAMPOS_DISTRICTS") {
+      setNavigation({ mapLevel: "RJ_MUNICIPALITIES", selectedGeography: municipality });
+    } else if (navigation.mapLevel === "RJ_MUNICIPALITIES") {
+      setNavigation({ mapLevel: "SOUTHEAST_STATES", selectedGeography: null });
+    } else if (navigation.mapLevel === "SOUTHEAST_STATES") {
+      setNavigation({ mapLevel: "BRAZIL_REGIONS", selectedGeography: null });
+    }
+  }
   const region =
     navigation.mapLevel !== "BRAZIL_REGIONS"
       ? "SE"
@@ -71,5 +95,5 @@ export function useMapNavigation() {
       : navigation.selectedGeography?.level === "state"
         ? navigation.selectedGeography.code
         : "";
-  return { ...navigation, region, state, navigate, select };
+  return { ...navigation, region, state, navigate, select, goBack };
 }

@@ -62,21 +62,28 @@ export function GeographicMap({
         <button type="button" aria-label="Redefinir zoom" onClick={resetZoom}>⟳</button>
         <span aria-live="polite">Zoom {Math.round((zoom / initialZoom) * 100)}%</span>
       </div>
-      <ComposableMap
-        width={800}
-        height={540}
-        projection="geoMercator"
-        projectionConfig={{ center: view.center, scale: view.scale }}
-        aria-label={`Mapa interativo: ${view.title}`}
+      <div
+        className="map-viewport"
+        onWheelCapture={(event) => {
+          // A roda sobre o mapa é uma ação de zoom, não de rolagem da página.
+          event.preventDefault();
+        }}
       >
-        <ZoomableGroup
-          center={view.center}
-          zoom={zoom}
-          minZoom={minZoom}
-          maxZoom={maxZoom}
-          onMove={({ zoom: nextZoom }) => setZoom(Number((nextZoom ?? 1).toFixed(1)))}
+        <ComposableMap
+          width={800}
+          height={540}
+          projection="geoMercator"
+          projectionConfig={{ center: view.center, scale: view.scale }}
+          aria-label={`Mapa interativo: ${view.title}`}
         >
-          <Geographies geography={map.data}>
+          <ZoomableGroup
+            center={view.center}
+            zoom={zoom}
+            minZoom={minZoom}
+            maxZoom={maxZoom}
+            onMove={({ zoom: nextZoom }) => setZoom(Number((nextZoom ?? minZoom).toFixed(1)))}
+          >
+            <Geographies geography={map.data}>
             {({ geographies }) =>
               geographies.map((geo) => {
               const p = geo.properties ?? {};
@@ -177,9 +184,10 @@ export function GeographicMap({
               );
               })
             }
-          </Geographies>
-        </ZoomableGroup>
-      </ComposableMap>
+            </Geographies>
+          </ZoomableGroup>
+        </ComposableMap>
+      </div>
       <p className="map-hint" aria-live="polite">
         {hint ||
           (selected

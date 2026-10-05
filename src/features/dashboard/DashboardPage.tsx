@@ -18,7 +18,7 @@ import { MunicipalityRanking } from "./components/MunicipalityRanking";
 import { TerritoryRanking } from "./components/TerritoryRanking";
 export function DashboardPage({ onLogout }: { onLogout: () => void }) {
   const navigation = useMapNavigation();
-  const { mapLevel, selectedGeography, select, navigate } = navigation;
+  const { mapLevel, selectedGeography, select, navigate, goBack } = navigation;
   const diseases = useDiseases();
   const metadata = useMetadata();
   const [filterInput, setFilters] = useState<EpidemiologyFilters>({
@@ -126,6 +126,16 @@ export function DashboardPage({ onLogout }: { onLogout: () => void }) {
           <section className="card map-card" aria-label="Exploração geográfica">
             <div className="map-heading">
               <div>
+                {mapLevel !== "BRAZIL_REGIONS" && (
+                  <button
+                    className="map-back"
+                    type="button"
+                    onClick={goBack}
+                    aria-label={`Voltar para ${mapLevel === "CAMPOS_NEIGHBORHOODS" ? "distritos" : mapLevel === "CAMPOS_DISTRICTS" ? "municípios" : mapLevel === "RJ_MUNICIPALITIES" ? "estados" : "regiões"}`}
+                  >
+                    ← Voltar
+                  </button>
+                )}
                 <div className="section-label">
                   {mapLevel === "CAMPOS_NEIGHBORHOODS"
                     ? "BAIRROS DA NOTIFICAÇÃO"
