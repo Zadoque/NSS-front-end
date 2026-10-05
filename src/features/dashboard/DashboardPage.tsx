@@ -16,7 +16,7 @@ import { FilterPanel } from "./components/FilterPanel";
 import { FilterDrawer } from "./components/FilterDrawer";
 import { MunicipalityRanking } from "./components/MunicipalityRanking";
 import { TerritoryRanking } from "./components/TerritoryRanking";
-export function DashboardPage() {
+export function DashboardPage({ onLogout }: { onLogout: () => void }) {
   const navigation = useMapNavigation();
   const { mapLevel, selectedGeography, select, navigate } = navigation;
   const diseases = useDiseases();
@@ -56,15 +56,25 @@ export function DashboardPage() {
   const selectedItem = items.find(
     (item) => item.code === selectedGeography?.code,
   );
+  const periodDescription =
+    filters.year === "ALL" && filters.month === "ALL"
+      ? "no período selecionado"
+      : filters.month === "ALL"
+        ? "no ano selecionado"
+        : filters.year === "ALL"
+          ? "no mês selecionado em todos os anos"
+          : "no mês selecionado";
   const selectionInfo = selectedGeography
-    ? !covered
+    ? selectedGeography.level === "district" && selectedGeography.code !== "CG_DIST_SEDE"
+      ? "Detalhamento por bairro da notificação indisponível neste distrito. O total distrital permanece disponível."
+      : !covered
       ? "Sem cobertura nesta V1. Dados ainda não disponíveis."
       : query.isError
         ? "Não foi possível consultar os dados."
-        : query.isPending
+          : query.isPending
           ? "Carregando dados…"
           : selectedItem
-            ? `${selectedItem.notificationsTotal} notificações da unidade notificadora no mês selecionado.`
+            ? `${selectedItem.notificationsTotal} notificações da unidade notificadora ${periodDescription}.`
             : "Sem registros neste recorte. Isso não equivale a zero casos."
     : territorial
       ? "Selecione um município, distrito ou bairro da notificação para consultar."
@@ -83,7 +93,10 @@ export function DashboardPage() {
     selectionInfo,
     demo: isDemo,
     availableYears: metadata.data?.availableYears ?? [],
-    availableMonths: metadata.data?.availableMonthsByYear[String(filters.year)] ?? [],
+    availableMonths:
+      filters.year === "ALL"
+        ? Array.from({ length: 12 }, (_, index) => index + 1)
+        : metadata.data?.availableMonthsByYear[String(filters.year)] ?? [],
   };
   return (
     <>
@@ -96,6 +109,7 @@ export function DashboardPage() {
           <p>UENF · Vigilância epidemiológica</p>
         </div>
         {isDemo && <span className="badge">DEMO</span>}
+        <button className="header-action" type="button" onClick={onLogout}>Sair</button>
       </header>
       <main>
         <a className="back-home" href="/">← Página inicial</a>
@@ -103,7 +117,7 @@ export function DashboardPage() {
           <div className="section-label">TERRITÓRIO E SAÚDE</div>
           <h1>Um olhar sobre o território</h1>
           <p>
-            Explore o mapa e consulte os casos mensais nos municípios cobertos.
+            Explore o mapa e consulte as notificações por período nos municípios cobertos.
           </p>
         </div>
         <GeographyBreadcrumb level={mapLevel} navigate={navigate} selected={selectedGeography} />

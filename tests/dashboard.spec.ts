@@ -1,11 +1,12 @@
 import { test, expect } from "@playwright/test";
 import { parseCases } from "../src/data/apiDataSource";
 import { caseColor } from "../src/features/dashboard/components/MapLegend";
+import { login } from "./helpers";
 
 for (const width of [375, 768, 1024, 1440]) {
   test(`navigation, coverage and drawer at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 1000 });
-    await page.goto("/mapa");
+    await login(page);
     const areas = page.locator(".geo");
     await expect(areas).toHaveCount(5);
     await page.getByRole("button", { name: /^Norte ·/ }).click();
@@ -102,7 +103,7 @@ test("touch activation, outside dismissal and cartography error recovery", async
   await page.route("**/maps/brazil-regions.geojson", (route) =>
     failMap ? route.fulfill({ status: 503, body: "" }) : route.continue(),
   );
-  await page.goto("/mapa");
+  await login(page);
   await expect(page.getByRole("alert")).toContainText(
     "Não foi possível carregar o mapa",
   );

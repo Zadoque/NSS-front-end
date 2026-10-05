@@ -10,6 +10,7 @@ export function HomePage() {
           <strong>Núcleo de Situação de Saúde</strong>
           <p>UENF · Saúde e território</p>
         </div>
+        <a className="header-login" href="/login">Entrar</a>
       </header>
       <main className="home">
         <section className="home-hero">
@@ -20,8 +21,8 @@ export function HomePage() {
             UENF que pretende apoiar o acompanhamento e a interpretação da
             situação de saúde, abrangendo Saúde Humana e Saúde Animal.
           </p>
-          <a className="primary home-cta" href="/mapa">
-            Explorar mapa <span aria-hidden="true">→</span>
+          <a className="primary home-cta" href="/login">
+            Acessar o mapa <span aria-hidden="true">→</span>
           </a>
         </section>
         <div className="home-grid">
@@ -90,8 +91,8 @@ export function HomePage() {
               Campos dos Goytacazes — RJ
             </address>
           </div>
-          <a className="primary home-cta" href="/mapa">
-            Explorar mapa <span aria-hidden="true">→</span>
+          <a className="primary home-cta" href="/login">
+            Acessar o mapa <span aria-hidden="true">→</span>
           </a>
         </section>
         <footer>

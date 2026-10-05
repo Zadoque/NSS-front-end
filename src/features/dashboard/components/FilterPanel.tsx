@@ -82,9 +82,13 @@ export function FilterPanel({
             id={`${id}-year`}
             value={filters.year}
             onChange={(e) =>
-              onChange({ ...filters, year: Number(e.target.value) })
+              onChange({
+                ...filters,
+                year: e.target.value === "ALL" ? "ALL" : Number(e.target.value),
+              })
             }
           >
+            <option value="ALL">Todos os anos</option>
             {availableYears.map((y) => (
               <option key={y}>{y}</option>
             ))}
@@ -96,9 +100,13 @@ export function FilterPanel({
             id={`${id}-month`}
             value={filters.month}
             onChange={(e) =>
-              onChange({ ...filters, month: Number(e.target.value) })
+              onChange({
+                ...filters,
+                month: e.target.value === "ALL" ? "ALL" : Number(e.target.value),
+              })
             }
           >
+            <option value="ALL">Todos os meses · total do ano</option>
             {availableMonths.map((month) => (
               <option key={month} value={month}>
                 {months[month - 1]}

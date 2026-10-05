@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ComposableMap, Geographies, Geography } from "react-simple-maps";
+import { ZoomableGroup } from "react-simple-maps/zoom";
 import { loadMap, mapViews } from "../../../data/maps";
 import type {
   GeographySelection,
@@ -25,6 +26,8 @@ export function GeographicMap({
   onSelect,
 }: Props) {
   const [hint, setHint] = useState("");
+  const initialZoom = level === "CAMPOS_NEIGHBORHOODS" ? 3.5 : 1;
+  const [zoom, setZoom] = useState(initialZoom);
   const map = useQuery({
     queryKey: ["map", level],
     queryFn: () => loadMap(level),
@@ -45,8 +48,20 @@ export function GeographicMap({
       </div>
     );
   const byCode = new Map(items.map((item) => [item.code, item]));
+  const minZoom = initialZoom;
+  const maxZoom = initialZoom * 3;
+  const zoomStep = initialZoom * 0.5;
+  const zoomIn = () => setZoom((value) => Math.min(maxZoom, Number((value + zoomStep).toFixed(1))));
+  const zoomOut = () => setZoom((value) => Math.max(minZoom, Number((value - zoomStep).toFixed(1))));
+  const resetZoom = () => setZoom(initialZoom);
   return (
     <>
+      <div className="map-controls" aria-label="Controles de zoom do mapa">
+        <button type="button" aria-label="Aumentar zoom" onClick={zoomIn}>+</button>
+        <button type="button" aria-label="Diminuir zoom" onClick={zoomOut}>−</button>
+        <button type="button" aria-label="Redefinir zoom" onClick={resetZoom}>⟳</button>
+        <span aria-live="polite">Zoom {Math.round((zoom / initialZoom) * 100)}%</span>
+      </div>
       <ComposableMap
         width={800}
         height={540}
@@ -54,9 +69,16 @@ export function GeographicMap({
         projectionConfig={{ center: view.center, scale: view.scale }}
         aria-label={`Mapa interativo: ${view.title}`}
       >
-        <Geographies geography={map.data}>
-          {({ geographies }) =>
-            geographies.map((geo) => {
+        <ZoomableGroup
+          center={view.center}
+          zoom={zoom}
+          minZoom={minZoom}
+          maxZoom={maxZoom}
+          onMove={({ zoom: nextZoom }) => setZoom(Number((nextZoom ?? 1).toFixed(1)))}
+        >
+          <Geographies geography={map.data}>
+            {({ geographies }) =>
+              geographies.map((geo) => {
               const p = geo.properties ?? {};
               const geography: GeographySelection =
                 level === "BRAZIL_REGIONS"
@@ -98,7 +120,11 @@ export function GeographicMap({
                   geography.code,
                 );
               const item = covered ? byCode.get(geography.code) : undefined;
-              const detail = navigable
+              const districtNeighborhoodUnavailable =
+                geography.level === "district" && geography.code !== "CG_DIST_SEDE";
+              const detail = districtNeighborhoodUnavailable
+                ? "Detalhamento por bairro da notificação indisponível neste distrito"
+                : navigable
                 ? "Toque ou pressione Enter para explorar"
                 : !covered
                 ? territorial
@@ -149,9 +175,10 @@ export function GeographicMap({
                   <title>{label}</title>
                 </Geography>
               );
-            })
-          }
-        </Geographies>
+              })
+            }
+          </Geographies>
+        </ZoomableGroup>
       </ComposableMap>
       <p className="map-hint" aria-live="polite">
         {hint ||

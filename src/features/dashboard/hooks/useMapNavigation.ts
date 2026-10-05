@@ -44,7 +44,16 @@ export function useMapNavigation() {
         setNavigation({ mapLevel: "RJ_MUNICIPALITIES", selectedGeography: selection });
       }
     } else if (selection.level === "district") {
-      setNavigation({ mapLevel: "CAMPOS_NEIGHBORHOODS", selectedGeography: selection });
+      // Na V1, o detalhamento por bairro da notificação está disponível
+      // somente para o Distrito Sede. Os demais distritos continuam no mapa
+      // distrital; isso não significa zero nem território não mapeado.
+      setNavigation({
+        mapLevel:
+          selection.code === "CG_DIST_SEDE"
+            ? "CAMPOS_NEIGHBORHOODS"
+            : "CAMPOS_DISTRICTS",
+        selectedGeography: selection,
+      });
     } else {
       setNavigation({
         mapLevel: "CAMPOS_NEIGHBORHOODS",

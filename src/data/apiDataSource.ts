@@ -1,7 +1,7 @@
 import { getJson } from "../api/http";
-import type { EpidemiologyDataSource, EpidemiologyRequest, EpidemiologyResponse } from "../types/epidemiology";
+import type { EpidemiologyDataSource, EpidemiologyFilters, EpidemiologyRequest, EpidemiologyResponse } from "../types/epidemiology";
 
-export function parseCases(value: unknown, filters: { disease: string; year: number; month: number }): EpidemiologyResponse {
+export function parseCases(value: unknown, filters: EpidemiologyFilters): EpidemiologyResponse {
   if (!value || typeof value !== "object" || !Array.isArray((value as { items?: unknown }).items)) throw new Error("Resposta epidemiológica inválida.");
   const rawItems = (value as { items: unknown[] }).items;
   const items = rawItems.map((item) => {
@@ -33,7 +33,9 @@ export const apiDataSource: EpidemiologyDataSource = {
     return value as { availableYears: number[]; availableMonthsByYear: Record<string, number[]> };
   },
   async getEpidemiology(request: EpidemiologyRequest): Promise<EpidemiologyResponse> {
-    const params = new URLSearchParams({ geography: request.geography, disease: request.disease, year: String(request.year), month: String(request.month) });
+    const params = new URLSearchParams({ geography: request.geography, disease: request.disease });
+    if (request.year !== "ALL") params.set("year", String(request.year));
+    if (request.month !== "ALL") params.set("month", String(request.month));
     if (request.sex) params.set("sex", request.sex);
     if (request.ageBand) params.set("ageBand", request.ageBand);
     if (request.municipalityCode) params.set("municipalityCode", request.municipalityCode);

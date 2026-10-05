@@ -14,7 +14,7 @@ function response(request: EpidemiologyRequest, items: EpidemiologyItem[], total
 
 export const mockDataSource: EpidemiologyDataSource = {
   async listDiseases() { return ["DENG", "FMAC", "TOXC"]; },
-  async getMetadata() { return { availableYears: [2025, 2026], availableMonthsByYear: { "2025": Array.from({ length: 12 }, (_, i) => i + 1), "2026": Array.from({ length: 10 }, (_, i) => i + 1) } }; },
+  async getMetadata() { return { availableYears: [2023, 2024, 2025, 2026], availableMonthsByYear: { "2023": Array.from({ length: 12 }, (_, i) => i + 1), "2024": Array.from({ length: 12 }, (_, i) => i + 1), "2025": Array.from({ length: 12 }, (_, i) => i + 1), "2026": Array.from({ length: 10 }, (_, i) => i + 1) } }; },
   async getEpidemiology(request) {
     await new Promise((resolve) => setTimeout(resolve, 180));
     if (request.geography === "MUNICIPALITY") {
@@ -25,7 +25,7 @@ export const mockDataSource: EpidemiologyDataSource = {
       const items = districts.map((feature, index) => ({ code: String(feature.properties?.territoryId), name: String(feature.properties?.name), notificationsTotal: index === 0 ? 27 : index % 3 === 0 ? 0 : 4 + index }));
       return response(request, items, 120, 114, 6, "PARTIAL");
     }
-    if (request.geography === "NEIGHBORHOOD" && request.municipalityCode === "3301009" && request.districtCode) {
+    if (request.geography === "NEIGHBORHOOD" && request.municipalityCode === "3301009" && request.districtCode === "CG_DIST_SEDE") {
       const items = neighborhoods.filter((feature) => feature.properties?.parentDistrictId === request.districtCode).map((feature, index) => ({ code: String(feature.properties?.territoryId), name: String(feature.properties?.name), notificationsTotal: index === 0 ? 0 : 1 + (index % 5), parentDistrictId: request.districtCode }));
       const mapped = items.reduce((total, item) => total + item.notificationsTotal, 0);
       return response(request, items, mapped + 2, mapped, 2, "PARTIAL");

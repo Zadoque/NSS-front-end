@@ -169,6 +169,32 @@ p {
   height: auto;
   background: radial-gradient(ellipse, #f5f9fb, white 72%);
 }
+.map-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 20px 0;
+}
+.map-controls button {
+  width: 38px;
+  height: 38px;
+  border: 1px solid #cbd8df;
+  background: #fff;
+  color: #174a7e;
+  font-size: 21px;
+  line-height: 1;
+}
+.map-controls button:hover { background: #edf6f2; }
+.map-controls span { margin-left: 6px; color: #607585; font-size: 12px; }
+.header-action { margin-left: auto; padding: 8px 12px; border: 1px solid #cbd8df; background: #fff; color: #174a7e; }
+.header-login { margin-left: auto; font-size: 13px; font-weight: 700; }
+.auth-page { min-height: 100dvh; display: grid; place-items: center; padding: 20px; }
+.auth-card { width: min(100%, 460px); padding: 30px; }
+.auth-card .brand-mark { margin-bottom: 28px; }
+.auth-card h1 { margin-bottom: 8px; }
+.auth-card form { display: grid; gap: 8px; margin-top: 24px; }
+.auth-card input { min-height: 46px; padding: 10px; border: 1px solid #a8bcc8; border-radius: 7px; margin-bottom: 8px; }
+.form-error { color: #9c321f; background: #fff0ed; padding: 10px; border-radius: 6px; }
 .geo {
   cursor: pointer;
   outline: none;
@@ -527,6 +553,11 @@ address {
 .geography-fields :disabled {
   background: #edf1f4;
   color: #536774;
+}
+.selector-help {
+  color: #607585;
+  font-size: 11px !important;
+  margin-top: 6px !important;
 }
 @media (min-width: 768px) {
   .home-grid {

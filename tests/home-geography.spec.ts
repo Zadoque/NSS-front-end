@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { login } from "./helpers";
 
 test("institutional home, links and browser history", async ({ page }) => {
   await page.goto("/");
@@ -7,8 +8,9 @@ test("institutional home, links and browser history", async ({ page }) => {
   );
   await expect(page.getByText("Onde estamos", { exact: true })).toBeVisible();
   await expect(page.locator("main")).toContainText("dados sintéticos");
-  await page.getByRole("link", { name: "Explorar mapa" }).first().click();
-  await expect(page).toHaveURL(/\/mapa$/);
+  await page.getByRole("link", { name: "Acessar o mapa" }).first().click();
+  await expect(page).toHaveURL(/\/login$/);
+  await login(page);
   await page.getByRole("link", { name: "Página inicial" }).click();
   await expect(page).toHaveURL(/\/$/);
   await page.goBack();
@@ -28,7 +30,8 @@ for (const width of [375, 1440]) {
         () => document.documentElement.scrollWidth <= innerWidth,
       ),
     ).toBeTruthy();
-    await page.getByRole("link", { name: "Explorar mapa" }).first().click();
+    await page.getByRole("link", { name: "Acessar o mapa" }).first().click();
+    await login(page);
     await expect(page.getByLabel("Estado", { exact: true })).toBeDisabled();
     await page.getByLabel("Região", { exact: true }).selectOption("SE");
     await expect(page.locator(".geo")).toHaveCount(4);
@@ -81,7 +84,7 @@ for (const width of [375, 1440]) {
 test("map and ranking update selectors, including unavailable areas", async ({
   page,
 }) => {
-  await page.goto("/mapa");
+  await login(page);
   await page.getByRole("button", { name: /^Norte ·/ }).click();
   await expect(page.getByLabel("Região", { exact: true })).toHaveValue("N");
   await page.getByRole("button", { name: /^Sudeste ·/ }).click();

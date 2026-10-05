@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { login } from "./helpers";
 
 test("Java adapter uses filters, zero, empty, loading and retry without demo fallback", async ({
   page,
@@ -36,7 +37,7 @@ test("Java adapter uses filters, zero, empty, loading and retry without demo fal
       return route.fulfill({ json: { ...filters, items } });
     },
   );
-  await page.goto("http://127.0.0.1:5174/mapa");
+  await login(page, "http://127.0.0.1:5174");
   await expect(page.locator(".badge")).toHaveCount(0);
   await page.getByRole("button", { name: /^Sudeste ·/ }).click();
   await page.getByRole("button", { name: /^Rio de Janeiro ·/ }).click();

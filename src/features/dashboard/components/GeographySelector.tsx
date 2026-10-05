@@ -42,7 +42,37 @@ export function GeographySelector({
     }))
     .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
   const municipality =
-    selectedGeography?.level === "municipality" ? selectedGeography.code : "";
+    selectedGeography?.municipalityCode ??
+    (selectedGeography?.level === "municipality" ? selectedGeography.code : "");
+  const district =
+    selectedGeography?.level === "district"
+      ? selectedGeography.code
+      : selectedGeography?.districtCode ?? "";
+  const districtMap = useQuery({
+    queryKey: ["map", "CAMPOS_DISTRICTS"],
+    queryFn: () => loadMap("CAMPOS_DISTRICTS"),
+    staleTime: Infinity,
+    enabled: municipality === "3301009",
+  });
+  const neighborhoodMap = useQuery({
+    queryKey: ["map", "CAMPOS_NEIGHBORHOODS", district],
+    queryFn: () => loadMap("CAMPOS_NEIGHBORHOODS"),
+    staleTime: Infinity,
+    enabled: district === "CG_DIST_SEDE",
+  });
+  const districts = (districtMap.data?.features ?? [])
+    .map(({ properties }) => ({
+      code: String(properties?.territoryId),
+      name: String(properties?.name),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+  const neighborhoods = (neighborhoodMap.data?.features ?? [])
+    .filter(({ properties }) => String(properties?.parentDistrictId) === "CG_DIST_SEDE")
+    .map(({ properties }) => ({
+      code: String(properties?.territoryId),
+      name: String(properties?.name),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
   const matches = municipalities.filter((item) =>
     normalize(item.name).includes(normalize(search)),
   );
@@ -157,6 +187,54 @@ export function GeographySelector({
             ))}
           </select>
         </div>
+        {municipality === "3301009" && (
+          <div>
+            <label htmlFor="district">Distrito</label>
+            <select
+              id="district"
+              disabled={!districtMap.isSuccess}
+              value={district}
+              onChange={(event) => {
+                const item = districts.find((candidate) => candidate.code === event.target.value);
+                if (item) {
+                  select({ level: "district", ...item, municipalityCode: "3301009" });
+                } else if (selectedGeography?.level !== "municipality") {
+                  select({ level: "municipality", code: "3301009", name: "Campos dos Goytacazes" });
+                }
+              }}
+            >
+              <option value="">Todos os distritos</option>
+              {districts.map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}
+            </select>
+            <p className="selector-help">
+              {districtMap.isPending ? "Carregando distritos…" : "Campos possui detalhamento distrital."}
+            </p>
+          </div>
+        )}
+        {district === "CG_DIST_SEDE" && (
+          <div>
+            <label htmlFor="neighborhood">Bairro da notificação</label>
+            <select
+              id="neighborhood"
+              disabled={!neighborhoodMap.isSuccess}
+              value={selectedGeography?.level === "neighborhood" ? selectedGeography.code : ""}
+              onChange={(event) => {
+                const item = neighborhoods.find((candidate) => candidate.code === event.target.value);
+                if (item) {
+                  select({ level: "neighborhood", ...item, municipalityCode: "3301009", districtCode: "CG_DIST_SEDE" });
+                } else {
+                  select({ level: "district", code: "CG_DIST_SEDE", name: "Distrito Sede", municipalityCode: "3301009" });
+                }
+              }}
+            >
+              <option value="">Todos os bairros da notificação</option>
+              {neighborhoods.map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}
+            </select>
+            <p className="selector-help">
+              {neighborhoodMap.isPending ? "Carregando bairros…" : "O bairro é derivado da unidade notificadora no CNES."}
+            </p>
+          </div>
+        )}
       </div>
       <p id="municipality-help" role="status">
         {state === "RJ"
