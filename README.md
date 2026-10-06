@@ -78,6 +78,14 @@ Os testes usam Playwright. Instale seu Chromium com `npx playwright install chro
 
 Para servir o build: `npm run preview`. Para publicar, sirva `dist/` como aplicação estática.
 
+### Imagem de produção
+
+O `Dockerfile` produz o build Vite e o serve com Nginx. Na integração com Caddy, construa com `VITE_USE_MOCKS=false` e `VITE_API_BASE_URL` vazio, para que o navegador use a mesma origem e o Caddy encaminhe `/api/*` ao Java:
+
+```sh
+docker build --build-arg VITE_USE_MOCKS=false --build-arg VITE_API_BASE_URL= -t nss-frontend:local .
+```
+
 A documentação LaTeX não foi alterada. Instruções específicas: [COMPILACAO_NIX_NSS_FRONT_END.md](COMPILACAO_NIX_NSS_FRONT_END.md).
 
 ## Homepage e navegação da V1

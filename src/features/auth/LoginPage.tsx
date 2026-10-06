@@ -22,7 +22,7 @@ export function LoginPage({ auth, demo, onSuccess }: { auth: AuthClient; demo: b
   }
 
   return (
-    <main className="auth-page">
+    <main className="auth-page" aria-busy={loading}>
       <section className="card auth-card" aria-labelledby="login-title">
         <div className="brand-mark" aria-hidden="true">NSS</div>
         <div className="section-label">{demo ? "ACESSO DEMONSTRAÇÃO" : "ACESSO RESTRITO"}</div>
@@ -35,6 +35,7 @@ export function LoginPage({ auth, demo, onSuccess }: { auth: AuthClient; demo: b
           <input id="password" type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required />
           {error && <p className="form-error" role="alert">{error}</p>}
           <button className="primary" type="submit" disabled={loading}>{loading ? "Entrando…" : "Entrar"}</button>
+          {loading && <p role="status">Validando suas credenciais…</p>}
         </form>
         {!demo && <a href="/esqueci-senha">Esqueci minha senha</a>}
         {demo && <p className="demo-note"><strong>Credenciais DEMO</strong>demo@nss.local · NSS-DEMO-2026</p>}
