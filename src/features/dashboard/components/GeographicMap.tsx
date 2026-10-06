@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ComposableMap, Geographies, Geography } from "react-simple-maps";
 import { ZoomableGroup } from "react-simple-maps/zoom";
@@ -26,6 +26,8 @@ export function GeographicMap({
   onSelect,
 }: Props) {
   const [hint, setHint] = useState("");
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
   const initialZoom = level === "CAMPOS_NEIGHBORHOODS" ? 3.5 : 1;
   const [zoom, setZoom] = useState(initialZoom);
   const map = useQuery({
@@ -33,6 +35,12 @@ export function GeographicMap({
     queryFn: () => loadMap(level),
     staleTime: Infinity,
   });
+  useEffect(() => {
+    const updateFullscreenState = () =>
+      setIsFullscreen(document.fullscreenElement === mapContainerRef.current);
+    document.addEventListener("fullscreenchange", updateFullscreenState);
+    return () => document.removeEventListener("fullscreenchange", updateFullscreenState);
+  }, []);
   const view = mapViews[level];
   if (map.isPending)
     return (
@@ -54,12 +62,32 @@ export function GeographicMap({
   const zoomIn = () => setZoom((value) => Math.min(maxZoom, Number((value + zoomStep).toFixed(1))));
   const zoomOut = () => setZoom((value) => Math.max(minZoom, Number((value - zoomStep).toFixed(1))));
   const resetZoom = () => setZoom(initialZoom);
+  const toggleFullscreen = async () => {
+    const container = mapContainerRef.current;
+    if (!container) return;
+
+    if (document.fullscreenElement) {
+      await document.exitFullscreen();
+      return;
+    }
+    await container.requestFullscreen();
+  };
+
   return (
-    <>
+    <div className="geographic-map" ref={mapContainerRef}>
       <div className="map-controls" aria-label="Controles de zoom do mapa">
         <button type="button" aria-label="Aumentar zoom" onClick={zoomIn}>+</button>
         <button type="button" aria-label="Diminuir zoom" onClick={zoomOut}>−</button>
         <button type="button" aria-label="Redefinir zoom" onClick={resetZoom}>⟳</button>
+        <button
+          type="button"
+          className="map-fullscreen"
+          aria-label={isFullscreen ? "Sair da tela cheia" : "Abrir mapa em tela cheia"}
+          aria-pressed={isFullscreen}
+          onClick={() => void toggleFullscreen()}
+        >
+          {isFullscreen ? "⤢" : "⛶"}
+        </button>
         <span aria-live="polite">Zoom {Math.round((zoom / initialZoom) * 100)}%</span>
       </div>
       <div
@@ -194,6 +222,6 @@ export function GeographicMap({
             ? selected.name
             : "Selecione uma área no mapa para explorar.")}
       </p>
-    </>
+    </div>
   );
 }
