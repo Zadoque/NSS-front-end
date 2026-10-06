@@ -78,7 +78,10 @@ export function useMapNavigation() {
     if (navigation.mapLevel === "CAMPOS_NEIGHBORHOODS") {
       setNavigation({ mapLevel: "CAMPOS_DISTRICTS", selectedGeography: municipality });
     } else if (navigation.mapLevel === "CAMPOS_DISTRICTS") {
-      setNavigation({ mapLevel: "RJ_MUNICIPALITIES", selectedGeography: municipality });
+      // A seleção de Campos só dá contexto aos níveis territoriais internos.
+      // Ao retornar ao mapa estadual, mantê-la ativa restringiria indevidamente
+      // a consulta municipal ao código 3301009.
+      setNavigation({ mapLevel: "RJ_MUNICIPALITIES", selectedGeography: null });
     } else if (navigation.mapLevel === "RJ_MUNICIPALITIES") {
       setNavigation({ mapLevel: "SOUTHEAST_STATES", selectedGeography: null });
     } else if (navigation.mapLevel === "SOUTHEAST_STATES") {
