@@ -42,8 +42,20 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
   const query = useEpidemiologyQuery({
     ...filters,
     geography,
-    municipalityCode: selectedGeography?.municipalityCode ?? (selectedGeography?.level === "municipality" ? selectedGeography.code : undefined),
-    districtCode: selectedGeography?.districtCode ?? (selectedGeography?.level === "district" ? selectedGeography.code : undefined),
+    // A seleção no mapa municipal é apenas visual: o ranking deve continuar
+    // trazendo todos os municípios do RJ. O escopo Campos é necessário apenas
+    // para as consultas de distrito e bairro.
+    municipalityCode:
+      mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS"
+        ? "3301009"
+        : undefined,
+    districtCode:
+      mapLevel === "CAMPOS_NEIGHBORHOODS"
+        ? selectedGeography?.districtCode ??
+          (selectedGeography?.level === "district"
+            ? selectedGeography.code
+            : undefined)
+        : undefined,
   });
   const items = query.isSuccess ? query.data.items : [];
   const municipal = mapLevel === "RJ_MUNICIPALITIES";
@@ -56,11 +68,11 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
   const selectedItem = items.find(
     (item) => item.code === selectedGeography?.code,
   );
-  const selectionIsQueryScope = selectedGeography?.level === "municipality"
-    || (selectedGeography?.level === "district" && geography === "NEIGHBORHOOD");
-  const selectedTotal = selectionIsQueryScope && query.isSuccess
-    ? query.data.totalNotifications
-    : selectedItem?.notificationsTotal;
+  const selectedTotal =
+    (selectedGeography?.level === "municipality" && geography === "DISTRICT") ||
+    (selectedGeography?.level === "district" && geography === "NEIGHBORHOOD")
+      ? query.data?.totalNotifications
+      : selectedItem?.notificationsTotal;
   const periodDescription =
     filters.year === "ALL" && filters.month === "ALL"
       ? "no período selecionado"
