@@ -120,3 +120,65 @@ test("touch activation, outside dismissal and cartography error recovery", async
   await expect(page.locator("dialog")).not.toBeVisible();
   await context.close();
 });
+
+test("real API mode keeps the municipal ranking unscoped after leaving Campos", async ({ page }) => {
+  const municipalRequests: URL[] = [];
+  await page.route("**/api/v1/diseases", (route) =>
+    route.fulfill({ json: { items: ["DENG"] } }),
+  );
+  await page.route("**/api/v1/metadata", (route) =>
+    route.fulfill({
+      json: {
+        availableYears: [2026],
+        availableMonthsByYear: { "2026": [1] },
+      },
+    }),
+  );
+  await page.route("**/api/v1/epidemiology/**", (route) => {
+    const url = new URL(route.request().url());
+    if (url.pathname.endsWith("/municipalities")) {
+      municipalRequests.push(url);
+      return route.fulfill({
+        json: {
+          items: [
+            { code: "3301009", name: "Campos dos Goytacazes", notificationsTotal: 120 },
+            { code: "3302403", name: "Macaé", notificationsTotal: 48 },
+          ],
+          totalNotifications: 168,
+          coverage: { status: "AVAILABLE", mappedNotificationsTotal: 168, unmappedNotificationsTotal: 0 },
+        },
+      });
+    }
+    return route.fulfill({
+      json: {
+        items: [{ code: "CG_DIST_SEDE", name: "Distrito Sede", notificationsTotal: 120 }],
+        totalNotifications: 120,
+        coverage: { status: "AVAILABLE", mappedNotificationsTotal: 120, unmappedNotificationsTotal: 0 },
+      },
+    });
+  });
+
+  await login(page, "http://127.0.0.1:5174");
+  await page.getByRole("button", { name: /^Sudeste ·/ }).click();
+  await page.getByRole("button", { name: /^Rio de Janeiro ·/ }).click();
+  await expect(page.locator(".ranking")).toContainText("Macaé");
+  await page.getByRole("button", { name: /^Campos dos Goytacazes ·/ }).click();
+  await expect(page.getByRole("heading", { name: "Distritos de Campos dos Goytacazes" })).toBeVisible();
+  await page.getByRole("button", { name: /Voltar para municípios/ }).click();
+  await expect(page.locator(".map-card").getByRole("heading", { name: "Rio de Janeiro" })).toBeVisible();
+  await expect(page.locator(".ranking")).toContainText("Macaé");
+  await page.getByRole("button", { name: /^Macaé ·/ }).click();
+  await expect(page.locator(".ranking")).toContainText("120 notificações");
+  expect(municipalRequests).not.toHaveLength(0);
+  expect(municipalRequests.every((url) => !url.searchParams.has("municipalityCode"))).toBeTruthy();
+});
+
+test("map can enter and leave fullscreen mode", async ({ page }) => {
+  await login(page);
+  const fullscreen = page.getByRole("button", { name: "Abrir mapa em tela cheia" });
+  await fullscreen.click();
+  await expect(page.getByRole("button", { name: "Sair da tela cheia" })).toBeVisible();
+  await expect(page.locator(".geographic-map")).toHaveJSProperty("nodeName", "DIV");
+  await page.getByRole("button", { name: "Sair da tela cheia" }).click();
+  await expect(page.getByRole("button", { name: "Abrir mapa em tela cheia" })).toBeVisible();
+});
