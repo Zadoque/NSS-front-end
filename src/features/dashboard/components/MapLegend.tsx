@@ -12,10 +12,10 @@ export function MapLegend({ municipal }: { municipal: boolean }) {
     ? [
         ["#dce2e6", "Sem cobertura nesta V1"],
         ["#f6f0d8", "Coberto · sem valor disponível"],
-        [caseColor(0), "0 casos"],
-        [caseColor(18), "1–40 casos"],
-        [caseColor(85), "41–100 casos"],
-        [caseColor(120), "Mais de 100 casos"],
+        [caseColor(0), "0 notificações"],
+        [caseColor(18), "1–40 notificações"],
+        [caseColor(85), "41–100 notificações"],
+        [caseColor(120), "Mais de 100 notificações"],
       ]
     : [
         ["#b8d9d2", "Disponível para explorar"],
@@ -23,7 +23,7 @@ export function MapLegend({ municipal }: { municipal: boolean }) {
       ];
   return (
     <section className="legend" aria-label="Legenda">
-      <h3>{municipal ? "Casos no mês" : "Navegação geográfica"}</h3>
+      <h3>{municipal ? "Notificações no período" : "Navegação geográfica"}</h3>
       <ul>
         {entries.map(([color, label]) => (
           <li key={label}>
@@ -34,7 +34,7 @@ export function MapLegend({ municipal }: { municipal: boolean }) {
       </ul>
       <p>
         {municipal
-          ? "Contagens absolutas; não representam incidência."
+          ? "Contagens absolutas de notificações; não representam incidência nem casos confirmados."
           : "As cores indicam navegação, sem totais epidemiológicos."}
       </p>
     </section>
