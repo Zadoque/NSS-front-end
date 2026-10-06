@@ -4,7 +4,7 @@ import { login } from "./helpers";
 test("institutional home, links and browser history", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toContainText(
-    "saúde do território",
+    "acompanhar a saúde no território",
   );
   await expect(page.getByText("Onde estamos", { exact: true })).toBeVisible();
   await expect(page.locator("main")).toContainText("dados sintéticos");
