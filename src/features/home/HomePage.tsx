@@ -14,12 +14,13 @@ export function HomePage() {
       </header>
       <main className="home">
         <section className="home-hero">
-          <div className="section-label">INICIATIVA EM FASE INICIAL</div>
-          <h1>Informação para compreender a saúde do território</h1>
+          <div className="section-label">PLATAFORMA NSS · V1</div>
+          <h1>Informação para acompanhar a saúde no território</h1>
           <p>
-            O Núcleo de Situação de Saúde — NSS é uma iniciativa vinculada à
-            UENF que pretende apoiar o acompanhamento e a interpretação da
-            situação de saúde, abrangendo Saúde Humana e Saúde Animal.
+            O Núcleo de Situação de Saúde — NSS é a plataforma da UENF para
+            consulta territorial de notificações epidemiológicas. Nesta primeira
+            versão, reúne filtros temporais, mapas e rankings para apoiar a
+            leitura da situação de saúde.
           </p>
           <a className="primary home-cta" href="/login">
             Acessar o mapa <span aria-hidden="true">→</span>
@@ -28,27 +29,23 @@ export function HomePage() {
         <div className="home-grid">
           <section className="card home-section">
             <div className="section-label">NOSSA MISSÃO</div>
-            <h2>O que queremos fazer</h2>
-            <p>Estes são objetivos do Núcleo, em construção:</p>
+            <h2>Para que serve o NSS</h2>
+            <p>A plataforma apoia a vigilância e a interpretação responsável dos dados:</p>
             <ul>
               <li>
-                Monitorar doenças e outros eventos epidemiológicos e acompanhar
-                sua evolução territorial e temporal.
+                Consultar notificações por doença, período e território.
               </li>
               <li>
-                Apoiar a elaboração e revisão de planos de contingência e
-                auxiliar logisticamente prefeituras e outros órgãos públicos.
+                Acompanhar a distribuição territorial e temporal dos eventos disponíveis.
               </li>
               <li>
                 Apoiar gestores na identificação de áreas que merecem atenção.
               </li>
               <li>
-                Transformar dados públicos de saúde em informação compreensível
-                e informar a população sobre riscos e cuidados necessários.
+                Transformar dados públicos em informação compreensível para análise.
               </li>
               <li>
-                Futuramente integrar perspectivas de saúde humana, animal e
-                ambiental, quando houver fontes adequadas.
+                Oferecer uma base evolutiva para incorporar novas fontes e recortes.
               </li>
             </ul>
           </section>
@@ -67,15 +64,14 @@ export function HomePage() {
             </p>
             <h3>Dados e desenvolvimento</h3>
             <p>
-              A plataforma está em desenvolvimento. A pipeline trabalha
-              inicialmente com dados públicos obtidos por PySUS, tendo o SINAN
-              como principal fonte incorporada nesta etapa. Outras fontes
-              poderão ser adicionadas conforme as perguntas que o Núcleo decidir
-              responder.
+              A V1 utiliza dados públicos de notificações epidemiológicas,
+              processados pela pipeline do NSS. O SINAN é a fonte principal
+              incorporada nesta versão; a cobertura exibida no mapa informa
+              explicitamente os limites de cada recorte.
             </p>
             <p>
-              Está sendo estabelecida uma parceria com a Prefeitura de Campos
-              dos Goytacazes.
+              Os valores apresentados são notificações. Eles não equivalem,
+              isoladamente, a incidência, casos confirmados ou diagnóstico clínico.
             </p>
           </section>
         </div>
@@ -96,7 +92,7 @@ export function HomePage() {
           </a>
         </section>
         <footer>
-          NSS / UENF <span>Plataforma em desenvolvimento · V1</span>
+          NSS / UENF <span>Plataforma de situação de saúde · V1</span>
         </footer>
       </main>
     </>
