@@ -56,7 +56,9 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
   const selectedItem = items.find(
     (item) => item.code === selectedGeography?.code,
   );
-  const selectedTotal = selectedGeography?.level === "municipality" && query.isSuccess
+  const selectionIsQueryScope = selectedGeography?.level === "municipality"
+    || (selectedGeography?.level === "district" && geography === "NEIGHBORHOOD");
+  const selectedTotal = selectionIsQueryScope && query.isSuccess
     ? query.data.totalNotifications
     : selectedItem?.notificationsTotal;
   const periodDescription =
