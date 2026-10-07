@@ -169,16 +169,105 @@ test("real API mode keeps the municipal ranking unscoped after leaving Campos", 
   await expect(page.locator(".ranking")).toContainText("Macaé");
   await page.getByRole("button", { name: /^Macaé ·/ }).click();
   await expect(page.locator(".ranking")).toContainText("120 notificações");
+  await page.getByLabel("Município", { exact: true }).selectOption({ label: "Angra dos Reis" });
+  await expect(page.locator(".map-context")).toContainText("Sem cobertura");
+  await expect(page.locator(".ranking")).toContainText("120 notificações");
+  await expect(page.locator(".ranking")).toContainText("48 notificações");
   expect(municipalRequests).not.toHaveLength(0);
   expect(municipalRequests.every((url) => !url.searchParams.has("municipalityCode"))).toBeTruthy();
 });
 
+test("continuous wheel and trackpad pinch retain zoom and pan after gesture", async ({ page }) => {
+  await login(page);
+  const viewport = page.locator(".map-viewport");
+  await expect(page.locator(".geo")).toHaveCount(5);
+  await viewport.scrollIntoViewIfNeeded();
+  const box = (await viewport.boundingBox())!;
+  await page.mouse.move(box.x + box.width * 0.65, box.y + box.height / 2);
+  const transform = page.locator(".rsm-zoomable-group");
+  await page.mouse.wheel(0, -20);
+  await expect(page.locator(".map-controls")).not.toContainText("Zoom 100%");
+  // Sub-step wheel deltas must not round back to the starting scale.
+  await page.waitForTimeout(250);
+  const first = await transform.getAttribute("transform");
+  expect(Number(first?.match(/scale\(([^)]+)\)/)?.[1])).toBeGreaterThan(1);
+  await transform.dispatchEvent("wheel", { deltaY: -15, deltaMode: 0, ctrlKey: true, clientX: box.x + box.width / 2, clientY: box.y + box.height / 2 });
+  await page.waitForTimeout(250);
+  const pinched = await transform.getAttribute("transform");
+  expect(Number(pinched?.match(/scale\(([^)]+)\)/)?.[1])).toBeGreaterThan(Number(first?.match(/scale\(([^)]+)\)/)?.[1]));
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2 + 40, box.y + box.height / 2 + 20, { steps: 5 });
+  await page.mouse.up();
+  await page.waitForTimeout(250);
+  const dragged = await transform.getAttribute("transform");
+  expect(dragged).not.toBe(pinched);
+  await page.waitForTimeout(250);
+  await expect(transform).toHaveAttribute("transform", dragged!);
+  await page.getByRole("button", { name: "Redefinir zoom" }).click();
+  await expect(page.locator(".map-controls")).toContainText("Zoom 100%");
+});
+
+test("mobile two-finger pinch changes scale without navigating", async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  const page = await context.newPage();
+  await login(page);
+  await expect(page.locator(".geo")).toHaveCount(5);
+  await page.locator(".map-viewport").scrollIntoViewIfNeeded();
+  const box = (await page.locator(".map-viewport").boundingBox())!;
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  const cdp = await context.newCDPSession(page);
+  const points = (distance: number) => [{ x: x - distance, y, id: 1 }, { x: x + distance, y, id: 2 }];
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: points(30) });
+  for (const distance of [40, 50, 60]) {
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: points(distance) });
+  }
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  await expect(page.locator(".map-controls")).toContainText("Zoom 200%");
+  await expect(page.locator(".geo")).toHaveCount(5);
+  await context.close();
+});
+
+test("fullscreen fallback and ranking on the left on large screens", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.addInitScript(() => {
+    Element.prototype.requestFullscreen = () => Promise.reject(new Error("unsupported"));
+  });
+  await login(page);
+  await page.getByLabel("Região", { exact: true }).selectOption("SE");
+  await page.getByLabel("Estado", { exact: true }).selectOption("RJ");
+  await expect(page.locator(".ranking")).toBeVisible();
+  const ranking = (await page.locator(".ranking").boundingBox())!;
+  const map = (await page.locator(".map-card").boundingBox())!;
+  expect(ranking.x + ranking.width).toBeLessThan(map.x);
+  await page.getByRole("button", { name: "Abrir mapa em tela cheia" }).click();
+  await expect(page.locator(".map-expanded")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".map-expanded")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Abrir mapa em tela cheia" })).toBeVisible();
+});
+
 test("map can enter and leave fullscreen mode", async ({ page }) => {
   await login(page);
+  await page.getByRole("button", { name: /^Sudeste ·/ }).click();
+  await page.getByRole("button", { name: /^Rio de Janeiro ·/ }).click();
   const fullscreen = page.getByRole("button", { name: "Abrir mapa em tela cheia" });
   await fullscreen.click();
   await expect(page.getByRole("button", { name: "Sair da tela cheia" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Voltar na navegação do mapa" })).toBeVisible();
   await expect(page.locator(".geographic-map")).toHaveJSProperty("nodeName", "DIV");
   await page.getByRole("button", { name: "Sair da tela cheia" }).click();
   await expect(page.getByRole("button", { name: "Abrir mapa em tela cheia" })).toBeVisible();
+});
+
+test("disease filter shows the full name followed by its code", async ({ page }) => {
+  await login(page);
+  const disease = page.getByLabel("Doença", { exact: true }).first();
+  await expect(disease.locator("option")).toHaveText([
+    "Dengue · DENG",
+    "Febre maculosa · FMAC",
+    "Toxoplasmose congênita · TOXC",
+  ]);
+  await expect(disease).toHaveAttribute("title", "Dengue · DENG");
 });
