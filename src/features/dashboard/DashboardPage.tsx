@@ -140,7 +140,7 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
         </div>
         <GeographyBreadcrumb level={mapLevel} navigate={navigate} selected={selectedGeography} />
         <GeographySelector key={mapLevel} navigation={navigation} />
-        <div className="dashboard-grid">
+        <div className={`dashboard-grid${territorial && query.isSuccess ? " has-ranking" : ""}`}>
           <section className="card map-card" aria-label="Exploração geográfica">
             <div className="map-heading">
               <div>
@@ -185,6 +185,7 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
                     : "loading"
               }
               onSelect={select}
+              onBack={mapLevel !== "BRAZIL_REGIONS" ? goBack : undefined}
             />
             <div className="map-context" aria-live="polite">
               <strong>
@@ -202,6 +203,10 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
           <aside className="card desktop-panel">
             <FilterPanel {...panel} />
           </aside>
+          {municipal && query.isSuccess && <MunicipalityRanking items={items} onSelect={select} selected={selectedGeography} />}
+          {(mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS") && query.isSuccess && (
+            <TerritoryRanking level={mapLevel === "CAMPOS_DISTRICTS" ? "district" : "neighborhood"} items={items} onSelect={select} selected={selectedGeography} />
+          )}
         </div>
         <FilterDrawer panel={panel} />
         {territorial && (
@@ -231,10 +236,6 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
               </p>
             )}
           </div>
-        )}
-        {municipal && query.isSuccess && <MunicipalityRanking items={items} onSelect={select} selected={selectedGeography} />}
-        {(mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS") && query.isSuccess && (
-          <TerritoryRanking level={mapLevel === "CAMPOS_DISTRICTS" ? "district" : "neighborhood"} items={items} onSelect={select} selected={selectedGeography} />
         )}
         <footer>
           NSS / UENF{" "}
