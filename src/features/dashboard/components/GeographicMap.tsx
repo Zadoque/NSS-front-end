@@ -17,6 +17,7 @@ type Props = {
   items: EpidemiologyItem[];
   dataStatus: "loading" | "error" | "success";
   onSelect: (value: GeographySelection) => void;
+  onBack?: () => void;
 };
 export function GeographicMap({
   level,
@@ -24,12 +25,16 @@ export function GeographicMap({
   items,
   dataStatus,
   onSelect,
+  onBack,
 }: Props) {
   const [hint, setHint] = useState("");
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const initialZoom = level === "CAMPOS_NEIGHBORHOODS" ? 3.5 : 1;
   const [zoom, setZoom] = useState(initialZoom);
+  const [displayZoom, setDisplayZoom] = useState(initialZoom);
+  const [center, setCenter] = useState(mapViews[level].center);
   const map = useQuery({
     queryKey: ["map", level],
     queryFn: () => loadMap(level),
@@ -41,6 +46,19 @@ export function GeographicMap({
     document.addEventListener("fullscreenchange", updateFullscreenState);
     return () => document.removeEventListener("fullscreenchange", updateFullscreenState);
   }, []);
+  useEffect(() => {
+    if (!expanded) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setExpanded(false);
+    };
+    document.addEventListener("keydown", escape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", escape);
+    };
+  }, [expanded]);
   const view = mapViews[level];
   if (map.isPending)
     return (
@@ -59,43 +77,67 @@ export function GeographicMap({
   const minZoom = initialZoom;
   const maxZoom = initialZoom * 3;
   const zoomStep = initialZoom * 0.5;
-  const zoomIn = () => setZoom((value) => Math.min(maxZoom, Number((value + zoomStep).toFixed(1))));
-  const zoomOut = () => setZoom((value) => Math.max(minZoom, Number((value - zoomStep).toFixed(1))));
-  const resetZoom = () => setZoom(initialZoom);
+  const changeZoom = (value: number) => {
+    const next = Math.max(minZoom, Math.min(maxZoom, value));
+    setZoom(next);
+    setDisplayZoom(next);
+  };
+  const zoomIn = () => changeZoom(displayZoom + zoomStep);
+  const zoomOut = () => changeZoom(displayZoom - zoomStep);
+  const resetZoom = () => {
+    setCenter(view.center);
+    changeZoom(initialZoom);
+  };
   const toggleFullscreen = async () => {
     const container = mapContainerRef.current;
     if (!container) return;
 
-    if (document.fullscreenElement) {
+    if (expanded) {
+      setExpanded(false);
+      return;
+    }
+    if (document.fullscreenElement === container) {
       await document.exitFullscreen();
       return;
     }
-    await container.requestFullscreen();
+    try {
+      if (!container.requestFullscreen) throw new Error("Fullscreen unavailable");
+      await container.requestFullscreen();
+    } catch {
+      // iOS and embedded browsers may not support native fullscreen.
+      setExpanded(true);
+    }
   };
 
   return (
-    <div className="geographic-map" ref={mapContainerRef}>
+    <div className={`geographic-map${expanded ? " map-expanded" : ""}`} ref={mapContainerRef}>
       <div className="map-controls" aria-label="Controles de zoom do mapa">
+        {(isFullscreen || expanded) && onBack && (
+          <button
+            type="button"
+            className="map-fullscreen-back"
+            aria-label="Voltar na navegação do mapa"
+            onClick={onBack}
+          >
+            ← Voltar
+          </button>
+        )}
         <button type="button" aria-label="Aumentar zoom" onClick={zoomIn}>+</button>
         <button type="button" aria-label="Diminuir zoom" onClick={zoomOut}>−</button>
         <button type="button" aria-label="Redefinir zoom" onClick={resetZoom}>⟳</button>
         <button
           type="button"
           className="map-fullscreen"
-          aria-label={isFullscreen ? "Sair da tela cheia" : "Abrir mapa em tela cheia"}
-          aria-pressed={isFullscreen}
+          aria-label={isFullscreen || expanded ? "Sair da tela cheia" : "Abrir mapa em tela cheia"}
+          aria-pressed={isFullscreen || expanded}
           onClick={() => void toggleFullscreen()}
         >
-          {isFullscreen ? "⤢" : "⛶"}
+          {isFullscreen || expanded ? "Sair da tela cheia" : "⛶ Tela cheia"}
         </button>
-        <span aria-live="polite">Zoom {Math.round((zoom / initialZoom) * 100)}%</span>
+        <span>Zoom {Math.round((displayZoom / initialZoom) * 100)}%</span>
       </div>
       <div
         className="map-viewport"
-        onWheelCapture={(event) => {
-          // A roda sobre o mapa é uma ação de zoom, não de rolagem da página.
-          event.preventDefault();
-        }}
       >
         <ComposableMap
           width={800}
@@ -105,11 +147,21 @@ export function GeographicMap({
           aria-label={`Mapa interativo: ${view.title}`}
         >
           <ZoomableGroup
-            center={view.center}
+            center={center}
             zoom={zoom}
             minZoom={minZoom}
             maxZoom={maxZoom}
-            onMove={({ zoom: nextZoom }) => setZoom(Number((nextZoom ?? minZoom).toFixed(1)))}
+            // D3 handles wheel deltas, trackpad pinch (ctrl+wheel), and the
+            // distance between touch points independently of button steps.
+            filterZoomEvent={(event) => {
+              const pointer = event as MouseEvent;
+              return (!pointer.ctrlKey || event.type === "wheel") && !pointer.button;
+            }}
+            onMove={({ zoom: nextZoom }) => setDisplayZoom(nextZoom ?? minZoom)}
+            onMoveEnd={({ coordinates, zoom: nextZoom }) => {
+              if (coordinates) setCenter(coordinates);
+              changeZoom(nextZoom ?? minZoom);
+            }}
           >
             <Geographies geography={map.data}>
             {({ geographies }) =>
