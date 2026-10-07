@@ -186,28 +186,37 @@ p {
   touch-action: none;
   user-select: none;
 }
-.geographic-map:fullscreen {
+.geographic-map:fullscreen,
+.geographic-map.map-expanded {
   display: flex;
   flex-direction: column;
   width: 100vw;
-  height: 100vh;
+  height: 100dvh;
   padding: 16px;
   background: #f7fafb;
 }
-.geographic-map:fullscreen .map-viewport {
+.map-expanded {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+}
+.geographic-map:fullscreen .map-viewport,
+.map-expanded .map-viewport {
   flex: 1;
   min-height: 0;
   display: grid;
   place-items: center;
 }
-.geographic-map:fullscreen .map-viewport svg {
+.geographic-map:fullscreen .map-viewport svg,
+.map-expanded .map-viewport svg {
   max-width: min(100%, 1200px);
-  max-height: calc(100vh - 156px);
+  max-height: calc(100dvh - 156px);
 }
 .map-controls {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-wrap: wrap;
   padding: 12px 20px 0;
 }
 .map-controls button {
@@ -220,7 +229,8 @@ p {
   line-height: 1;
   touch-action: manipulation;
 }
-.map-fullscreen { margin-left: 6px; }
+.map-controls .map-fullscreen { margin-left: 6px; width: auto; padding: 0 12px; font-size: 14px; }
+.map-controls .map-fullscreen-back { width: auto; padding: 0 12px; font-size: 14px; }
 .map-controls button:hover { background: #edf6f2; }
 .map-controls span { margin-left: 6px; color: #607585; font-size: 14px; }
 .header-action { margin-left: auto; padding: 8px 12px; border: 1px solid #cbd8df; background: #fff; color: #174a7e; }
@@ -304,6 +314,11 @@ p {
   background: #fff;
   border: 1px solid #cbd8df;
   border-radius: 7px;
+}
+.panel-content .disease-select {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .filter-period {
   display: grid;
@@ -487,12 +502,25 @@ footer {
   .mobile-controls {
     display: none;
   }
-  .ranking {
-    width: calc((100% - 22px) * 0.7);
-  }
   .map-hint {
     min-height: 44px;
   }
+}
+
+@media (min-width: 1280px) {
+  .dashboard-grid.has-ranking {
+    grid-template-columns: minmax(230px, 1fr) minmax(0, 2.6fr) minmax(260px, 1fr);
+  }
+  .has-ranking > .ranking {
+    grid-column: 1;
+    grid-row: 1;
+    margin-top: 0;
+    padding: 16px;
+  }
+  .has-ranking > .map-card { grid-column: 2; grid-row: 1; }
+  .has-ranking > .desktop-panel { grid-column: 3; grid-row: 1; }
+  .has-ranking .ranking button { grid-template-columns: 20px 1fr; gap: 6px; }
+  .has-ranking .ranking strong { grid-column: 2; }
 }
 
 input {
