@@ -29,6 +29,18 @@ const months = [
   "Novembro",
   "Dezembro",
 ];
+const diseaseNames: Record<string, string> = {
+  DENG: "Dengue",
+  CHIK: "Chikungunya",
+  ZIKA: "Zika",
+  FMAC: "Febre maculosa",
+  TOXC: "Toxoplasmose congênita",
+  TOXG: "Toxoplasmose gestacional",
+};
+
+function diseaseLabel(code: string) {
+  return `${diseaseNames[code] ?? code} · ${code}`;
+}
 export function FilterPanel({
   municipal,
   filters,
@@ -60,7 +72,9 @@ export function FilterPanel({
       <label htmlFor={`${id}-disease`}>Doença</label>
       <select
         id={`${id}-disease`}
+        className="disease-select"
         value={filters.disease}
+        title={filters.disease ? diseaseLabel(filters.disease) : undefined}
         disabled={diseasesLoading || diseasesError || !diseases.length}
         onChange={(e) => onChange({ ...filters, disease: e.target.value })}
       >
@@ -71,7 +85,7 @@ export function FilterPanel({
         )}
         {diseases.map((d) => (
           <option key={d} value={d}>
-            {d === "DENG" ? "Dengue · DENG" : d}
+            {diseaseLabel(d)}
           </option>
         ))}
       </select>
