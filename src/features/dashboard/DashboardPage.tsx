@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { isDemo } from "../../data/dataSource";
+import { isDemo, isProdMock } from "../../data/dataSource";
 import { demoCoverage } from "../../data/coverage";
 import { mapViews } from "../../data/maps";
 import type { EpidemiologyFilters } from "../../types/epidemiology";
@@ -125,7 +125,7 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
           <strong>Núcleo de Situação de Saúde</strong>
           <p>UENF · Vigilância epidemiológica</p>
         </div>
-        {isDemo && <span className="badge">DEMO</span>}
+        {isDemo && <span className="badge">{isProdMock ? 'SNAPSHOT REAL' : 'DEMO'}</span>}
         {onAdmin && <button className="header-action" type="button" onClick={onAdmin}>Usuários</button>}
         <button className="header-action" type="button" onClick={onLogout}>Sair</button>
       </header>
@@ -240,7 +240,7 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
         <footer>
           NSS / UENF{" "}
           <span>
-            {isDemo
+            {isProdMock ? `Dados reais agregados · Snapshot publicado em ${(metadata.data as { sourcePublishedAt?: string } | undefined)?.sourcePublishedAt?.slice(0, 10) ?? 'carregamento'} · Sem atualização em tempo real · Território da unidade notificadora, não residência` : isDemo
               ? "Demonstração com dados sintéticos · V1"
               : "Dados fornecidos pela API epidemiológica · V1"}
           </span>
