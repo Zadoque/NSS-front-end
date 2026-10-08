@@ -68,7 +68,7 @@ export function App() {
   }
   if (!authReady && path !== "/") return <main><p role="status">Verificando sessão…</p></main>;
   if (isProdMock && ["/primeiro-acesso", "/redefinir-senha", "/esqueci-senha", "/admin/usuarios"].includes(path.replace(/\/+$/, ""))) {
-    return <main><h1>Recurso indisponível na demonstração</h1><p>Esta versão usa dados sintéticos e não cadastra usuários nem recebe senhas pessoais.</p><a href="/">Voltar à página inicial</a></main>;
+    return <main><h1>Recurso indisponível na demonstração</h1><p>Esta versão publica um snapshot de dados agregados e não cadastra usuários nem recebe senhas pessoais.</p><a href="/">Voltar à página inicial</a></main>;
   }
   return (
     <div onClick={followLink}>
