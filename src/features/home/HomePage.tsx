@@ -1,4 +1,4 @@
-import { isDemo } from "../../data/dataSource";
+import { isDemo, isProdMock } from "../../data/dataSource";
 export function HomePage() {
   return (
     <>
@@ -58,7 +58,7 @@ export function HomePage() {
               epidemiológica é parcial.
             </p>
             <p>
-              {isDemo
+              {isProdMock ? "Neste acesso, o mapa usa um snapshot estático de dados reais agregados do SINAN. Não há atualização em tempo real. Consulte a data da publicação no mapa." : isDemo
                 ? "Neste acesso, o mapa é uma demonstração com dados sintéticos, não dados reais do SINAN."
                 : "Neste acesso, o mapa consulta a API epidemiológica, dentro dos limites de cobertura da V1."}
             </p>
