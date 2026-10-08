@@ -47,7 +47,7 @@ não use `npm run dev` ou `vite preview` como servidor público.
 O build normal limpa `dist/`, portanto, quando precisar dos dois artefatos,
 gere primeiro `npm run build` e depois `npm run build:prod-mock`.
 
-`prod-mock` usa dados sintéticos independentemente de `VITE_USE_MOCKS`,
+`prod-mock` usa um snapshot real agregado independentemente de `VITE_USE_MOCKS`,
 `VITE_DATA_SOURCE` ou da URL da API. A entrada pública não pede credenciais.
 Primeiro acesso, recuperação de senha e administração não estão disponíveis,
 inclusive por URL direta. Não há proteção de acesso real nessa demonstração.
@@ -59,15 +59,42 @@ essas rotas ao Java. O Compose e os serviços NixOS da stack completa precisam
 de configuração independente antes de publicar somente esta imagem.
 Não são necessários banco, Java, pipeline ou segredos desses serviços.
 
-O mock atual oferece resultados para DENG/janeiro/2026; outros recortes ficam
-indisponíveis. Sexo e faixa etária não alteram os números sintéticos atuais.
-A demonstração não deve ser usada como dado epidemiológico real.
+O snapshot inclui CHIK, DENG, FMAC, TOXC, TOXG e ZIKA de 2023 a 2026 nos quatro
+municípios, com filtros reais de período, sexo e faixa etária. Inclui os distritos
+de Campos e bairros/localidades da sede. É território da unidade notificadora,
+não de residência. Mapeamento ausente não é convertido em território ou zero.
+O modo de desenvolvimento continua com suas fixtures sintéticas, sem mudanças.
+
+O snapshot atual representa 38.782 notificações em 6.020 combinações agregadas.
+Foi extraído em 08/10/2026, com última publicação no banco em 07/10/2026. Não é
+atualizado em tempo real. O manifest inclui data, catálogo e SHA-256 dos arquivos.
+Arquivos são carregados sob demanda por agravo, sem compor o bundle JavaScript.
+Os dados ficam em `data/static-snapshot`, fora de `public`: apenas o comando
+`build:prod-mock` os copia para o artefato. O build habitual não os publica.
+
+Para atualizar, com Docker e Python 3 disponíveis, use um container PostgreSQL
+autorizado e o catálogo territorial do Java:
+
+```sh
+python3 scripts/export-static-snapshot.py --container nss-v1-db-1 --catalog ../Site-Sala-de-Situa-o-de-Saude-Java/src/main/resources/territories/campos.tsv
+npm run test:builds
+npm run build:prod-mock
+```
+
+O exportador usa transação repeatable-read/read-only e whitelist de municípios
+e colunas. Gera também 180 resultados SQL de referência para testes. Mantém nulos,
+sexo ignorado e a situação do mapeamento; elimina unidade, nascimento, semana,
+classificação, evolução e identificadores internos, que não são filtros da UI.
+Atualize e versione arquivos, manifest e oráculo juntos. A publicação foi
+autorizada como snapshot público: inclusive contagens pequenas serão baixáveis.
 
 Validação dos dois builds finais, sem backend (também executada no CI):
 
 ```sh
 npm run test:builds
 # NixOS: CHROMIUM_PATH=/caminho/para/chromium npm run test:builds
+# Contra a stack Caddy já iniciada (somente a suíte UI):
+NSS_BUILD_TEST_BASE_URL=http://127.0.0.1:8080 npm run test:builds -- snapshot-ui.spec.ts
 ```
 
 Variáveis Vite são públicas e resolvidas durante o build. Nunca inclua segredos.
