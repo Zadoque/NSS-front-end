@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "tsc -b && vite build",
+    "build:prod-mock": "tsc -b && vite build --mode prod-mock --outDir dist/prod-mock",
+    "test:builds": "playwright test --config playwright.builds.config.ts",
     "lint": "eslint .",
     "preview": "vite preview --host 0.0.0.0",
     "test": "playwright test"
