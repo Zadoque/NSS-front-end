@@ -31,6 +31,51 @@ Outros anos/meses retornam uma lista vazia, mostrada como **sem registros neste 
 
 ## API Java
 
+### Build público independente: `prod-mock`
+
+O build habitual `npm run build` continua usando API e autenticação reais,
+mesmo quando flags de mock estiverem definidas. O terceiro modo é explícito:
+
+```sh
+npm run build:prod-mock
+docker build -f Dockerfile.prod-mock -t nss-frontend:prod-mock .
+```
+
+O artefato estático da demonstração fica em **`dist/prod-mock/`**, separado do
+build normal. Publique somente essa pasta. É um build otimizado de produção;
+não use `npm run dev` ou `vite preview` como servidor público.
+O build normal limpa `dist/`, portanto, quando precisar dos dois artefatos,
+gere primeiro `npm run build` e depois `npm run build:prod-mock`.
+
+`prod-mock` usa dados sintéticos independentemente de `VITE_USE_MOCKS`,
+`VITE_DATA_SOURCE` ou da URL da API. A entrada pública não pede credenciais.
+Primeiro acesso, recuperação de senha e administração não estão disponíveis,
+inclusive por URL direta. Não há proteção de acesso real nessa demonstração.
+Os mapas GeoJSON continuam sendo carregados da mesma origem.
+
+A imagem separada usa `nginx.prod-mock.conf`, com CSP, cabeçalhos de segurança
+e bloqueio de `/api` e `/actuator`. Não configure o proxy externo para encaminhar
+essas rotas ao Java. O Compose e os serviços NixOS da stack completa precisam
+de configuração independente antes de publicar somente esta imagem.
+Não são necessários banco, Java, pipeline ou segredos desses serviços.
+
+O mock atual oferece resultados para DENG/janeiro/2026; outros recortes ficam
+indisponíveis. Sexo e faixa etária não alteram os números sintéticos atuais.
+A demonstração não deve ser usada como dado epidemiológico real.
+
+Validação dos dois builds finais, sem backend (também executada no CI):
+
+```sh
+npm run test:builds
+# NixOS: CHROMIUM_PATH=/caminho/para/chromium npm run test:builds
+```
+
+Variáveis Vite são públicas e resolvidas durante o build. Nunca inclua segredos.
+Arquivos `.env.*` locais são excluídos do Git e do contexto Docker, salvo
+`.env.example`. Esta alteração não instala CD nem modifica o deployment.
+
+### Configuração da API real
+
 ```env
 VITE_USE_MOCKS=false
 VITE_API_BASE_URL=http://localhost:8080
