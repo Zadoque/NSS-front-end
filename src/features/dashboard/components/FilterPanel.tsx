@@ -1,4 +1,5 @@
 import { useId } from "react";
+import { isProdMock } from "../../../data/dataSource";
 import type { EpidemiologyFilters } from "../../../types/epidemiology";
 import { MapLegend } from "./MapLegend";
 export type FilterPanelProps = {
@@ -159,8 +160,7 @@ export function FilterPanel({
       <MapLegend municipal={municipal} />
       {demo && (
         <p className="demo-note">
-          <strong>DEMO</strong> Dados sintéticos para demonstração. Não são
-          estatísticas reais.
+          <strong>{isProdMock ? 'SNAPSHOT REAL' : 'DEMO'}</strong> {isProdMock ? 'Dados reais agregados, publicados estaticamente. O território é o da unidade notificadora, não o de residência.' : 'Dados sintéticos para demonstração. Não são estatísticas reais.'}
         </p>
       )}
     </div>
