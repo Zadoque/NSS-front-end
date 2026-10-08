@@ -13,14 +13,15 @@ test.describe("prod-mock sem backend", () => {
 
   test("entrada pública, mapa, ranking e logout sem credenciais", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByText(/Neste acesso, o mapa é uma demonstração/)).toBeVisible();
+    await expect(page.getByText(/Neste acesso, o mapa usa um snapshot estático/)).toBeVisible();
     await page.goto("/login");
     await expect(page.locator("input")).toHaveCount(0);
     await page.getByRole("button", { name: "Entrar na demonstração" }).click();
     await expect(page).toHaveURL(/\/mapa$/);
     await page.getByRole("button", { name: /^Sudeste ·/ }).click();
     await page.getByRole("button", { name: /^Rio de Janeiro ·/ }).click();
-    await expect(page.locator(".ranking")).toContainText("120 notificações");
+    await expect(page.locator(".ranking li")).toHaveCount(4);
+    await expect(page.locator(".ranking")).not.toContainText("Sem registros");
     await page.getByRole("button", { name: "Sair", exact: true }).click();
     await expect(page).toHaveURL(/\/$/);
   });
