@@ -16,18 +16,28 @@ Abra o endereço indicado pelo Vite. O modo padrão é **DEMO**, com dados expli
 
 Navegue pelo mapa: **Brasil → Sudeste → Rio de Janeiro**. Somente Sudeste e RJ permitem avançar. Use o breadcrumb ou **Voltar** para retornar. Cada polígono aceita clique, toque, foco, Enter e Space. No celular, abra **Filtros e informações**; feche pelo botão, Escape ou toque fora. Em larguras a partir de 1024 px o mesmo conteúdo aparece no painel lateral sticky.
 
-### Dados de demonstração
+### Dados da demonstração estática
 
-A única fixture fornecida pela especificação é **DENG / janeiro / 2026**:
+O modo de desenvolvimento continua usando fixtures sintéticas. Já o build
+`prod-mock` publica um snapshot real agregado, sem backend e sem atualização em
+tempo real. O snapshot inclui seis agravos, de 2023 a 2026, nos quatro
+municípios do escopo:
 
-| Município | Código IBGE | Casos sintéticos |
-| --- | --- | ---: |
-| Campos dos Goytacazes | 3301009 | 120 |
-| Macaé | 3302403 | 85 |
-| Itaperuna | 3302205 | 42 |
-| São João da Barra | 3305000 | 18 |
+| Agravos | Período | Municípios | Notificações agregadas |
+| --- | --- | --- | ---: |
+| CHIK, DENG, FMAC, TOXC, TOXG e ZIKA | 2023–2026 | Campos dos Goytacazes, Macaé, Itaperuna e São João da Barra | 38.782 |
 
-Outros anos/meses retornam uma lista vazia, mostrada como **sem registros neste recorte**. Não foram inventadas outras doenças ou séries. A lista de doenças do mock contém apenas DENG; o seletor suporta a lista retornada pelo Java. Zero só é exibido quando um registro declara `casesTotal: 0`. Municípios sem cobertura são cinza. Não há totais estaduais, regionais ou nacionais.
+Para Campos dos Goytacazes, a demonstração permite o drill-down de município
+para distritos e, no Distrito Sede, para bairros/localidades da unidade
+notificadora. Os filtros de ano, mês, sexo e faixa etária são aplicados no
+navegador sobre os agregados publicados. O território representa a unidade
+notificadora, não a residência do paciente.
+
+O snapshot preserva ausência de mapeamento como ausência explícita; ela não é
+convertida em território válido nem em zero. Municípios sem cobertura no recorte
+selecionado continuam identificados na interface. Não são publicados usuários,
+credenciais ou linhas individuais do SINAN. A data da publicação e os hashes dos
+arquivos estão em `data/static-snapshot/manifest.json`.
 
 ## API Java
 
