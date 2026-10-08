@@ -4,7 +4,7 @@ import { HomePage } from "../features/home/HomePage";
 import { LoginPage } from "../features/auth/LoginPage";
 import { mockAuth } from "../auth/mockAuth";
 import { realAuth, type AuthClient } from "../auth/realAuth";
-import { isDemo } from "../data/dataSource";
+import { isDemo, isProdMock } from "../data/dataSource";
 import { AdminUsersPage } from "../features/admin/AdminUsersPage";
 import { FirstAccessPage } from "../features/auth/FirstAccessPage";
 import { ForgotPasswordPage } from "../features/auth/ForgotPasswordPage";
@@ -67,6 +67,9 @@ export function App() {
     setPath("/");
   }
   if (!authReady && path !== "/") return <main><p role="status">Verificando sessão…</p></main>;
+  if (isProdMock && ["/primeiro-acesso", "/redefinir-senha", "/esqueci-senha", "/admin/usuarios"].includes(path.replace(/\/+$/, ""))) {
+    return <main><h1>Recurso indisponível na demonstração</h1><p>Esta versão usa dados sintéticos e não cadastra usuários nem recebe senhas pessoais.</p><a href="/">Voltar à página inicial</a></main>;
+  }
   return (
     <div onClick={followLink}>
       {path === "/primeiro-acesso" ? <FirstAccessPage onDone={() => { window.history.pushState(null, "", "/login"); setPath("/login"); }} /> : path === "/redefinir-senha" ? <ResetPasswordPage onDone={() => { window.history.pushState(null, "", "/login"); setPath("/login"); }} /> : path === "/esqueci-senha" ? <ForgotPasswordPage onBack={() => { window.history.pushState(null, "", "/login"); setPath("/login"); }} /> : path === "/admin/usuarios" ? (
