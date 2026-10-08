@@ -28,7 +28,7 @@ export function LoginPage({ auth, demo, onSuccess }: { auth: AuthClient; demo: b
         <div className="brand-mark" aria-hidden="true">NSS</div>
         <div className="section-label">{demo ? "ACESSO DEMONSTRAÇÃO" : "ACESSO RESTRITO"}</div>
         <h1 id="login-title">Entrar no NSS</h1>
-        <p>{isProdMock ? "Demonstração pública com dados sintéticos. Não é necessário informar e-mail ou senha." : demo ? "Use a conta DEMO para acessar o mapa epidemiológico sintético." : "Entre com suas credenciais institucionais para acessar o mapa epidemiológico."}</p>
+        <p>{isProdMock ? "Acesso público ao snapshot de dados reais agregados. Não é necessário informar e-mail ou senha." : demo ? "Use a conta DEMO para acessar o mapa epidemiológico sintético." : "Entre com suas credenciais institucionais para acessar o mapa epidemiológico."}</p>
         <form onSubmit={submit}>
           {!isProdMock && <>
           <label htmlFor="email">E-mail</label>
