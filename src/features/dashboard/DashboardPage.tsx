@@ -16,39 +16,42 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
   const { navigation, mapLevel, selectedGeography, select, navigate, goBack, metadata, filters, query, items, municipal, territorial, selectionInfo, panel } = useDashboardModel();
   const [mobileTab, setMobileTab] = useState<MobileDashboardTab>("map");
   const [activeView, setActiveView] = useState<DashboardView>("map");
-  const viewScrollY = useRef<Record<DashboardView, number>>({
-    map: 0,
-    indicators: 0,
-    ranking: 0,
-    coverage: 0,
-    table: 0,
-  });
+  const viewScrollY = useRef<Partial<Record<DashboardView, number>>>({});
+  const visitedViews = useRef<Set<DashboardView>>(new Set(["map"]));
   const previousView = useRef<DashboardView>("map");
   const rankingAvailable = municipal || mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS";
   const selectedTotal = query.data?.totalNotifications;
   useLayoutEffect(() => {
     if (previousView.current === activeView) return;
-    const target = viewScrollY.current[activeView];
+    const hasVisited = visitedViews.current.has(activeView);
+    const savedPosition = viewScrollY.current[activeView];
     let secondFrame = 0;
     const firstFrame = window.requestAnimationFrame(() => {
       secondFrame = window.requestAnimationFrame(() => {
+        const switcher = document.getElementById("dashboard-view-switcher");
+        const firstVisitTarget = switcher ? window.scrollY + switcher.getBoundingClientRect().top - 16 : 0;
+        const target = hasVisited && savedPosition !== undefined ? savedPosition : Math.max(0, firstVisitTarget);
         const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
         window.scrollTo(0, Math.min(target, maxScroll));
       });
     });
     previousView.current = activeView;
+    visitedViews.current.add(activeView);
     return () => {
       window.cancelAnimationFrame(firstFrame);
       if (secondFrame) window.cancelAnimationFrame(secondFrame);
     };
   }, [activeView]);
   useEffect(() => {
-    const saveScroll = () => { viewScrollY.current[activeView] = window.scrollY; };
+    const saveScroll = () => { if (visitedViews.current.has(activeView)) viewScrollY.current[activeView] = window.scrollY; };
     window.addEventListener("scroll", saveScroll, { passive: true });
     return () => window.removeEventListener("scroll", saveScroll);
   }, [activeView]);
   const changeView = (view: DashboardView) => {
-    if (view !== activeView) viewScrollY.current[activeView] = window.scrollY;
+    if (view !== activeView) {
+      viewScrollY.current[activeView] = window.scrollY;
+      visitedViews.current.add(activeView);
+    }
     setActiveView(view);
     if (view === "map") setMobileTab("map");
   };

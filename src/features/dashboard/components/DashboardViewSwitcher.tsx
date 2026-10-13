@@ -15,7 +15,7 @@ const views: Array<{ id: DashboardView; label: string }> = [
 
 export function DashboardViewSwitcher({ activeView, onChange }: Props) {
   return (
-    <nav className="dashboard-view-switcher" aria-label="Tipo de visualização">
+    <nav id="dashboard-view-switcher" className="dashboard-view-switcher" aria-label="Tipo de visualização">
       <span className="section-label">VISUALIZAÇÃO</span>
       <div id="dashboard-view-tablist" className="dashboard-view-tabs" role="tablist" aria-label="Visualizações do dashboard">
         {views.map((view) => (

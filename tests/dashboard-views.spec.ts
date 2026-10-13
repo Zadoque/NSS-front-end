@@ -45,6 +45,8 @@ test("restores map scroll position after changing analytical view", async ({ pag
   await page.setViewportSize({ width: 1440, height: 700 });
   await login(page);
   await page.evaluate(() => window.scrollTo(0, 420));
+  await page.waitForTimeout(50);
+  expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(100);
   const before = await page.evaluate(() => window.scrollY);
   await page.getByRole("tab", { name: "Visualização: Indicadores", exact: true }).click();
   await page.getByRole("tab", { name: "Visualização: Mapa", exact: true }).click();
@@ -63,6 +65,17 @@ test("restores the scroll position of each analytical view", async ({ page }) =>
   await page.getByRole("tab", { name: "Visualização: Indicadores", exact: true }).click();
   await page.waitForTimeout(100);
   expect(await page.evaluate(() => window.scrollY)).toBeGreaterThanOrEqual(Math.max(0, indicatorsPosition - 2));
+});
+
+test("first visit to an analytical view keeps the switcher in view", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 700 });
+  await login(page);
+  await page.evaluate(() => window.scrollTo(0, 420));
+  await page.waitForTimeout(50);
+  expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(100);
+  await page.getByRole("tab", { name: "Visualização: Indicadores", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Indicadores do recorte" })).toBeVisible();
+  expect(await page.evaluate(() => window.scrollY <= document.documentElement.scrollHeight - window.innerHeight)).toBeTruthy();
 });
 
 test("analytical views remain discoverable and usable on mobile", async ({ page }) => {
