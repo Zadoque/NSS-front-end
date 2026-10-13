@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { isDemo, isProdMock } from "./api/sources/dataSource";
 import { mapViews } from "./geography/maps";
 import { useDashboardModel } from "./hooks/useDashboardModel";
@@ -5,11 +6,15 @@ import { GeographicMap } from "./components/GeographicMap";
 import { GeographyBreadcrumb } from "./components/GeographyBreadcrumb";
 import { GeographySelector } from "./components/GeographySelector";
 import { FilterPanel } from "./components/FilterPanel";
-import { FilterDrawer } from "./components/FilterDrawer";
 import { MunicipalityRanking } from "./components/MunicipalityRanking";
 import { TerritoryRanking } from "./components/TerritoryRanking";
+import { MobileDashboardContext } from "./components/MobileDashboardContext";
+import { MobileDashboardNav, type MobileDashboardTab } from "./components/MobileDashboardNav";
 export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onAdmin?: () => void }) {
   const { navigation, mapLevel, selectedGeography, select, navigate, goBack, metadata, filters, query, items, municipal, territorial, selectionInfo, panel } = useDashboardModel();
+  const [mobileTab, setMobileTab] = useState<MobileDashboardTab>("map");
+  const rankingAvailable = municipal || mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS";
+  const selectedTotal = query.data?.totalNotifications;
   return (
     <>
       <header className="header">
@@ -33,9 +38,13 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
             Explore o mapa e consulte as notificações por período nos municípios cobertos.
           </p>
         </div>
-        <GeographyBreadcrumb level={mapLevel} navigate={navigate} selected={selectedGeography} />
-        <GeographySelector key={mapLevel} navigation={navigation} />
-        <div className={`dashboard-grid${territorial && query.isSuccess ? " has-ranking" : ""}`}>
+        <div className={`dashboard-workspace mobile-tab-${mobileTab}`}>
+          <MobileDashboardContext filters={filters} selectionName={selectedGeography?.name ?? mapViews[mapLevel].title} total={selectedTotal} pending={query.isPending} />
+          <div className="mobile-map-navigation">
+            <GeographyBreadcrumb level={mapLevel} navigate={navigate} selected={selectedGeography} />
+            <GeographySelector key={mapLevel} navigation={navigation} />
+          </div>
+          <div id="mobile-panel-map" className={`dashboard-grid${territorial && query.isSuccess ? " has-ranking" : ""}`}>
           <section className="card map-card" aria-label="Exploração geográfica">
             <div className="map-heading">
               <div>
@@ -102,8 +111,20 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
           {(mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS") && query.isSuccess && (
             <TerritoryRanking level={mapLevel === "CAMPOS_DISTRICTS" ? "district" : "neighborhood"} items={items} onSelect={select} selected={selectedGeography} />
           )}
-        </div>
-        <FilterDrawer panel={panel} />
+          </div>
+          <div className="mobile-dashboard-panels">
+          <section id="mobile-panel-filters" className="mobile-dashboard-panel card" role="tabpanel" aria-label="Filtros" hidden={mobileTab !== "filters"}>
+            <FilterPanel {...panel} />
+          </section>
+          <section id="mobile-panel-ranking" className="mobile-dashboard-panel mobile-ranking-panel" role="tabpanel" aria-label="Ranking" hidden={mobileTab !== "ranking"}>
+            {query.isSuccess && municipal && <MunicipalityRanking items={items} onSelect={select} selected={selectedGeography} />}
+            {query.isSuccess && (mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS") && (
+              <TerritoryRanking level={mapLevel === "CAMPOS_DISTRICTS" ? "district" : "neighborhood"} items={items} onSelect={select} selected={selectedGeography} />
+            )}
+            {!query.isSuccess && <p role="status">Carregando o ranking do recorte selecionado…</p>}
+          </section>
+          </div>
+          <MobileDashboardNav activeTab={mobileTab} onChange={setMobileTab} rankingAvailable={rankingAvailable} />
         {territorial && (
           <div className="query-state" aria-live="polite">
             {query.isPending && (
@@ -140,6 +161,7 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
               : "Dados fornecidos pela API epidemiológica · V1"}
           </span>
         </footer>
+        </div>
       </main>
     </>
   );

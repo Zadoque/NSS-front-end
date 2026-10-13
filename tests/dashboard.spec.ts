@@ -22,11 +22,13 @@ for (const width of [375, 768, 1024, 1440]) {
     await page.getByRole("button", { name: /^Rio de Janeiro ·/ }).focus();
     await page.keyboard.press("Space");
     await expect(areas).toHaveCount(92);
-    await expect(page.locator(".ranking")).toContainText("120 notificações");
+    if (width >= 1024) await expect(page.locator(".ranking:visible")).toContainText("120 notificações");
     await page
       .getByRole("button", { name: /^Campos dos Goytacazes ·/ })
       .click();
     await expect(page.locator(".map-context")).toContainText("120 notificações");
+    if (width < 1024) await page.getByRole("tab", { name: "Ranking" }).click();
+    await expect(page.locator(".ranking:visible")).toContainText(width < 1024 ? "27 notificações" : "27 notificações");
     await page.screenshot({ path: `/tmp/nss-rj-${width}.png`, fullPage: true });
     expect(
       await page.evaluate(
@@ -34,29 +36,21 @@ for (const width of [375, 768, 1024, 1440]) {
       ),
     ).toBeTruthy();
     if (width < 1024) {
-      await expect(page.locator("dialog")).not.toBeVisible();
-      await page.getByRole("button", { name: "Filtros e informações" }).click();
-      await expect(
-        page.getByRole("button", { name: "Fechar ×" }),
-      ).toBeFocused();
-      await page.keyboard.press("Shift+Tab");
-      expect(
-        await page.evaluate(() => !!document.activeElement?.closest("dialog")),
-      ).toBeTruthy();
-      await page.keyboard.press("Escape");
-      await expect(page.locator("dialog")).not.toBeVisible();
-      await expect(
-        page.getByRole("button", { name: "Filtros e informações" }),
-      ).toBeFocused();
-      await page.getByRole("button", { name: "Filtros e informações" }).click();
-      await page.screenshot({ path: `/tmp/nss-drawer-${width}.png` });
+      await page.getByRole("tab", { name: "Mapa" }).dispatchEvent("click");
+      await expect(page.getByRole("tab", { name: "Mapa" })).toHaveAttribute("aria-selected", "true");
+      await page.getByRole("tab", { name: "Filtros" }).click();
+      await expect(page.locator("#mobile-panel-filters")).toBeVisible();
+      await expect(page.locator(".mobile-dashboard-context")).toContainText("Dengue");
+      await page.screenshot({ path: `/tmp/nss-mobile-filters-${width}.png` });
     }
-    const panel = width < 1024 ? page.locator("dialog") : page.locator("aside");
+    const panel = width < 1024 ? page.locator("#mobile-panel-filters") : page.locator("aside");
     await panel.getByLabel("Mês", { exact: true }).selectOption("2");
     if (width < 1024)
-      await page.getByRole("button", { name: "Fechar ×" }).click();
+      await page.getByRole("tab", { name: "Mapa" }).click();
     await expect(page.locator(".map-context")).toContainText("Sem registros");
-    await expect(page.locator(".ranking")).not.toContainText("120 notificações");
+    if (width < 1024) await page.getByRole("tab", { name: "Ranking" }).click();
+    await expect(page.locator(".ranking:visible")).not.toContainText("120 notificações");
+    if (width < 1024) await page.getByRole("tab", { name: "Mapa" }).dispatchEvent("click");
     await page.getByRole("button", { name: "Brasil", exact: true }).click();
     await expect(areas).toHaveCount(5);
     await page.screenshot({
@@ -115,9 +109,10 @@ test("touch activation, outside dismissal and cartography error recovery", async
   await page.screenshot({ path: "/tmp/nss-southeast-375.png", fullPage: true });
   await page.getByRole("button", { name: /^Rio de Janeiro ·/ }).tap();
   await expect(page.locator(".geo")).toHaveCount(92);
-  await page.getByRole("button", { name: "Filtros e informações" }).tap();
-  await page.touchscreen.tap(5, 400);
-  await expect(page.locator("dialog")).not.toBeVisible();
+  await page.getByRole("tab", { name: "Filtros" }).tap();
+  await expect(page.locator("#mobile-panel-filters")).toBeVisible();
+  await page.getByRole("tab", { name: "Mapa" }).tap();
+  await expect(page.locator("#mobile-panel-filters")).not.toBeVisible();
   await context.close();
 });
 
@@ -161,18 +156,18 @@ test("real API mode keeps the municipal ranking unscoped after leaving Campos", 
   await login(page, "http://127.0.0.1:5174");
   await page.getByRole("button", { name: /^Sudeste ·/ }).click();
   await page.getByRole("button", { name: /^Rio de Janeiro ·/ }).click();
-  await expect(page.locator(".ranking")).toContainText("Macaé");
+  await expect(page.locator(".ranking:visible")).toContainText("Macaé");
   await page.getByRole("button", { name: /^Campos dos Goytacazes ·/ }).click();
   await expect(page.getByRole("heading", { name: "Distritos de Campos dos Goytacazes" })).toBeVisible();
   await page.getByRole("button", { name: /Voltar para municípios/ }).click();
   await expect(page.locator(".map-card").getByRole("heading", { name: "Rio de Janeiro" })).toBeVisible();
-  await expect(page.locator(".ranking")).toContainText("Macaé");
+  await expect(page.locator(".ranking:visible")).toContainText("Macaé");
   await page.getByRole("button", { name: /^Macaé ·/ }).click();
-  await expect(page.locator(".ranking")).toContainText("120 notificações");
+  await expect(page.locator(".ranking:visible")).toContainText("120 notificações");
   await page.getByLabel("Município", { exact: true }).selectOption({ label: "Angra dos Reis" });
   await expect(page.locator(".map-context")).toContainText("Sem cobertura");
-  await expect(page.locator(".ranking")).toContainText("120 notificações");
-  await expect(page.locator(".ranking")).toContainText("48 notificações");
+  await expect(page.locator(".ranking:visible")).toContainText("120 notificações");
+  await expect(page.locator(".ranking:visible")).toContainText("48 notificações");
   expect(municipalRequests).not.toHaveLength(0);
   expect(municipalRequests.every((url) => !url.searchParams.has("municipalityCode"))).toBeTruthy();
 });
@@ -237,8 +232,8 @@ test("fullscreen fallback and ranking on the left on large screens", async ({ pa
   await login(page);
   await page.getByLabel("Região", { exact: true }).selectOption("SE");
   await page.getByLabel("Estado", { exact: true }).selectOption("RJ");
-  await expect(page.locator(".ranking")).toBeVisible();
-  const ranking = (await page.locator(".ranking").boundingBox())!;
+  await expect(page.locator(".ranking:visible")).toBeVisible();
+  const ranking = (await page.locator(".ranking:visible").boundingBox())!;
   const map = (await page.locator(".map-card").boundingBox())!;
   expect(ranking.x + ranking.width).toBeLessThan(map.x);
   await page.getByRole("button", { name: "Abrir mapa em tela cheia" }).click();

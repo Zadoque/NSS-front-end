@@ -698,3 +698,21 @@ receber `api/`, `model/` e schemas próprios. Da mesma forma, as páginas de
 autenticação ainda chamam o cliente HTTP diretamente; a próxima etapa deverá
 criar `features/auth/api/` e retirar esse detalhe das páginas. Essas pendências
 não invalidam o padrão escolhido, mas indicam onde continuar a refatoração.
+
+### Navegação mobile do dashboard
+
+Em viewports abaixo de 1024px, o dashboard usa uma navegação inferior com três
+abas: `Filtros`, `Mapa` e `Ranking`. A aba `Mapa` é a inicial e mantém a
+exploração territorial como fluxo principal; filtros e ranking ocupam painéis
+próprios, em vez de ficarem empilhados depois do mapa.
+
+`MobileDashboardContext` permanece visível nas três abas e resume a doença,
+período, localização e total do recorte atual. `MobileDashboardNav` controla
+apenas estado de apresentação (`MobileDashboardTab`); não altera consultas nem
+contratos da API. A seleção de um território no ranking continua usando o
+mesmo `useDashboardModel` da visualização do mapa.
+
+Em telas a partir de 1024px, a barra mobile e o contexto compacto ficam ocultos
+e o layout lateral existente (ranking, mapa e filtros) permanece ativo. A barra
+inferior respeita `safe-area-inset-bottom`, possui navegação semântica por abas,
+foco de teclado e espaço inferior no conteúdo para não encobrir listas longas.
