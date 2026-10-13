@@ -16,18 +16,26 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
   const { navigation, mapLevel, selectedGeography, select, navigate, goBack, metadata, filters, query, items, municipal, territorial, selectionInfo, panel } = useDashboardModel();
   const [mobileTab, setMobileTab] = useState<MobileDashboardTab>("map");
   const [activeView, setActiveView] = useState<DashboardView>("map");
-  const mapScrollY = useRef(0);
+  const viewScrollY = useRef<Record<DashboardView, number>>({
+    map: 0,
+    indicators: 0,
+    ranking: 0,
+    coverage: 0,
+    table: 0,
+  });
   const previousView = useRef<DashboardView>("map");
   const rankingAvailable = municipal || mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS";
   const selectedTotal = query.data?.totalNotifications;
   useLayoutEffect(() => {
     if (activeView === "map" && previousView.current !== "map") {
-      window.requestAnimationFrame(() => window.scrollTo(0, mapScrollY.current));
+      window.requestAnimationFrame(() => window.scrollTo(0, viewScrollY.current.map));
+    } else if (previousView.current !== activeView) {
+      window.requestAnimationFrame(() => window.scrollTo(0, viewScrollY.current[activeView]));
     }
     previousView.current = activeView;
   }, [activeView]);
   const changeView = (view: DashboardView) => {
-    if (activeView === "map" && view !== "map") mapScrollY.current = window.scrollY;
+    if (view !== activeView) viewScrollY.current[activeView] = window.scrollY;
     setActiveView(view);
     if (view === "map") setMobileTab("map");
   };
