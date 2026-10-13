@@ -1,13 +1,19 @@
 import { test, expect } from "@playwright/test";
 import { login } from "./helpers";
 
+const externalBuild = Boolean(process.env.PLAYWRIGHT_BASE_URL);
+
 test("institutional home, links and browser history", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toContainText(
     "acompanhar a saúde no território",
   );
   await expect(page.getByText("Onde estamos", { exact: true })).toBeVisible();
-  await expect(page.locator("main")).toContainText("dados sintéticos");
+  if (externalBuild) {
+    await expect(page.locator("main")).toContainText(/snapshot estático de dados reais|dados sintéticos/);
+  } else {
+    await expect(page.locator("main")).toContainText("dados sintéticos");
+  }
   await page.getByRole("link", { name: "Acessar o mapa" }).first().click();
   await expect(page).toHaveURL(/\/login$/);
   await login(page);
@@ -42,7 +48,7 @@ for (const width of [375, 1440]) {
     await search.fill("cam");
     await municipality.selectOption("3301009");
     await expect(page.getByRole("heading", { name: "Distritos de Campos dos Goytacazes" })).toBeVisible();
-    await expect(page.locator(".map-context")).toContainText("120 notificações");
+    await expect(page.locator(".map-context")).toContainText(externalBuild ? /\d+ notificações/ : "120 notificações");
     if (width < 1024) await page.getByRole("tab", { name: "Ranking" }).click();
     await expect(page.getByRole("heading", { name: "Notificações por distrito" })).toBeVisible();
     if (width < 1024) await page.getByRole("tab", { name: "Mapa" }).click();

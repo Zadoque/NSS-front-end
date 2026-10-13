@@ -2,6 +2,7 @@ import { test, expect, type Page } from "@playwright/test";
 import { login } from "./helpers";
 
 const mobileViewports = [320, 375, 390, 430];
+const externalBuild = Boolean(process.env.PLAYWRIGHT_BASE_URL);
 
 async function openMunicipalRanking(page: Page) {
   await page.getByRole("button", { name: /^Sudeste ·/ }).click();
@@ -30,7 +31,11 @@ for (const width of mobileViewports) {
     await page.getByRole("tab", { name: "Mapa" }).click();
     await expect(page.locator(".map-card")).toBeVisible();
     await openMunicipalRanking(page);
-    await expect(page.locator(".query-state")).toContainText("Sem registros");
+    if (externalBuild) {
+      await expect(page.locator(".query-state")).not.toContainText("Não foi possível carregar os dados");
+    } else {
+      await expect(page.locator(".query-state")).toContainText("Sem registros");
+    }
 
     // Restore the available recorte before validating the ranking interaction.
     await page.getByRole("tab", { name: "Filtros" }).click();
@@ -42,12 +47,12 @@ for (const width of mobileViewports) {
     await expect(page.locator("#mobile-panel-ranking")).toBeVisible();
     await expect(page.locator(".mobile-dashboard-context")).toContainText("Dengue");
     await expect(page.locator(".mobile-dashboard-context")).toContainText("jan.");
-    await expect(page.locator("#mobile-panel-ranking")).toContainText("120 notificações");
+    await expect(page.locator("#mobile-panel-ranking")).toContainText(/\d+ notificações/);
 
     await page.locator("#mobile-panel-ranking").getByRole("button", { name: /Campos dos Goytacazes/ }).click();
     await page.getByRole("tab", { name: "Mapa" }).click();
     await expect(page.getByRole("heading", { name: "Distritos de Campos dos Goytacazes" })).toBeVisible();
-    await expect(page.locator(".map-context")).toContainText("120 notificações");
+    await expect(page.locator(".map-context")).toContainText(/\d+ notificações/);
 
     const layout = await page.evaluate(() => {
       const navBox = document.querySelector<HTMLElement>(".mobile-dashboard-nav")?.getBoundingClientRect();

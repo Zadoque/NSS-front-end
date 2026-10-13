@@ -25,6 +25,7 @@
 
 @layer components {
   .header { @apply flex items-center gap-[14px] border-b border-[#dde5eb] bg-white px-5 py-5; }
+  .header > div:nth-child(2) { @apply min-w-0; }
   .brand-mark { @apply grid h-[52px] w-[52px] shrink-0 place-items-center rounded-xl bg-nss-blue font-extrabold text-white; }
   .header strong { @apply text-sm; }
   .header p { @apply mt-[3px] text-xs text-[#617583]; }
@@ -152,6 +153,11 @@
   .home-section { @apply p-8; }
   .geography-fields { @apply grid-cols-[1fr_1fr_1.4fr]; }
   .location { @apply flex items-center justify-between gap-6; }
+}
+
+@media (max-width: 767px) {
+  .header { @apply flex-wrap; }
+  .header > div:nth-child(2) { @apply min-w-0 flex-1; }
 }
 
 @media (min-width: 1024px) {

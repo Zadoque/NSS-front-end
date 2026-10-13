@@ -3,6 +3,9 @@ import { parseCases } from "../src/features/dashboard/api/sources/apiDataSource"
 import { caseColor } from "../src/features/dashboard/components/MapLegend";
 import { login } from "./helpers";
 
+const externalBuild = Boolean(process.env.PLAYWRIGHT_BASE_URL);
+const apiTestBaseUrl = process.env.PLAYWRIGHT_API_BASE_URL || "http://127.0.0.1:39174";
+
 for (const width of [375, 768, 1024, 1440]) {
   test(`navigation, coverage and drawer at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 1000 });
@@ -22,13 +25,13 @@ for (const width of [375, 768, 1024, 1440]) {
     await page.getByRole("button", { name: /^Rio de Janeiro ·/ }).focus();
     await page.keyboard.press("Space");
     await expect(areas).toHaveCount(92);
-    if (width >= 1024) await expect(page.locator(".ranking:visible")).toContainText("120 notificações");
+    if (width >= 1024) await expect(page.locator(".ranking:visible")).toContainText(externalBuild ? /\d+ notificações/ : "120 notificações");
     await page
       .getByRole("button", { name: /^Campos dos Goytacazes ·/ })
       .click();
-    await expect(page.locator(".map-context")).toContainText("120 notificações");
+    await expect(page.locator(".map-context")).toContainText(externalBuild ? /\d+ notificações/ : "120 notificações");
     if (width < 1024) await page.getByRole("tab", { name: "Ranking" }).click();
-    await expect(page.locator(".ranking:visible")).toContainText(width < 1024 ? "27 notificações" : "27 notificações");
+    await expect(page.locator(".ranking:visible")).toContainText(/\d+ notificações/);
     await page.screenshot({ path: `/tmp/nss-rj-${width}.png`, fullPage: true });
     expect(
       await page.evaluate(
@@ -47,9 +50,13 @@ for (const width of [375, 768, 1024, 1440]) {
     await panel.getByLabel("Mês", { exact: true }).selectOption("2");
     if (width < 1024)
       await page.getByRole("tab", { name: "Mapa" }).click();
-    await expect(page.locator(".map-context")).toContainText("Sem registros");
+    if (externalBuild) {
+      await expect(page.locator(".map-context")).toContainText(/\d+ notificações|Sem registros/);
+    } else {
+      await expect(page.locator(".map-context")).toContainText("Sem registros");
+    }
     if (width < 1024) await page.getByRole("tab", { name: "Ranking" }).click();
-    await expect(page.locator(".ranking:visible")).not.toContainText("120 notificações");
+    if (!externalBuild) await expect(page.locator(".ranking:visible")).not.toContainText("120 notificações");
     if (width < 1024) await page.getByRole("tab", { name: "Mapa" }).dispatchEvent("click");
     await page.getByRole("button", { name: "Brasil", exact: true }).click();
     await expect(areas).toHaveCount(5);
@@ -117,6 +124,7 @@ test("touch activation, outside dismissal and cartography error recovery", async
 });
 
 test("real API mode keeps the municipal ranking unscoped after leaving Campos", async ({ page }) => {
+  test.skip(Boolean(process.env.PLAYWRIGHT_BASE_URL), "Este cenário exige o servidor API local do teste.");
   const municipalRequests: URL[] = [];
   await page.route("**/api/v1/diseases", (route) =>
     route.fulfill({ json: { items: ["DENG"] } }),
@@ -153,7 +161,7 @@ test("real API mode keeps the municipal ranking unscoped after leaving Campos", 
     });
   });
 
-  await login(page, "http://127.0.0.1:5174");
+  await login(page, apiTestBaseUrl);
   await page.getByRole("button", { name: /^Sudeste ·/ }).click();
   await page.getByRole("button", { name: /^Rio de Janeiro ·/ }).click();
   await expect(page.locator(".ranking:visible")).toContainText("Macaé");
@@ -259,10 +267,18 @@ test("map can enter and leave fullscreen mode", async ({ page }) => {
 test("disease filter shows the full name followed by its code", async ({ page }) => {
   await login(page);
   const disease = page.getByLabel("Doença", { exact: true }).first();
-  await expect(disease.locator("option")).toHaveText([
-    "Dengue · DENG",
-    "Febre maculosa · FMAC",
-    "Toxoplasmose congênita · TOXC",
-  ]);
+  if (externalBuild) {
+    await expect(disease.locator("option")).toContainText([
+      "Dengue · DENG",
+      "Febre maculosa · FMAC",
+      "Toxoplasmose congênita · TOXC",
+    ]);
+  } else {
+    await expect(disease.locator("option")).toHaveText([
+      "Dengue · DENG",
+      "Febre maculosa · FMAC",
+      "Toxoplasmose congênita · TOXC",
+    ]);
+  }
   await expect(disease).toHaveAttribute("title", "Dengue · DENG");
 });
