@@ -60,11 +60,17 @@
   .map-controls span { @apply ml-1.5 text-sm text-nss-muted; }
   .header-action { @apply ml-auto border border-nss-border bg-white px-3 py-2 text-nss-blue; }
   .dashboard-view-switcher { @apply mb-6 flex flex-wrap items-center gap-3 rounded-xl border border-[#d7e2e8] bg-white p-3 shadow-[0_3px_14px_#1b3d5512]; }
+  .dashboard-territory-selection { @apply grid gap-2; }
+  .dashboard-map-navigation { @apply block; }
+  .dashboard-territory-selection .mobile-dashboard-context { @apply hidden; }
   .dashboard-view-tabs { @apply flex min-w-0 flex-1 flex-wrap gap-1.5; }
   .dashboard-view-tabs button { @apply min-h-10 rounded-lg px-3 text-sm font-semibold text-nss-muted transition-colors; }
   .dashboard-view-tabs button:hover { @apply bg-[#edf6f2] text-nss-blue; }
   .dashboard-view-tabs button[aria-pressed="true"] { @apply bg-nss-blue text-white; }
   .dashboard-analytics-view { @apply grid gap-5; }
+  .analytics-empty-state { @apply grid gap-2 p-6 text-center text-sm text-nss-muted; }
+  .analytics-empty-state strong { @apply text-nss-ink; }
+  .analytics-empty-state span { @apply block; }
   .dashboard-analytics-view > .page-intro { @apply mb-0; }
   .indicator-grid { @apply grid gap-3 sm:grid-cols-2 xl:grid-cols-4; }
   .indicator-card { @apply grid gap-1 p-5; }
@@ -207,8 +213,7 @@
   .mobile-dashboard-context span { @apply mt-0.5 text-xs text-nss-muted; }
   .mobile-context-location { @apply text-right; }
   .mobile-context-location strong { @apply text-nss-blue; }
-  .mobile-map-navigation { @apply block; }
-  .mobile-tab-filters .mobile-map-navigation, .mobile-tab-ranking .mobile-map-navigation { @apply hidden; }
+  .dashboard-territory-selection .mobile-dashboard-context { @apply flex; }
   .mobile-tab-filters .dashboard-grid, .mobile-tab-ranking .dashboard-grid { @apply hidden; }
   .dashboard-grid > .ranking, .dashboard-grid > .desktop-panel { @apply hidden; }
   .mobile-dashboard-panels { @apply block; }

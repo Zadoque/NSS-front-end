@@ -14,6 +14,7 @@ type Props = {
   onSelect: (selection: GeographySelection) => void;
   selected: GeographySelection | null;
   activeView: Exclude<DashboardView, "map">;
+  status: "loading" | "error" | "success";
 };
 
 function percentage(value: number, total: number | null | undefined) {
@@ -33,7 +34,11 @@ function AnalyticsShell({ title, description, children, id }: { title: string; d
   );
 }
 
-export function DashboardAnalyticsViews({ items, totalNotifications, coverage, onSelect, selected, activeView }: Props) {
+export function DashboardAnalyticsViews({ items, totalNotifications, coverage, onSelect, selected, activeView, status }: Props) {
+  if (status !== "success" || items.length === 0) {
+    const title = activeView === "indicators" ? "Indicadores do recorte" : activeView === "ranking" ? "Ranking territorial" : activeView === "coverage" ? "Cobertura territorial" : "Tabela analítica";
+    return <AnalyticsShell id={`dashboard-view-${activeView}-panel`} title={title} description="Resumo dos dados retornados para a doença, período e território selecionados."><div className="card analytics-empty-state" role={status === "error" ? "alert" : "status"}>{status === "loading" ? "Carregando dados para esta visualização…" : status === "error" ? <>Não foi possível carregar os dados. <button type="button" onClick={() => window.location.reload()}>Tentar novamente</button></> : <>Para a seleção atual: <strong>não há dados para esta visualização.</strong><span>Tente alterar o território, a doença ou o período.</span></>}</div></AnalyticsShell>;
+  }
   const sorted = [...items].sort((a, b) => b.notificationsTotal - a.notificationsTotal);
   const total = totalNotifications ?? sorted.reduce((sum, item) => sum + item.notificationsTotal, 0);
   const highest = sorted[0];

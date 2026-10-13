@@ -41,13 +41,15 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
             Explore o mapa e consulte as notificações por período nos municípios cobertos.
           </p>
         </div>
-        <DashboardViewSwitcher activeView={activeView} onChange={(view) => { setActiveView(view); if (view === "map") setMobileTab("map"); }} />
-        {activeView === "map" ? <div className={`dashboard-workspace mobile-tab-${mobileTab}`}>
+        <div className="dashboard-territory-selection">
           <MobileDashboardContext filters={filters} selectionName={selectedGeography?.name ?? mapViews[mapLevel].title} total={selectedTotal} pending={query.isPending} />
-          <div className="mobile-map-navigation">
+          <div className="dashboard-map-navigation">
             <GeographyBreadcrumb level={mapLevel} navigate={navigate} selected={selectedGeography} />
             <GeographySelector key={mapLevel} navigation={navigation} />
           </div>
+        </div>
+        <DashboardViewSwitcher activeView={activeView} onChange={(view) => { setActiveView(view); if (view === "map") setMobileTab("map"); }} />
+        {activeView === "map" ? <div className={`dashboard-workspace mobile-tab-${mobileTab}`}>
           <div id="mobile-panel-map" className={`dashboard-grid${territorial && query.isSuccess ? " has-ranking" : ""}`}>
           <section className="card map-card" aria-label="Exploração geográfica">
             <div className="map-heading">
@@ -165,7 +167,7 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
               : "Dados fornecidos pela API epidemiológica · V1"}
           </span>
         </footer>
-        </div> : <DashboardAnalyticsViews activeView={activeView} items={items} totalNotifications={query.data?.totalNotifications} coverage={query.data?.coverage} onSelect={select} selected={selectedGeography} />}
+        </div> : <DashboardAnalyticsViews activeView={activeView} status={query.isPending ? "loading" : query.isError ? "error" : "success"} items={items} totalNotifications={query.data?.totalNotifications} coverage={query.data?.coverage} onSelect={select} selected={selectedGeography} />}
       </main>
     </>
   );
