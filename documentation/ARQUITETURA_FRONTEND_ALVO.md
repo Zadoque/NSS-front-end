@@ -449,3 +449,102 @@ DTOs que as demais etapas reutilizarão. Em seguida, a Etapa 2 elimina a maior
 fonte de duplicação de regras; as Etapas 3 e 4 reduzem o acoplamento de página e
 app. A ordem permite entregar melhorias pequenas e verificáveis sem interromper
 o `prod-mock` usado na validação da API Java.
+
+## 10. Planejamento pré-novas-telas
+
+Nenhuma nova tela deve ser iniciada antes de concluir os gates abaixo. O
+objetivo é organizar a fundação do frontend que já existe, sem ampliar o
+escopo funcional nem criar rotas paralelas.
+
+### Gate 0 — congelar o comportamento atual
+
+1. Confirmar a branch de trabalho e registrar o commit-base.
+2. Executar `npm run lint`, `npm run build` e Playwright nos modos disponíveis.
+3. Catalogar rotas atuais, permissões, query keys, fontes de dados e estados de cobertura.
+4. Transformar os fluxos críticos em testes de regressão: entrada pública, login DEMO, mapa, retorno, filtros, zero, indisponível, snapshot e logout.
+
+Não iniciar a próxima etapa se o comportamento atual não estiver reproduzível ou se houver teste crítico intermitente sem causa registrada.
+
+### Gate 1 — estabelecer a fronteira HTTP com Zod
+
+1. Adicionar Zod como dependência de runtime.
+2. Criar `shared/api/httpClient.ts` para transporte, timeout, headers, refresh coordenado e erros.
+3. Criar schemas Zod para autenticação, epidemiologia e administração.
+4. Fazer cada adapter receber `unknown`, executar `safeParse`/`parse` e mapear DTO validado para modelo de domínio.
+5. Remover casts de resposta nas páginas.
+6. Testar respostas válidas, campos ausentes, tipos incorretos, duplicidades, status de cobertura e erros HTTP.
+
+Saída obrigatória: nenhuma tela chama `fetch` ou converte JSON com `as`.
+
+### Gate 2 — centralizar o domínio territorial
+
+1. Criar o módulo `features/dashboard/geography`.
+2. Mover para ele níveis, códigos, catálogo, cobertura de drill-down e transições.
+3. Fazer mapa, seletor, breadcrumb, ranking e página consumirem o mesmo `GeographyDomain`.
+4. Remover códigos territoriais duplicados dos componentes e fontes mock/static.
+5. Cobrir Brasil → Sudeste → RJ → Campos → distrito → bairro e todos os retornos com testes de domínio.
+
+Saída obrigatória: componentes não decidem regras de negócio territorial.
+
+### Gate 3 — reduzir `DashboardPage` a composição
+
+1. Criar funções puras para request, escopo, cobertura, seleção e textos.
+2. Criar `useDashboardModel` como único controlador da feature.
+3. Consolidar query keys e hooks em `dashboard/api`.
+4. Fazer `DashboardPage` renderizar um view-model e encaminhar eventos.
+5. Manter mapa, filtros, rankings e drawer como componentes de apresentação.
+
+Saída obrigatória: a página não monta request, consulta adapter nem conhece códigos específicos de Campos.
+
+### Gate 4 — separar router, sessão e autorização
+
+1. Adicionar o router escolhido e declarar as rotas existentes.
+2. Criar layouts público, autenticado e administrativo.
+3. Criar `AuthProvider`, `RequireSession` e `RequirePermission`.
+4. Mover título, redirect, bootstrap de sessão e acesso negado para a camada de rota/guard.
+5. Manter token em memória, refresh HttpOnly e a política especial do `prod-mock`.
+6. Testar acesso direto, refresh da página, 401, logout, permissão e URLs indisponíveis no snapshot.
+
+Saída obrigatória: `App.tsx` não contém árvore de condicionais por rota nem decisão de autorização.
+
+### Gate 5 — padronizar administração e apresentação
+
+1. Aplicar ao `admin-users` o mesmo padrão API → schema → model → page.
+2. Separar CSS global, tokens e estilos de feature sem alterar o visual.
+3. Revisar foco, teclado, leitores de tela e estados de erro/loading.
+4. Remover aliases temporários, imports legados e duplicações identificadas.
+
+Saída obrigatória: dashboard, autenticação e administração usam as mesmas fronteiras arquiteturais.
+
+### Gate 6 — autorização para novas telas
+
+Uma nova tela só pode ser planejada depois que todos os gates anteriores forem aceitos e estes itens estiverem comprovados:
+
+- `npm run lint` e `npm run build` verdes;
+- Playwright cobrindo os fluxos existentes nos modos `prod-mock` e API;
+- testes de schemas Zod para contratos alterados;
+- testes de domínio territorial verdes;
+- ausência de casts de JSON nas páginas;
+- rotas, guardas e permissões documentados;
+- modelo de dados e query key da nova tela definidos antes do JSX;
+- nenhuma regra territorial, HTTP ou autorização implementada dentro de componente visual.
+
+### Ordem de execução resumida
+
+```text
+Regressão do estado atual
+        ↓
+HTTP + schemas Zod
+        ↓
+Domínio territorial único
+        ↓
+Dashboard model
+        ↓
+Router + sessão + guards
+        ↓
+Administração + estilos + acessibilidade
+        ↓
+Gate de autorização para novas telas
+```
+
+Esse planejamento mantém o `prod-mock` utilizável durante toda a organização, preserva as rotas que o Java fornecerá na produção e evita que novas telas consolidem novamente as responsabilidades que estão sendo removidas.
