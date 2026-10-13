@@ -30,7 +30,7 @@ for (const width of [375, 768, 1024, 1440]) {
       .getByRole("button", { name: /^Campos dos Goytacazes ·/ })
       .click();
     await expect(page.locator(".map-context")).toContainText(externalBuild ? /\d+ notificações/ : "120 notificações");
-    if (width < 1024) await page.getByRole("tab", { name: "Ranking" }).click();
+    if (width < 1024) await page.getByRole("tablist", { name: "Visualização do painel" }).getByRole("tab", { name: "Ranking" }).click();
     await expect(page.locator(".ranking:visible")).toContainText(/\d+ notificações/);
     await page.screenshot({ path: `/tmp/nss-rj-${width}.png`, fullPage: true });
     expect(
@@ -39,9 +39,10 @@ for (const width of [375, 768, 1024, 1440]) {
       ),
     ).toBeTruthy();
     if (width < 1024) {
-      await page.getByRole("tab", { name: "Mapa" }).dispatchEvent("click");
-      await expect(page.getByRole("tab", { name: "Mapa" })).toHaveAttribute("aria-selected", "true");
-      await page.getByRole("tab", { name: "Filtros" }).click();
+      const mobileTabs = page.getByRole("tablist", { name: "Visualização do painel" });
+      await mobileTabs.getByRole("tab", { name: "Mapa" }).dispatchEvent("click");
+      await expect(mobileTabs.getByRole("tab", { name: "Mapa" })).toHaveAttribute("aria-selected", "true");
+      await mobileTabs.getByRole("tab", { name: "Filtros" }).click();
       await expect(page.locator("#mobile-panel-filters")).toBeVisible();
       await expect(page.locator(".mobile-dashboard-context")).toContainText("Dengue");
       await page.screenshot({ path: `/tmp/nss-mobile-filters-${width}.png` });
@@ -49,15 +50,15 @@ for (const width of [375, 768, 1024, 1440]) {
     const panel = width < 1024 ? page.locator("#mobile-panel-filters") : page.locator("aside");
     await panel.getByLabel("Mês", { exact: true }).selectOption("2");
     if (width < 1024)
-      await page.getByRole("tab", { name: "Mapa" }).click();
+      await page.getByRole("tablist", { name: "Visualização do painel" }).getByRole("tab", { name: "Mapa" }).click();
     if (externalBuild) {
       await expect(page.locator(".map-context")).toContainText(/\d+ notificações|Sem registros/);
     } else {
       await expect(page.locator(".map-context")).toContainText("Sem registros");
     }
-    if (width < 1024) await page.getByRole("tab", { name: "Ranking" }).click();
+    if (width < 1024) await page.getByRole("tablist", { name: "Visualização do painel" }).getByRole("tab", { name: "Ranking" }).click();
     if (!externalBuild) await expect(page.locator(".ranking:visible")).not.toContainText("120 notificações");
-    if (width < 1024) await page.getByRole("tab", { name: "Mapa" }).dispatchEvent("click");
+    if (width < 1024) await page.getByRole("tablist", { name: "Visualização do painel" }).getByRole("tab", { name: "Mapa" }).dispatchEvent("click");
     await page.getByRole("button", { name: "Brasil", exact: true }).click();
     await expect(areas).toHaveCount(5);
     await page.screenshot({
@@ -116,9 +117,9 @@ test("touch activation, outside dismissal and cartography error recovery", async
   await page.screenshot({ path: "/tmp/nss-southeast-375.png", fullPage: true });
   await page.getByRole("button", { name: /^Rio de Janeiro ·/ }).tap();
   await expect(page.locator(".geo")).toHaveCount(92);
-  await page.getByRole("tab", { name: "Filtros" }).tap();
+  await page.getByRole("tablist", { name: "Visualização do painel" }).getByRole("tab", { name: "Filtros" }).tap();
   await expect(page.locator("#mobile-panel-filters")).toBeVisible();
-  await page.getByRole("tab", { name: "Mapa" }).tap();
+  await page.getByRole("tablist", { name: "Visualização do painel" }).getByRole("tab", { name: "Mapa" }).tap();
   await expect(page.locator("#mobile-panel-filters")).not.toBeVisible();
   await context.close();
 });

@@ -66,7 +66,7 @@
   .dashboard-view-tabs { @apply flex min-w-0 flex-1 flex-wrap gap-1.5; }
   .dashboard-view-tabs button { @apply min-h-10 rounded-lg px-3 text-sm font-semibold text-nss-muted transition-colors; }
   .dashboard-view-tabs button:hover { @apply bg-[#edf6f2] text-nss-blue; }
-  .dashboard-view-tabs button[aria-pressed="true"] { @apply bg-nss-blue text-white; }
+  .dashboard-view-tabs button[aria-selected="true"] { @apply bg-nss-blue text-white; }
   .dashboard-analytics-view { @apply grid gap-5; }
   .analytics-empty-state { @apply grid gap-2 p-6 text-center text-sm text-nss-muted; }
   .analytics-empty-state strong { @apply text-nss-ink; }

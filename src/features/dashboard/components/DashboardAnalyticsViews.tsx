@@ -21,9 +21,9 @@ function percentage(value: number, total: number | null | undefined) {
   return total && total > 0 ? (value / total) * 100 : 0;
 }
 
-function AnalyticsShell({ title, description, children, id }: { title: string; description: string; children: ReactNode; id: string }) {
+function AnalyticsShell({ title, description, children, id, tabId }: { title: string; description: string; children: ReactNode; id: string; tabId: string }) {
   return (
-    <section id={id} className="dashboard-analytics-view" role="tabpanel" aria-labelledby="dashboard-view-switcher">
+    <section id={id} className="dashboard-analytics-view" role="tabpanel" aria-labelledby={tabId} tabIndex={0}>
       <div className="page-intro">
         <div className="section-label">ANÁLISE DO RECORTE</div>
         <h2>{title}</h2>
@@ -37,7 +37,7 @@ function AnalyticsShell({ title, description, children, id }: { title: string; d
 export function DashboardAnalyticsViews({ items, totalNotifications, coverage, onSelect, selected, activeView, status }: Props) {
   if (status !== "success" || items.length === 0) {
     const title = activeView === "indicators" ? "Indicadores do recorte" : activeView === "ranking" ? "Ranking territorial" : activeView === "coverage" ? "Cobertura territorial" : "Tabela analítica";
-    return <AnalyticsShell id={`dashboard-view-${activeView}-panel`} title={title} description="Resumo dos dados retornados para a doença, período e território selecionados."><div className="card analytics-empty-state" role={status === "error" ? "alert" : "status"}>{status === "loading" ? "Carregando dados para esta visualização…" : status === "error" ? <>Não foi possível carregar os dados. <button type="button" onClick={() => window.location.reload()}>Tentar novamente</button></> : <>Para a seleção atual: <strong>não há dados para esta visualização.</strong><span>Tente alterar o território, a doença ou o período.</span></>}</div></AnalyticsShell>;
+    return <AnalyticsShell id={`dashboard-panel-${activeView}`} tabId={`dashboard-tab-${activeView}`} title={title} description="Resumo dos dados retornados para a doença, período e território selecionados."><div className="card analytics-empty-state" role={status === "error" ? "alert" : "status"}>{status === "loading" ? "Carregando dados para esta visualização…" : status === "error" ? <>Não foi possível carregar os dados. <button type="button" onClick={() => window.location.reload()}>Tentar novamente</button></> : <>Para a seleção atual: <strong>não há dados para esta visualização.</strong><span>Tente alterar o território, a doença ou o período.</span></>}</div></AnalyticsShell>;
   }
   const sorted = [...items].sort((a, b) => b.notificationsTotal - a.notificationsTotal);
   const total = totalNotifications ?? sorted.reduce((sum, item) => sum + item.notificationsTotal, 0);
@@ -51,7 +51,7 @@ export function DashboardAnalyticsViews({ items, totalNotifications, coverage, o
   return (
     <div className="dashboard-analytics-views">
       <div id="dashboard-view-indicators" hidden={activeView !== "indicators"}>
-        <AnalyticsShell id="dashboard-view-indicators-panel" title="Indicadores do recorte" description="Resumo dos dados retornados para a doença, período e território selecionados.">
+        <AnalyticsShell id="dashboard-panel-indicators" tabId="dashboard-tab-indicators" title="Indicadores do recorte" description="Resumo dos dados retornados para a doença, período e território selecionados.">
           <div className="indicator-grid">
             <article className="card indicator-card"><span>Total de notificações</span><strong>{totalNotifications ?? "Indisponível"}</strong></article>
             <article className="card indicator-card"><span>Territórios retornados</span><strong>{items.length}</strong></article>
@@ -61,7 +61,7 @@ export function DashboardAnalyticsViews({ items, totalNotifications, coverage, o
         </AnalyticsShell>
       </div>
       <div id="dashboard-view-ranking" hidden={activeView !== "ranking"}>
-        <AnalyticsShell id="dashboard-view-ranking-panel" title="Ranking territorial" description="Comparação dos territórios com registros no recorte selecionado.">
+        <AnalyticsShell id="dashboard-panel-ranking" tabId="dashboard-tab-ranking" title="Ranking territorial" description="Comparação dos territórios com registros no recorte selecionado.">
           <div className="analytics-bars card">
             {sorted.length === 0 && <p className="query-state">Sem registros para este recorte.</p>}
             {sorted.map((item) => {
@@ -74,14 +74,14 @@ export function DashboardAnalyticsViews({ items, totalNotifications, coverage, o
         </AnalyticsShell>
       </div>
       <div id="dashboard-view-coverage" hidden={activeView !== "coverage"}>
-        <AnalyticsShell id="dashboard-view-coverage-panel" title="Cobertura territorial" description="Distribuição entre notificações mapeadas e notificações sem distrito ou bairro oficial associado.">
+        <AnalyticsShell id="dashboard-panel-coverage" tabId="dashboard-tab-coverage" title="Cobertura territorial" description="Distribuição entre notificações mapeadas e notificações sem distrito ou bairro oficial associado.">
           <div className="card coverage-card">
             {coveragePercent === null ? <p>Dados de cobertura indisponíveis para este recorte.</p> : <><div className="coverage-track"><span style={{ width: `${coveragePercent}%` }} /></div><div className="coverage-values"><strong>{mapped} mapeadas ({coveragePercent.toFixed(1)}%)</strong><strong>{unmapped} não mapeadas ({(100 - coveragePercent).toFixed(1)}%)</strong></div><p>Notificações não mapeadas permanecem no total municipal e não significam ausência de casos.</p></>}
           </div>
         </AnalyticsShell>
       </div>
       <div id="dashboard-view-table" hidden={activeView !== "table"}>
-        <AnalyticsShell id="dashboard-view-table-panel" title="Tabela analítica" description="Valores absolutos e participação de cada território no total do recorte.">
+        <AnalyticsShell id="dashboard-panel-table" tabId="dashboard-tab-table" title="Tabela analítica" description="Valores absolutos e participação de cada território no total do recorte.">
           <div className="card analytical-table-wrap"><table className="analytical-table"><caption className="sr-only">Notificações por território</caption><thead><tr><th scope="col">Território</th><th scope="col">Notificações</th><th scope="col">Participação</th></tr></thead><tbody>{sorted.map((item) => <tr key={item.code}><th scope="row">{item.name}</th><td>{item.notificationsTotal}</td><td>{percentage(item.notificationsTotal, total).toFixed(1)}%</td></tr>)}</tbody></table></div>
         </AnalyticsShell>
       </div>

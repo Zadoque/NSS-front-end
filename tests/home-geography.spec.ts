@@ -49,9 +49,9 @@ for (const width of [375, 1440]) {
     await municipality.selectOption("3301009");
     await expect(page.getByRole("heading", { name: "Distritos de Campos dos Goytacazes" })).toBeVisible();
     await expect(page.locator(".map-context")).toContainText(externalBuild ? /\d+ notificações/ : "120 notificações");
-    if (width < 1024) await page.getByRole("tab", { name: "Ranking" }).click();
+    if (width < 1024) await page.getByRole("tablist", { name: "Visualização do painel" }).getByRole("tab", { name: "Ranking" }).click();
     await expect(page.getByRole("heading", { name: "Notificações por distrito" })).toBeVisible();
-    if (width < 1024) await page.getByRole("tab", { name: "Mapa" }).click();
+    if (width < 1024) await page.getByRole("tablist", { name: "Visualização do painel" }).getByRole("tab", { name: "Mapa" }).click();
     await search.fill("maca");
     await expect(municipality.locator("option", { hasText: "Macaé" })).toHaveCount(1);
     await search.fill("macae");

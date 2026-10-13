@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { isDemo, isProdMock } from "./api/sources/dataSource";
 import { mapViews } from "./geography/maps";
 import { useDashboardModel } from "./hooks/useDashboardModel";
@@ -27,12 +27,25 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
   const rankingAvailable = municipal || mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS";
   const selectedTotal = query.data?.totalNotifications;
   useLayoutEffect(() => {
-    if (activeView === "map" && previousView.current !== "map") {
-      window.requestAnimationFrame(() => window.scrollTo(0, viewScrollY.current.map));
-    } else if (previousView.current !== activeView) {
-      window.requestAnimationFrame(() => window.scrollTo(0, viewScrollY.current[activeView]));
-    }
+    if (previousView.current === activeView) return;
+    const target = viewScrollY.current[activeView];
+    let secondFrame = 0;
+    const firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(() => {
+        const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+        window.scrollTo(0, Math.min(target, maxScroll));
+      });
+    });
     previousView.current = activeView;
+    return () => {
+      window.cancelAnimationFrame(firstFrame);
+      if (secondFrame) window.cancelAnimationFrame(secondFrame);
+    };
+  }, [activeView]);
+  useEffect(() => {
+    const saveScroll = () => { viewScrollY.current[activeView] = window.scrollY; };
+    window.addEventListener("scroll", saveScroll, { passive: true });
+    return () => window.removeEventListener("scroll", saveScroll);
   }, [activeView]);
   const changeView = (view: DashboardView) => {
     if (view !== activeView) viewScrollY.current[activeView] = window.scrollY;
@@ -70,7 +83,7 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
           </div>
         </div>
         <DashboardViewSwitcher activeView={activeView} onChange={changeView} />
-        {activeView === "map" ? <div className={`dashboard-workspace mobile-tab-${mobileTab}`}>
+        {activeView === "map" ? <div id="dashboard-panel-map" className={`dashboard-workspace mobile-tab-${mobileTab}`} role="tabpanel" aria-labelledby="dashboard-tab-map" tabIndex={0}>
           <div id="mobile-panel-map" className={`dashboard-grid${territorial && query.isSuccess ? " has-ranking" : ""}`}>
           <section className="card map-card" aria-label="Exploração geográfica">
             <div className="map-heading">

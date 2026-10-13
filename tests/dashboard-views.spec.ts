@@ -13,31 +13,31 @@ test("dashboard view switcher alternates map and analytical views", async ({ pag
   await page.setViewportSize({ width: 1440, height: 1000 });
   await login(page);
 
-  await expect(page.getByRole("button", { name: "Mapa", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("tab", { name: "Visualização: Mapa", exact: true })).toHaveAttribute("aria-selected", "true");
   await expect(page.locator(".map-card")).toBeVisible();
   await page.getByRole("button", { name: /^Sudeste ·/ }).click();
   await page.getByRole("button", { name: /^Rio de Janeiro ·/ }).click();
 
-  await page.getByRole("button", { name: "Indicadores", exact: true }).click();
+  await page.getByRole("tab", { name: "Visualização: Indicadores", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Indicadores do recorte" })).toBeVisible();
   await expect(page.getByText("Total de notificações", { exact: true })).toBeVisible();
   await expect(page.locator(".indicator-card").filter({ hasText: "Total de notificações" }).locator("strong")).toHaveText(String(expectedTotal));
   await expect(page.locator(".map-card")).toBeHidden();
 
-  await page.getByRole("button", { name: "Ranking", exact: true }).click();
+  await page.getByRole("tab", { name: "Visualização: Ranking", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Ranking territorial" })).toBeVisible();
   await expect(page.locator("#dashboard-view-ranking-panel")).toBeVisible();
 
-  await page.getByRole("button", { name: "Cobertura", exact: true }).click();
+  await page.getByRole("tab", { name: "Visualização: Cobertura", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Cobertura territorial" })).toBeVisible();
   await expect(page.locator(".coverage-values")).toContainText(`${expectedTotal} mapeadas`);
 
-  await page.getByRole("button", { name: "Tabela", exact: true }).click();
+  await page.getByRole("tab", { name: "Visualização: Tabela", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Tabela analítica" })).toBeVisible();
   await expect(page.locator(".analytical-table")).toBeVisible();
   await expect(page.locator(".analytical-table tbody tr").filter({ hasText: "Campos dos Goytacazes" }).locator("td").first()).toHaveText(String(expectedCampos));
 
-  await page.getByRole("button", { name: "Mapa", exact: true }).click();
+  await page.getByRole("tab", { name: "Visualização: Mapa", exact: true }).click();
   await expect(page.locator(".map-card")).toBeVisible();
 });
 
@@ -46,8 +46,8 @@ test("restores map scroll position after changing analytical view", async ({ pag
   await login(page);
   await page.evaluate(() => window.scrollTo(0, 420));
   const before = await page.evaluate(() => window.scrollY);
-  await page.getByRole("button", { name: "Indicadores", exact: true }).click();
-  await page.getByRole("button", { name: "Mapa", exact: true }).click();
+  await page.getByRole("tab", { name: "Visualização: Indicadores", exact: true }).click();
+  await page.getByRole("tab", { name: "Visualização: Mapa", exact: true }).click();
   await page.waitForTimeout(100);
   const after = await page.evaluate(() => window.scrollY);
   expect(after).toBeGreaterThanOrEqual(Math.max(0, before - 2));
@@ -56,11 +56,11 @@ test("restores map scroll position after changing analytical view", async ({ pag
 test("restores the scroll position of each analytical view", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 700 });
   await login(page);
-  await page.getByRole("button", { name: "Indicadores", exact: true }).click();
+  await page.getByRole("tab", { name: "Visualização: Indicadores", exact: true }).click();
   await page.evaluate(() => window.scrollTo(0, 260));
   const indicatorsPosition = await page.evaluate(() => window.scrollY);
-  await page.getByRole("button", { name: "Ranking", exact: true }).click();
-  await page.getByRole("button", { name: "Indicadores", exact: true }).click();
+  await page.getByRole("tab", { name: "Visualização: Ranking", exact: true }).click();
+  await page.getByRole("tab", { name: "Visualização: Indicadores", exact: true }).click();
   await page.waitForTimeout(100);
   expect(await page.evaluate(() => window.scrollY)).toBeGreaterThanOrEqual(Math.max(0, indicatorsPosition - 2));
 });
@@ -68,7 +68,7 @@ test("restores the scroll position of each analytical view", async ({ page }) =>
 test("analytical views remain discoverable and usable on mobile", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await login(page);
-  await page.getByRole("button", { name: "Indicadores", exact: true }).click();
+  await page.getByRole("tab", { name: "Visualização: Indicadores", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Indicadores do recorte" })).toBeVisible();
   await expect(page.locator(".dashboard-view-switcher")).toBeVisible();
   await expect(page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).resolves.toBeTruthy();
