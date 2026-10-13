@@ -1,25 +1,21 @@
 import { getJson } from "../api/http";
-import type { EpidemiologyDataSource, EpidemiologyFilters, EpidemiologyRequest, EpidemiologyResponse } from "../types/epidemiology";
+import type { EpidemiologyDataSource, EpidemiologyRequest, EpidemiologyResponse } from "../types/epidemiology";
+import { diseasesResponseSchema, epidemiologyResponseSchema, metadataResponseSchema } from "../features/dashboard/api/epidemiologySchemas";
 
-export function parseCases(value: unknown, filters: EpidemiologyFilters): EpidemiologyResponse {
-  if (!value || typeof value !== "object" || !Array.isArray((value as { items?: unknown }).items)) throw new Error("Resposta epidemiológica inválida.");
-  const rawItems = (value as { items: unknown[] }).items;
-  const items = rawItems.map((item) => {
-    if (!item || typeof item !== "object") throw new Error("Item epidemiológico inválido.");
-    const x = item as Record<string, unknown>;
-    if (typeof x.code === "string" && typeof x.notificationsTotal === "number") return x as unknown as EpidemiologyResponse["items"][number];
-    if (typeof x.cdMun === "string" && typeof x.nmMun === "string" && typeof x.casesTotal === "number" && Number.isSafeInteger(x.casesTotal) && x.casesTotal >= 0) return { code: x.cdMun, name: x.nmMun, notificationsTotal: x.casesTotal, cdMun: x.cdMun, nmMun: x.nmMun, casesTotal: x.casesTotal } as unknown as EpidemiologyResponse["items"][number];
-    throw new Error("Item epidemiológico inválido.");
-  });
+export function parseCases(value: unknown, request: EpidemiologyRequest): EpidemiologyResponse {
+  const parsed = epidemiologyResponseSchema.safeParse(value);
+  if (!parsed.success) throw new Error("Resposta epidemiológica inválida.");
+  const items = parsed.data.items.map((item) => "code" in item
+    ? { code: item.code, name: item.name, notificationsTotal: item.notificationsTotal }
+    : { code: item.cdMun, name: item.nmMun, notificationsTotal: item.casesTotal, cdMun: item.cdMun, nmMun: item.nmMun, casesTotal: item.casesTotal });
   if (new Set(items.map((item) => item.code)).size !== items.length) throw new Error("Territórios duplicados na resposta epidemiológica.");
-  const x = value as Record<string, unknown>;
-  const responseFilters = x.filters && typeof x.filters === "object" ? x.filters as Record<string, unknown> : x;
-  if (responseFilters.year !== undefined && responseFilters.year !== null && responseFilters.year !== filters.year) throw new Error("Filtros divergentes na resposta epidemiológica.");
-  if (responseFilters.month !== undefined && responseFilters.month !== null && responseFilters.month !== filters.month) throw new Error("Filtros divergentes na resposta epidemiológica.");
+  const responseFilters = parsed.data.filters ?? parsed.data;
+  if (responseFilters?.year !== undefined && responseFilters.year !== request.year) throw new Error("Filtros divergentes na resposta epidemiológica.");
+  if (responseFilters?.month !== undefined && responseFilters.month !== request.month) throw new Error("Filtros divergentes na resposta epidemiológica.");
   return {
-    metric: "notifications", geography: "MUNICIPALITY", filters,
-    totalNotifications: typeof x.totalNotifications === "number" ? x.totalNotifications : null,
-    coverage: typeof x.coverage === "object" && x.coverage !== null ? x.coverage as EpidemiologyResponse["coverage"] : { status: "PARTIAL", mappedNotificationsTotal: 0, unmappedNotificationsTotal: 0 },
+    metric: "notifications", geography: request.geography, filters: request,
+    totalNotifications: parsed.data.totalNotifications ?? null,
+    coverage: parsed.data.coverage ?? { status: "PARTIAL", mappedNotificationsTotal: 0, unmappedNotificationsTotal: 0 },
     items,
   };
 }
@@ -27,13 +23,15 @@ export function parseCases(value: unknown, filters: EpidemiologyFilters): Epidem
 export const apiDataSource: EpidemiologyDataSource = {
   async listDiseases() {
     const value = await getJson("/diseases");
-    if (!value || typeof value !== "object" || !Array.isArray((value as { items?: unknown }).items)) throw new Error("Lista de doenças inválida.");
-    return (value as { items: unknown[] }).items.filter((item): item is string => typeof item === "string");
+    const parsed = diseasesResponseSchema.safeParse(value);
+    if (!parsed.success) throw new Error("Lista de doenças inválida.");
+    return parsed.data.items;
   },
   async getMetadata() {
     const value = await getJson("/metadata");
-    if (!value || typeof value !== "object") throw new Error("Metadata inválida.");
-    return value as { availableYears: number[]; availableMonthsByYear: Record<string, number[]> };
+    const parsed = metadataResponseSchema.safeParse(value);
+    if (!parsed.success) throw new Error("Metadata inválida.");
+    return parsed.data;
   },
   async getEpidemiology(request: EpidemiologyRequest): Promise<EpidemiologyResponse> {
     const params = new URLSearchParams({ geography: request.geography, disease: request.disease });

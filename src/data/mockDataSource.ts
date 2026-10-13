@@ -3,6 +3,7 @@ import districtsMap from "./campos-districts.json";
 import neighborhoodsMap from "./campos-neighborhoods.json";
 import { municipalities } from "./coverage";
 import type { EpidemiologyDataSource, EpidemiologyRequest, EpidemiologyResponse, EpidemiologyItem } from "../types/epidemiology";
+import { CAMPOS_MUNICIPALITY_CODE, CAMPOS_SEAT_DISTRICT_CODE } from "../features/dashboard/geography/geographyDomain";
 
 type TerritoryProperties = { territoryId: string; name: string; parentDistrictId?: string };
 const districts = (districtsMap as FeatureCollection<Geometry, TerritoryProperties>).features;
@@ -24,11 +25,11 @@ export const mockDataSource: EpidemiologyDataSource = {
       const items = municipalities.map((item) => ({ code: item.cdMun, name: item.nmMun, notificationsTotal: item.casesTotal }));
       return response(request, items, 265, 265, 0, "AVAILABLE");
     }
-    if (request.geography === "DISTRICT" && request.municipalityCode === "3301009") {
+    if (request.geography === "DISTRICT" && request.municipalityCode === CAMPOS_MUNICIPALITY_CODE) {
       const items = districts.map((feature, index) => ({ code: String(feature.properties?.territoryId), name: String(feature.properties?.name), notificationsTotal: index === 0 ? 27 : index % 3 === 0 ? 0 : 4 + index }));
       return response(request, items, 120, 114, 6, "PARTIAL");
     }
-    if (request.geography === "NEIGHBORHOOD" && request.municipalityCode === "3301009" && request.districtCode === "CG_DIST_SEDE") {
+    if (request.geography === "NEIGHBORHOOD" && request.municipalityCode === CAMPOS_MUNICIPALITY_CODE && request.districtCode === CAMPOS_SEAT_DISTRICT_CODE) {
       const items = neighborhoods.filter((feature) => feature.properties?.parentDistrictId === request.districtCode).map((feature, index) => ({ code: String(feature.properties?.territoryId), name: String(feature.properties?.name), notificationsTotal: index === 0 ? 0 : 1 + (index % 5), parentDistrictId: request.districtCode }));
       const mapped = items.reduce((total, item) => total + item.notificationsTotal, 0);
       return response(request, items, mapped + 2, mapped, 2, "PARTIAL");

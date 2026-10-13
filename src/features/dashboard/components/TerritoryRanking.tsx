@@ -1,4 +1,5 @@
 import type { EpidemiologyItem, GeographySelection } from "../../../types/epidemiology";
+import { CAMPOS_MUNICIPALITY_CODE } from "../geography/geographyDomain";
 
 export function TerritoryRanking({ level, items, onSelect, selected }: { level: "district" | "neighborhood"; items: EpidemiologyItem[]; onSelect: (value: GeographySelection) => void; selected: GeographySelection | null }) {
   const rows = [...items].sort((a, b) => b.notificationsTotal - a.notificationsTotal);
@@ -10,7 +11,7 @@ export function TerritoryRanking({ level, items, onSelect, selected }: { level: 
       <ol>
         {rows.map((item, index) => (
           <li key={item.code}>
-            <button aria-pressed={selected?.code === item.code} onClick={() => onSelect({ level, code: item.code, name: item.name, municipalityCode: "3301009", ...(level === "neighborhood" ? { districtCode: item.parentDistrictId } : {}) })}>
+            <button aria-pressed={selected?.code === item.code} onClick={() => onSelect({ level, code: item.code, name: item.name, municipalityCode: CAMPOS_MUNICIPALITY_CODE, ...(level === "neighborhood" ? { districtCode: item.parentDistrictId } : {}) })}>
               <span className="rank-number">{index + 1}</span><span>{item.name}</span><strong>{item.notificationsTotal} notificações</strong>
             </button>
           </li>

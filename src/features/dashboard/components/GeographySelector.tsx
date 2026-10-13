@@ -1,8 +1,13 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { loadMap } from "../../../data/maps";
-import { demoCoverage } from "../../../data/coverage";
 import type { useMapNavigation } from "../hooks/useMapNavigation";
+import {
+  CAMPOS_MUNICIPALITY_CODE,
+  CAMPOS_SEAT_DISTRICT_CODE,
+  CAMPOS_SEAT_DISTRICT_NAME,
+  geographyCapabilities,
+} from "../geography/geographyDomain";
 
 const regions = [
   ["N", "Norte"],
@@ -52,13 +57,13 @@ export function GeographySelector({
     queryKey: ["map", "CAMPOS_DISTRICTS"],
     queryFn: () => loadMap("CAMPOS_DISTRICTS"),
     staleTime: Infinity,
-    enabled: municipality === "3301009",
+    enabled: municipality === CAMPOS_MUNICIPALITY_CODE,
   });
   const neighborhoodMap = useQuery({
     queryKey: ["map", "CAMPOS_NEIGHBORHOODS", district],
     queryFn: () => loadMap("CAMPOS_NEIGHBORHOODS"),
     staleTime: Infinity,
-    enabled: district === "CG_DIST_SEDE",
+    enabled: district === CAMPOS_SEAT_DISTRICT_CODE,
   });
   const districts = (districtMap.data?.features ?? [])
     .map(({ properties }) => ({
@@ -67,7 +72,7 @@ export function GeographySelector({
     }))
     .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
   const neighborhoods = (neighborhoodMap.data?.features ?? [])
-    .filter(({ properties }) => String(properties?.parentDistrictId) === "CG_DIST_SEDE")
+    .filter(({ properties }) => String(properties?.parentDistrictId) === CAMPOS_SEAT_DISTRICT_CODE)
     .map(({ properties }) => ({
       code: String(properties?.territoryId),
       name: String(properties?.name),
@@ -114,7 +119,7 @@ export function GeographySelector({
               <option
                 key={code}
                 value={code}
-                disabled={!demoCoverage.drilldownEnabled.regions.includes(code)}
+                disabled={!geographyCapabilities.drilldownRegions.includes(code as "SE")}
               >
                 {name}
                 {code !== "SE" ? " · Navegação indisponível" : ""}
@@ -146,7 +151,7 @@ export function GeographySelector({
                   key={code}
                   value={code}
                   disabled={
-                    !demoCoverage.drilldownEnabled.states.includes(code)
+                    !geographyCapabilities.drilldownStates.includes(code as "RJ")
                   }
                 >
                   {name}
@@ -187,7 +192,7 @@ export function GeographySelector({
             ))}
           </select>
         </div>
-        {municipality === "3301009" && (
+        {municipality === CAMPOS_MUNICIPALITY_CODE && (
           <div>
             <label htmlFor="district">Distrito</label>
             <select
@@ -197,9 +202,9 @@ export function GeographySelector({
               onChange={(event) => {
                 const item = districts.find((candidate) => candidate.code === event.target.value);
                 if (item) {
-                  select({ level: "district", ...item, municipalityCode: "3301009" });
+                  select({ level: "district", ...item, municipalityCode: CAMPOS_MUNICIPALITY_CODE });
                 } else if (selectedGeography?.level !== "municipality") {
-                  select({ level: "municipality", code: "3301009", name: "Campos dos Goytacazes" });
+                  select({ level: "municipality", code: CAMPOS_MUNICIPALITY_CODE, name: "Campos dos Goytacazes" });
                 }
               }}
             >
@@ -211,7 +216,7 @@ export function GeographySelector({
             </p>
           </div>
         )}
-        {district === "CG_DIST_SEDE" && (
+        {district === CAMPOS_SEAT_DISTRICT_CODE && (
           <div>
             <label htmlFor="neighborhood">Bairro da notificação</label>
             <select
@@ -221,9 +226,9 @@ export function GeographySelector({
               onChange={(event) => {
                 const item = neighborhoods.find((candidate) => candidate.code === event.target.value);
                 if (item) {
-                  select({ level: "neighborhood", ...item, municipalityCode: "3301009", districtCode: "CG_DIST_SEDE" });
+                  select({ level: "neighborhood", ...item, municipalityCode: CAMPOS_MUNICIPALITY_CODE, districtCode: CAMPOS_SEAT_DISTRICT_CODE });
                 } else {
-                  select({ level: "district", code: "CG_DIST_SEDE", name: "Distrito Sede", municipalityCode: "3301009" });
+                  select({ level: "district", code: CAMPOS_SEAT_DISTRICT_CODE, name: CAMPOS_SEAT_DISTRICT_NAME, municipalityCode: CAMPOS_MUNICIPALITY_CODE });
                 }
               }}
             >

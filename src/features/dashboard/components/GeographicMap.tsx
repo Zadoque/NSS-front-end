@@ -8,8 +8,8 @@ import type {
   MapLevel,
   EpidemiologyItem,
 } from "../../../types/epidemiology";
-import { demoCoverage } from "../../../data/coverage";
 import { caseColor } from "./MapLegend";
+import { canDrillDown, isCoveredMunicipality, CAMPOS_MUNICIPALITY_CODE, CAMPOS_SEAT_DISTRICT_CODE } from "../geography/geographyDomain";
 
 type Props = {
   level: MapLevel;
@@ -186,29 +186,19 @@ export function GeographicMap({
                       code: String(p.code_muni),
                       name: String(p.name_muni),
                     }
-                    : level === "CAMPOS_DISTRICTS"
-                      ? { level: "district", code: String(p.territoryId), name: String(p.name), municipalityCode: "3301009" }
-                      : { level: "neighborhood", code: String(p.territoryId), name: String(p.name), municipalityCode: "3301009", districtCode: String(p.parentDistrictId) };
-              const navigable =
-                geography.level === "region"
-                  ? demoCoverage.drilldownEnabled.regions.includes(
-                      geography.code,
-                    )
-                  : geography.level === "state" &&
-                    demoCoverage.drilldownEnabled.states.includes(
-                      geography.code,
-                    );
+                      : level === "CAMPOS_DISTRICTS"
+                      ? { level: "district", code: String(p.territoryId), name: String(p.name), municipalityCode: CAMPOS_MUNICIPALITY_CODE }
+                      : { level: "neighborhood", code: String(p.territoryId), name: String(p.name), municipalityCode: CAMPOS_MUNICIPALITY_CODE, districtCode: String(p.parentDistrictId) };
+              const navigable = canDrillDown(geography);
               const territorial = geography.level === "district" || geography.level === "neighborhood";
               const covered = territorial
                 ? Boolean(byCode.get(geography.code))
                 :
                 geography.level === "municipality" &&
-                demoCoverage.caseDataAvailableForMunicipalities.includes(
-                  geography.code,
-                );
+                isCoveredMunicipality(geography.code);
               const item = covered ? byCode.get(geography.code) : undefined;
               const districtNeighborhoodUnavailable =
-                geography.level === "district" && geography.code !== "CG_DIST_SEDE";
+                geography.level === "district" && geography.code !== CAMPOS_SEAT_DISTRICT_CODE;
               const detail = districtNeighborhoodUnavailable
                 ? "Detalhamento por bairro da notificação indisponível neste distrito"
                 : navigable

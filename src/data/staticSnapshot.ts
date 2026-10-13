@@ -1,4 +1,5 @@
 import type { EpidemiologyRequest, EpidemiologyResponse } from '../types/epidemiology';
+import { CAMPOS_MUNICIPALITY_CODE, CAMPOS_SEAT_DISTRICT_CODE } from '../features/dashboard/geography/geographyDomain';
 
 export type SnapshotRow = [number, number, string, string | null, string | null, string | null, string | null, string | null, number];
 export type SnapshotManifest = {
@@ -15,8 +16,8 @@ export function aggregateSnapshot(manifest: SnapshotManifest, rows: SnapshotRow[
   const { geography, municipalityCode, districtCode } = request;
   const response: EpidemiologyResponse = { metric: 'notifications', geography, filters: request, totalNotifications: null, coverage: { status: 'UNAVAILABLE', mappedNotificationsTotal: 0, unmappedNotificationsTotal: 0 }, items: [] };
   if (!['MUNICIPALITY','DISTRICT','NEIGHBORHOOD'].includes(geography) ||
-      (geography !== 'MUNICIPALITY' && municipalityCode !== '3301009') ||
-      (geography === 'NEIGHBORHOOD' && districtCode !== 'CG_DIST_SEDE')) return response;
+      (geography !== 'MUNICIPALITY' && municipalityCode !== CAMPOS_MUNICIPALITY_CODE) ||
+      (geography === 'NEIGHBORHOOD' && districtCode !== CAMPOS_SEAT_DISTRICT_CODE)) return response;
   const entries = manifest.catalog.filter(x => x.type === geography && (!municipalityCode || x.municipalityCode === municipalityCode) && (geography !== 'NEIGHBORHOOD' || x.parentDistrictId === districtCode));
   if (!entries.length) return response;
   const counts = new Map(entries.map(x => [x.code, 0]));

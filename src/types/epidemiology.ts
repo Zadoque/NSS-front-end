@@ -7,7 +7,16 @@ export type PeriodFilter = number | "ALL";
 export type EpidemiologyFilters = { disease: string; year: PeriodFilter; month: PeriodFilter; sex?: "M" | "F"; ageBand?: AgeBand };
 export type EpidemiologyRequest = EpidemiologyFilters & { geography: GeographyLevel; municipalityCode?: string; districtCode?: string };
 export type Coverage = { status: CoverageStatus; mappedNotificationsTotal: number; unmappedNotificationsTotal: number };
-export type EpidemiologyItem = { code: string; name: string; notificationsTotal: number; parentDistrictId?: string };
+export type EpidemiologyItem = {
+  code: string;
+  name: string;
+  notificationsTotal: number;
+  parentDistrictId?: string;
+  /** Compatibility fields for the pre-envelope municipal adapter. */
+  cdMun?: string;
+  nmMun?: string;
+  casesTotal?: number;
+};
 export type EpidemiologyResponse = { metric: Metric; geography: GeographyLevel; filters: EpidemiologyFilters; totalNotifications: number | null; coverage: Coverage; items: EpidemiologyItem[] };
 export type MunicipalityCases = EpidemiologyItem & { cdUf: string; nmUf: string; cdMun: string; nmMun: string; casesTotal: number };
 export type MunicipalityCasesResponse = EpidemiologyResponse & { items: MunicipalityCases[] };

@@ -1,6 +1,11 @@
 import { useState } from "react";
-import { demoCoverage } from "../../../data/coverage";
 import type { GeographySelection, MapLevel } from "../../../types/epidemiology";
+import {
+  CAMPOS_MUNICIPALITY_CODE,
+  canDrillDown,
+  camposMunicipalitySelection,
+  mapLevelForSelection,
+} from "../geography/geographyDomain";
 
 type Navigation = {
   mapLevel: MapLevel;
@@ -15,63 +20,22 @@ export function useMapNavigation() {
     setNavigation({ mapLevel, selectedGeography: null });
   }
   function select(selection: GeographySelection) {
-    if (selection.level === "region") {
-      setNavigation({
-        mapLevel: demoCoverage.drilldownEnabled.regions.includes(selection.code)
-          ? "SOUTHEAST_STATES"
-          : "BRAZIL_REGIONS",
-        selectedGeography: demoCoverage.drilldownEnabled.regions.includes(
-          selection.code,
-        )
+    const mapLevel = mapLevelForSelection(selection);
+    setNavigation({
+      mapLevel,
+      selectedGeography:
+        (selection.level === "region" || selection.level === "state") && canDrillDown(selection)
           ? null
           : selection,
-      });
-    } else if (selection.level === "state") {
-      setNavigation({
-        mapLevel: demoCoverage.drilldownEnabled.states.includes(selection.code)
-          ? "RJ_MUNICIPALITIES"
-          : "SOUTHEAST_STATES",
-        selectedGeography: demoCoverage.drilldownEnabled.states.includes(
-          selection.code,
-        )
-          ? null
-          : selection,
-      });
-    } else if (selection.level === "municipality") {
-      if (selection.code === "3301009") {
-        setNavigation({ mapLevel: "CAMPOS_DISTRICTS", selectedGeography: selection });
-      } else {
-        setNavigation({ mapLevel: "RJ_MUNICIPALITIES", selectedGeography: selection });
-      }
-    } else if (selection.level === "district") {
-      // Na V1, o detalhamento por bairro da notificação está disponível
-      // somente para o Distrito Sede. Os demais distritos continuam no mapa
-      // distrital; isso não significa zero nem território não mapeado.
-      setNavigation({
-        mapLevel:
-          selection.code === "CG_DIST_SEDE"
-            ? "CAMPOS_NEIGHBORHOODS"
-            : "CAMPOS_DISTRICTS",
-        selectedGeography: selection,
-      });
-    } else {
-      setNavigation({
-        mapLevel: "CAMPOS_NEIGHBORHOODS",
-        selectedGeography: selection,
-      });
-    }
+    });
   }
   function goBack() {
     const current = navigation.selectedGeography;
-    const camposMunicipality: GeographySelection = {
-      level: "municipality",
-      code: "3301009",
-      name: "Campos dos Goytacazes",
-    };
+    const camposMunicipality = camposMunicipalitySelection();
     const municipality =
       current?.level === "municipality"
         ? current
-        : current?.municipalityCode === "3301009"
+        : current?.municipalityCode === CAMPOS_MUNICIPALITY_CODE
           ? camposMunicipality
           : null;
 

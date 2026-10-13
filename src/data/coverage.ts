@@ -1,11 +1,12 @@
+import { geographyCapabilities } from "../features/dashboard/geography/geographyDomain";
+
+/** Compatibility projection for existing visual components. Domain rules live in geographyDomain. */
 export const demoCoverage = {
-  drilldownEnabled: { regions: ["SE"], states: ["RJ"] },
-  caseDataAvailableForMunicipalities: [
-    "3301009",
-    "3305000",
-    "3302205",
-    "3302403",
-  ],
+  drilldownEnabled: {
+    regions: [...geographyCapabilities.drilldownRegions],
+    states: [...geographyCapabilities.drilldownStates],
+  },
+  caseDataAvailableForMunicipalities: [...geographyCapabilities.coveredMunicipalities],
 };
 export const municipalities = [
   { cdMun: "3301009", nmMun: "Campos dos Goytacazes", casesTotal: 120 },
