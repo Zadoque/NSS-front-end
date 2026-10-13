@@ -1,11 +1,21 @@
 import type { EpidemiologyDataSource } from '../../domain/epidemiologyTypes';
 import { aggregateSnapshot, type SnapshotManifest, type SnapshotRow } from './staticSnapshot';
 const base = `${import.meta.env.BASE_URL}snapshot/`;
+const snapshotHeaders = import.meta.env.MODE === 'prod-mock'
+  ? { 'ngrok-skip-browser-warning': '1' }
+  : undefined;
 let manifestPromise: Promise<SnapshotManifest> | undefined;
 const cache = new Map<string, Promise<SnapshotRow[]>>();
 async function read(path: string): Promise<unknown> {
-  const response = await fetch(base + path, { signal: AbortSignal.timeout(15_000), credentials: 'omit' });
+  const response = await fetch(base + path, {
+    signal: AbortSignal.timeout(15_000),
+    credentials: 'omit',
+    headers: snapshotHeaders,
+  });
   if (!response.ok) throw new Error('Não foi possível carregar o snapshot publicado.');
+  if (!response.headers.get('content-type')?.toLowerCase().includes('application/json')) {
+    throw new Error('O snapshot publicado não retornou JSON válido.');
+  }
   return response.json();
 }
 function manifest() {
