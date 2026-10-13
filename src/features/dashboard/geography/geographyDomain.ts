@@ -1,4 +1,4 @@
-import type { GeographySelection, MapLevel } from "../../../types/epidemiology";
+import type { GeographySelection, MapLevel } from "../domain/epidemiologyTypes";
 
 export const CAMPOS_MUNICIPALITY_CODE = "3301009";
 export const CAMPOS_MUNICIPALITY_NAME = "Campos dos Goytacazes";

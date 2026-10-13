@@ -2,12 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ComposableMap, Geographies, Geography } from "react-simple-maps";
 import { ZoomableGroup } from "react-simple-maps/zoom";
-import { loadMap, mapViews } from "../../../data/maps";
+import { loadMap, mapViews } from "../geography/maps";
 import type {
   GeographySelection,
   MapLevel,
   EpidemiologyItem,
-} from "../../../types/epidemiology";
+} from "../domain/epidemiologyTypes";
 import { caseColor } from "./MapLegend";
 import { canDrillDown, isCoveredMunicipality, CAMPOS_MUNICIPALITY_CODE, CAMPOS_SEAT_DISTRICT_CODE } from "../geography/geographyDomain";
 

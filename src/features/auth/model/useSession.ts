@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { AuthClient, Session } from "../../../auth/realAuth";
+import type { AuthClient, Session } from "./realAuth";
 
 export function useSession(auth: AuthClient, initiallyReady: boolean) {
   const [session, setSession] = useState<Session | null>(auth.getSession());

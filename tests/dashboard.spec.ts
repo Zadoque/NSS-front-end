@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { parseCases } from "../src/data/apiDataSource";
+import { parseCases } from "../src/features/dashboard/api/sources/apiDataSource";
 import { caseColor } from "../src/features/dashboard/components/MapLegend";
 import { login } from "./helpers";
 

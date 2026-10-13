@@ -1,6 +1,6 @@
 import { useId } from "react";
-import { isProdMock } from "../../../data/dataSource";
-import type { EpidemiologyFilters } from "../../../types/epidemiology";
+import { isProdMock } from "../api/sources/dataSource";
+import type { EpidemiologyFilters } from "../domain/epidemiologyTypes";
 import { MapLegend } from "./MapLegend";
 export type FilterPanelProps = {
   filters: EpidemiologyFilters;

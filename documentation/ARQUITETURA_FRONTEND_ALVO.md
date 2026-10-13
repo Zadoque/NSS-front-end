@@ -548,3 +548,153 @@ Gate de autorização para novas telas
 ```
 
 Esse planejamento mantém o `prod-mock` utilizável durante toda a organização, preserva as rotas que o Java fornecerá na produção e evita que novas telas consolidem novamente as responsabilidades que estão sendo removidas.
+
+## 11. Organização efetivamente aplicada em `src`
+
+Após a refatoração, a organização adotada é **feature-first híbrida, com
+domínio isolado onde há regras complexas**. A árvore abaixo representa o
+estado implementado; a árvore de referência anterior neste documento é o alvo
+completo para etapas futuras.
+
+```text
+src/
+  app/
+    App.tsx
+    router/
+      AppRoutes.tsx
+      guards.tsx
+
+  features/
+    auth/
+      model/
+        mockAuth.ts
+        realAuth.ts
+        useSession.ts
+      pages/
+        LoginPage.tsx
+        FirstAccessPage.tsx
+        ForgotPasswordPage.tsx
+        ResetPasswordPage.tsx
+
+    dashboard/
+      api/
+        epidemiologySchemas.ts
+        sources/
+          apiDataSource.ts
+          dataSource.ts
+          mockDataSource.ts
+          staticDataSource.ts
+          staticSnapshot.ts
+      components/
+      data/
+        assets/
+          campos-districts.json
+          campos-neighborhoods.json
+          cidac-campos-territories.json
+      domain/
+        epidemiologyTypes.ts
+      geography/
+        geographyDomain.ts
+        coverage.ts
+        maps.ts
+      hooks/
+        useDashboardModel.ts
+        useEpidemiologyQuery.ts
+        useMapNavigation.ts
+      DashboardPage.tsx
+
+    admin-users/
+      pages/AdminUsersPage.tsx
+
+    home/
+      pages/HomePage.tsx
+
+  shared/
+    api/http.ts
+    types/                         # reservado para tipos realmente globais
+
+  index.css
+  main.tsx
+```
+
+### Significado de cada pasta
+
+#### `app/`
+
+É a composição da aplicação. Contém bootstrap de rotas, guards e montagem das
+features. Não deve conter regras epidemiológicas ou códigos territoriais.
+
+#### `features/`
+
+Representa capacidades de negócio percebidas pelo usuário. Cada feature é uma
+unidade que pode evoluir sem espalhar sua regra por toda a aplicação.
+
+- `auth`: sessão e fluxos de autenticação;
+- `dashboard`: exploração territorial, filtros, mapa e rankings;
+- `admin-users`: administração de usuários;
+- `home`: apresentação institucional.
+
+#### `features/dashboard/domain/`
+
+Contém os modelos do domínio epidemiológico. `epidemiologyTypes.ts` define os
+tipos que circulam entre fonte de dados, hooks e componentes. Não deve conter
+JSX nem `fetch`.
+
+#### `features/dashboard/geography/`
+
+É o domínio geográfico do dashboard. Centraliza códigos, hierarquia, cobertura,
+transições e carregamento de mapas. Componentes não devem repetir essas regras.
+
+#### `features/dashboard/api/`
+
+É a fronteira de dados da feature. Schemas Zod validam respostas externas e os
+adapters em `sources/` implementam API Java, mock sintético e snapshot estático
+com o mesmo contrato.
+
+#### `features/*/pages/`
+
+Contém páginas de rota. Páginas conectam hooks/modelos a componentes e devem
+evitar regras de transporte ou domínio diretamente no JSX.
+
+#### `features/*/components/`
+
+Contém componentes específicos da feature. Eles recebem props, exibem estados e
+disparam eventos; não escolhem a fonte de dados nem conhecem endpoints.
+
+#### `features/*/hooks/` e `model/`
+
+Hooks coordenam estado React e queries. `model/` é usado para estado e
+capacidades próprias da feature, como o cliente de sessão da autenticação.
+
+#### `features/dashboard/data/`
+
+Contém assets JSON específicos do dashboard. Não é uma camada de domínio nem
+um local para regras de negócio.
+
+#### `shared/`
+
+Contém infraestrutura reutilizável por mais de uma feature. Atualmente o
+cliente HTTP está em `shared/api/http.ts`. A pasta `shared/types` fica
+intencionalmente pequena: tipos de epidemiologia não são globais, por isso
+foram movidos para o domínio do dashboard.
+
+### Regra de dependência
+
+```text
+app → features → shared
+                  ↑
+          adapters/sources
+```
+
+Uma feature pode utilizar `shared`, mas `shared` não deve importar uma feature.
+Assets e adapters podem ser usados pela feature correspondente; regras de
+domínio permanecem no domínio da feature. Essa regra evita que `data` se torne
+um segundo lugar para regras territoriais.
+
+### O que ainda é uma etapa posterior
+
+`admin-users` já foi separado da pasta técnica anterior, mas ainda precisa
+receber `api/`, `model/` e schemas próprios. Da mesma forma, as páginas de
+autenticação ainda chamam o cliente HTTP diretamente; a próxima etapa deverá
+criar `features/auth/api/` e retirar esse detalhe das páginas. Essas pendências
+não invalidam o padrão escolhido, mas indicam onde continuar a refatoração.

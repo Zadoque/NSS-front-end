@@ -1,6 +1,6 @@
-import { getJson } from "../api/http";
-import type { EpidemiologyDataSource, EpidemiologyRequest, EpidemiologyResponse } from "../types/epidemiology";
-import { diseasesResponseSchema, epidemiologyResponseSchema, metadataResponseSchema } from "../features/dashboard/api/epidemiologySchemas";
+import { getJson } from "../../../../shared/api/http";
+import type { EpidemiologyDataSource, EpidemiologyRequest, EpidemiologyResponse } from "../../domain/epidemiologyTypes";
+import { diseasesResponseSchema, epidemiologyResponseSchema, metadataResponseSchema } from "../epidemiologySchemas";
 
 export function parseCases(value: unknown, request: EpidemiologyRequest): EpidemiologyResponse {
   const parsed = epidemiologyResponseSchema.safeParse(value);

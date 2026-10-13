@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { loadMap } from "../../../data/maps";
+import { loadMap } from "../geography/maps";
 import type { useMapNavigation } from "../hooks/useMapNavigation";
 import {
   CAMPOS_MUNICIPALITY_CODE,

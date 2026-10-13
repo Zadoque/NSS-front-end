@@ -1,9 +1,9 @@
 import type { FeatureCollection, Geometry } from "geojson";
-import districtsMap from "./campos-districts.json";
-import neighborhoodsMap from "./campos-neighborhoods.json";
-import { municipalities } from "./coverage";
-import type { EpidemiologyDataSource, EpidemiologyRequest, EpidemiologyResponse, EpidemiologyItem } from "../types/epidemiology";
-import { CAMPOS_MUNICIPALITY_CODE, CAMPOS_SEAT_DISTRICT_CODE } from "../features/dashboard/geography/geographyDomain";
+import districtsMap from "../../data/assets/campos-districts.json";
+import neighborhoodsMap from "../../data/assets/campos-neighborhoods.json";
+import { municipalities } from "../../geography/coverage";
+import type { EpidemiologyDataSource, EpidemiologyRequest, EpidemiologyResponse, EpidemiologyItem } from "../../domain/epidemiologyTypes";
+import { CAMPOS_MUNICIPALITY_CODE, CAMPOS_SEAT_DISTRICT_CODE } from "../../geography/geographyDomain";
 
 type TerritoryProperties = { territoryId: string; name: string; parentDistrictId?: string };
 const districts = (districtsMap as FeatureCollection<Geometry, TerritoryProperties>).features;

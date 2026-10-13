@@ -1,4 +1,4 @@
-import { geographyCapabilities } from "../features/dashboard/geography/geographyDomain";
+import { geographyCapabilities } from "./geographyDomain";
 
 /** Compatibility projection for existing visual components. Domain rules live in geographyDomain. */
 export const demoCoverage = {

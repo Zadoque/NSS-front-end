@@ -1,4 +1,4 @@
-import type { GeographySelection, MapLevel } from "../../../types/epidemiology";
+import type { GeographySelection, MapLevel } from "../domain/epidemiologyTypes";
 const levels: MapLevel[] = [
   "BRAZIL_REGIONS",
   "SOUTHEAST_STATES",

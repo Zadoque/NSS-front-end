@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
-import type { EpidemiologyRequest } from '../../src/types/epidemiology';
+import type { EpidemiologyRequest } from '../../src/features/dashboard/domain/epidemiologyTypes';
 const oracle: {request:EpidemiologyRequest;expected:{items:{code:string;count:number}[]}}[] = JSON.parse(readFileSync(new URL('./snapshot-oracle.json', import.meta.url),'utf8'));
 const manifest = JSON.parse(readFileSync(new URL('../../data/static-snapshot/manifest.json', import.meta.url),'utf8'));
 for (const disease of ['CHIK','DENG','FMAC','TOXC','TOXG','ZIKA']) test(`snapshot ${disease}: municípios → distritos → sede e retorno`, async ({page}) => {

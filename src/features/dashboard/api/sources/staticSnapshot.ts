@@ -1,5 +1,5 @@
-import type { EpidemiologyRequest, EpidemiologyResponse } from '../types/epidemiology';
-import { CAMPOS_MUNICIPALITY_CODE, CAMPOS_SEAT_DISTRICT_CODE } from '../features/dashboard/geography/geographyDomain';
+import type { EpidemiologyRequest, EpidemiologyResponse } from '../../domain/epidemiologyTypes';
+import { CAMPOS_MUNICIPALITY_CODE, CAMPOS_SEAT_DISTRICT_CODE } from '../../geography/geographyDomain';
 
 export type SnapshotRow = [number, number, string, string | null, string | null, string | null, string | null, string | null, number];
 export type SnapshotManifest = {

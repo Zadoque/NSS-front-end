@@ -1,5 +1,5 @@
-import { isDemo, isProdMock } from "../../data/dataSource";
-import { mapViews } from "../../data/maps";
+import { isDemo, isProdMock } from "./api/sources/dataSource";
+import { mapViews } from "./geography/maps";
 import { useDashboardModel } from "./hooks/useDashboardModel";
 import { GeographicMap } from "./components/GeographicMap";
 import { GeographyBreadcrumb } from "./components/GeographyBreadcrumb";

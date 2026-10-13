@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { dataSource } from "../../../data/dataSource";
-import type { EpidemiologyRequest } from "../../../types/epidemiology";
+import { dataSource } from "../api/sources/dataSource";
+import type { EpidemiologyRequest } from "../domain/epidemiologyTypes";
 export function useEpidemiologyQuery(request: EpidemiologyRequest) {
   return useQuery({
     queryKey: ["epidemiology", request],

@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { requestJson } from "../../api/http";
+import { requestJson } from "../../../shared/api/http";
 
 export function ResetPasswordPage({ onDone }: { onDone: () => void }) {
   const token = new URLSearchParams(window.location.search).get("token") || ""; const [email, setEmail] = useState(""); const [password, setPassword] = useState(""); const [confirmation, setConfirmation] = useState(""); const [error, setError] = useState(""); const [done, setDone] = useState(false);

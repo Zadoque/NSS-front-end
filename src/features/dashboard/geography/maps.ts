@@ -1,5 +1,5 @@
 import type { FeatureCollection } from "geojson";
-import type { MapLevel } from "../types/epidemiology";
+import type { MapLevel } from "../domain/epidemiologyTypes";
 export const mapViews: Record<
   MapLevel,
   { file: string; title: string; center: [number, number]; scale: number }

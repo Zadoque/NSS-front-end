@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { requestJson } from "../../api/http";
+import { requestJson } from "../../../shared/api/http";
 
 export function ForgotPasswordPage({ onBack }: { onBack: () => void }) {
   const [email, setEmail] = useState(""); const [sent, setSent] = useState(false); const [error, setError] = useState("");

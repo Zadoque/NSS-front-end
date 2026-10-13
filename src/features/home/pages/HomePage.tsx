@@ -1,4 +1,4 @@
-import { isDemo, isProdMock } from "../../data/dataSource";
+import { isDemo, isProdMock } from "../../dashboard/api/sources/dataSource";
 export function HomePage() {
   return (
     <>

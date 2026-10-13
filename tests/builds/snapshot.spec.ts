@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { test, expect } from '@playwright/test';
-import { aggregateSnapshot, type SnapshotManifest, type SnapshotRow } from '../../src/data/staticSnapshot';
-import type { EpidemiologyRequest } from '../../src/types/epidemiology';
+import { aggregateSnapshot, type SnapshotManifest, type SnapshotRow } from '../../src/features/dashboard/api/sources/staticSnapshot';
+import type { EpidemiologyRequest } from '../../src/features/dashboard/domain/epidemiologyTypes';
 const root = new URL('../../data/static-snapshot/', import.meta.url);
 const manifest: SnapshotManifest = JSON.parse(readFileSync(new URL('manifest.json', root), 'utf8'));
 const oracle: { request: EpidemiologyRequest; expected: { total: number; mapped: number; items: {code:string;count:number}[] } }[] = JSON.parse(readFileSync(new URL('./snapshot-oracle.json', import.meta.url), 'utf8'));

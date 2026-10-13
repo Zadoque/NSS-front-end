@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { requestJson, getJson } from "../../api/http";
+import { requestJson, getJson } from "../../../shared/api/http";
 
 type User = { id: number; email: string; name?: string; active: boolean };
 type Invite = { id: number; email: string; expiresAt: string };

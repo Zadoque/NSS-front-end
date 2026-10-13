@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { Session } from "../../auth/realAuth";
+import type { Session } from "../../features/auth/model/realAuth";
 
 export function RequireSession({ session, fallback, children }: { session: Session | null; fallback: ReactNode; children: ReactNode }) {
   return session ? children : fallback;

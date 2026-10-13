@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { isDemo } from "../../../data/dataSource";
-import { mapViews } from "../../../data/maps";
-import type { EpidemiologyFilters } from "../../../types/epidemiology";
+import { isDemo } from "../api/sources/dataSource";
+import { mapViews } from "../geography/maps";
+import type { EpidemiologyFilters } from "../domain/epidemiologyTypes";
 import { useDiseases, useEpidemiologyQuery, useMetadata } from "./useEpidemiologyQuery";
 import { useMapNavigation } from "./useMapNavigation";
 import { isCoveredMunicipality, CAMPOS_SEAT_DISTRICT_CODE, territoryScope } from "../geography/geographyDomain";

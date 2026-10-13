@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { GeographySelection, MapLevel } from "../../../types/epidemiology";
+import type { GeographySelection, MapLevel } from "../domain/epidemiologyTypes";
 import {
   CAMPOS_MUNICIPALITY_CODE,
   canDrillDown,

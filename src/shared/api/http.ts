@@ -1,4 +1,4 @@
-import { realAuth } from "../auth/realAuth";
+import { realAuth } from "../../features/auth/model/realAuth";
 
 export async function getJson(path: string, allowRefresh = true): Promise<unknown> {
   const base = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");

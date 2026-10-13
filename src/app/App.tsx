@@ -1,7 +1,7 @@
 import { useEffect, useState, type MouseEvent } from "react";
-import { mockAuth } from "../auth/mockAuth";
-import { realAuth, type AuthClient } from "../auth/realAuth";
-import { isDemo, isProdMock } from "../data/dataSource";
+import { mockAuth } from "../features/auth/model/mockAuth";
+import { realAuth, type AuthClient } from "../features/auth/model/realAuth";
+import { isDemo, isProdMock } from "../features/dashboard/api/sources/dataSource";
 import { AppRoutes } from "./router/AppRoutes";
 import { useSession } from "../features/auth/model/useSession";
 

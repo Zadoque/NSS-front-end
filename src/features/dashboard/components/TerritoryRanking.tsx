@@ -1,4 +1,4 @@
-import type { EpidemiologyItem, GeographySelection } from "../../../types/epidemiology";
+import type { EpidemiologyItem, GeographySelection } from "../domain/epidemiologyTypes";
 import { CAMPOS_MUNICIPALITY_CODE } from "../geography/geographyDomain";
 
 export function TerritoryRanking({ level, items, onSelect, selected }: { level: "district" | "neighborhood"; items: EpidemiologyItem[]; onSelect: (value: GeographySelection) => void; selected: GeographySelection | null }) {

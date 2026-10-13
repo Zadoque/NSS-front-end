@@ -1,8 +1,8 @@
-import { municipalities } from "../../../data/coverage";
+import { municipalities } from "../geography/coverage";
 import type {
   GeographySelection,
   EpidemiologyItem,
-} from "../../../types/epidemiology";
+} from "../domain/epidemiologyTypes";
 export function MunicipalityRanking({
   items,
   onSelect,

@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
-import type { AuthClient } from "../../auth/realAuth";
-import { isProdMock } from "../../data/dataSource";
+import type { AuthClient } from "../model/realAuth";
+import { isProdMock } from "../../dashboard/api/sources/dataSource";
 
 export function LoginPage({ auth, demo, onSuccess }: { auth: AuthClient; demo: boolean; onSuccess: () => void }) {
   const [email, setEmail] = useState(demo ? "demo@nss.local" : "");

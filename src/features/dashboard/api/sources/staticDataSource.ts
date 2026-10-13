@@ -1,4 +1,4 @@
-import type { EpidemiologyDataSource } from '../types/epidemiology';
+import type { EpidemiologyDataSource } from '../../domain/epidemiologyTypes';
 import { aggregateSnapshot, type SnapshotManifest, type SnapshotRow } from './staticSnapshot';
 const base = `${import.meta.env.BASE_URL}snapshot/`;
 let manifestPromise: Promise<SnapshotManifest> | undefined;

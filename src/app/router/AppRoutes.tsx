@@ -1,11 +1,11 @@
-import type { AuthClient, Session } from "../../auth/realAuth";
-import { AdminUsersPage } from "../../features/admin/AdminUsersPage";
+import type { AuthClient, Session } from "../../features/auth/model/realAuth";
+import { AdminUsersPage } from "../../features/admin-users/pages/AdminUsersPage";
 import { DashboardPage } from "../../features/dashboard/DashboardPage";
-import { FirstAccessPage } from "../../features/auth/FirstAccessPage";
-import { ForgotPasswordPage } from "../../features/auth/ForgotPasswordPage";
-import { LoginPage } from "../../features/auth/LoginPage";
-import { ResetPasswordPage } from "../../features/auth/ResetPasswordPage";
-import { HomePage } from "../../features/home/HomePage";
+import { FirstAccessPage } from "../../features/auth/pages/FirstAccessPage";
+import { ForgotPasswordPage } from "../../features/auth/pages/ForgotPasswordPage";
+import { LoginPage } from "../../features/auth/pages/LoginPage";
+import { ResetPasswordPage } from "../../features/auth/pages/ResetPasswordPage";
+import { HomePage } from "../../features/home/pages/HomePage";
 import { RequirePermission, RequireSession } from "./guards";
 
 type Props = {
