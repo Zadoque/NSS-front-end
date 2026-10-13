@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { isDemo, isProdMock } from "./api/sources/dataSource";
 import { mapViews } from "./geography/maps";
 import { useDashboardModel } from "./hooks/useDashboardModel";
@@ -16,8 +16,21 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
   const { navigation, mapLevel, selectedGeography, select, navigate, goBack, metadata, filters, query, items, municipal, territorial, selectionInfo, panel } = useDashboardModel();
   const [mobileTab, setMobileTab] = useState<MobileDashboardTab>("map");
   const [activeView, setActiveView] = useState<DashboardView>("map");
+  const mapScrollY = useRef(0);
+  const previousView = useRef<DashboardView>("map");
   const rankingAvailable = municipal || mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS";
   const selectedTotal = query.data?.totalNotifications;
+  useLayoutEffect(() => {
+    if (activeView === "map" && previousView.current !== "map") {
+      window.requestAnimationFrame(() => window.scrollTo(0, mapScrollY.current));
+    }
+    previousView.current = activeView;
+  }, [activeView]);
+  const changeView = (view: DashboardView) => {
+    if (activeView === "map" && view !== "map") mapScrollY.current = window.scrollY;
+    setActiveView(view);
+    if (view === "map") setMobileTab("map");
+  };
   return (
     <>
       <header className="header">
@@ -48,7 +61,7 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
             <GeographySelector key={mapLevel} navigation={navigation} />
           </div>
         </div>
-        <DashboardViewSwitcher activeView={activeView} onChange={(view) => { setActiveView(view); if (view === "map") setMobileTab("map"); }} />
+        <DashboardViewSwitcher activeView={activeView} onChange={changeView} />
         {activeView === "map" ? <div className={`dashboard-workspace mobile-tab-${mobileTab}`}>
           <div id="mobile-panel-map" className={`dashboard-grid${territorial && query.isSuccess ? " has-ranking" : ""}`}>
           <section className="card map-card" aria-label="Exploração geográfica">

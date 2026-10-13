@@ -41,6 +41,18 @@ test("dashboard view switcher alternates map and analytical views", async ({ pag
   await expect(page.locator(".map-card")).toBeVisible();
 });
 
+test("restores map scroll position after changing analytical view", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 700 });
+  await login(page);
+  await page.evaluate(() => window.scrollTo(0, 420));
+  const before = await page.evaluate(() => window.scrollY);
+  await page.getByRole("button", { name: "Indicadores", exact: true }).click();
+  await page.getByRole("button", { name: "Mapa", exact: true }).click();
+  await page.waitForTimeout(100);
+  const after = await page.evaluate(() => window.scrollY);
+  expect(after).toBeGreaterThanOrEqual(Math.max(0, before - 2));
+});
+
 test("analytical views remain discoverable and usable on mobile", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await login(page);
