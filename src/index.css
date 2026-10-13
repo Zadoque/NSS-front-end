@@ -72,10 +72,10 @@
   .admin-row { @apply flex items-center justify-between gap-3 border-b border-[#e4ebef] py-3; }
   .admin-row small { @apply text-[#71828c]; }
   .admin-section { @apply mt-5 p-5; }
-  .geo { @apply cursor-pointer outline-none; vector-effect: non-scaling-stroke; }
-  .geo:hover, .geo:focus { @apply stroke-[#b4660b] brightness-[0.92]; stroke-width: 2.5; }
-  .geo.selected { @apply stroke-nss-blue; stroke-width: 3; }
-  .geo:focus-visible { @apply stroke-[#b4660b]; stroke-width: 3.5; }
+  .geo { @apply cursor-pointer outline-none [vector-effect:non-scaling-stroke]; }
+  .geo:hover, .geo:focus { @apply stroke-[#b4660b] brightness-[0.92] [stroke-width:2.5]; }
+  .geo.selected { @apply stroke-nss-blue [stroke-width:3]; }
+  .geo:focus-visible { @apply stroke-[#b4660b] [stroke-width:3.5]; }
   .map-placeholder { @apply grid min-h-[350px] place-content-center gap-4; }
   .map-hint { @apply min-h-[55px] px-5 py-2 text-center text-sm text-[#4a6475]; }
   .map-context { @apply border-t border-[#e3eaee] bg-[#f7fafb] px-[22px] py-4 text-[15px]; }
