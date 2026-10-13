@@ -59,6 +59,32 @@
   .map-controls button:hover { @apply bg-[#edf6f2]; }
   .map-controls span { @apply ml-1.5 text-sm text-nss-muted; }
   .header-action { @apply ml-auto border border-nss-border bg-white px-3 py-2 text-nss-blue; }
+  .dashboard-view-switcher { @apply mb-6 flex flex-wrap items-center gap-3 rounded-xl border border-[#d7e2e8] bg-white p-3 shadow-[0_3px_14px_#1b3d5512]; }
+  .dashboard-view-tabs { @apply flex min-w-0 flex-1 flex-wrap gap-1.5; }
+  .dashboard-view-tabs button { @apply min-h-10 rounded-lg px-3 text-sm font-semibold text-nss-muted transition-colors; }
+  .dashboard-view-tabs button:hover { @apply bg-[#edf6f2] text-nss-blue; }
+  .dashboard-view-tabs button[aria-pressed="true"] { @apply bg-nss-blue text-white; }
+  .dashboard-analytics-view { @apply grid gap-5; }
+  .dashboard-analytics-view > .page-intro { @apply mb-0; }
+  .indicator-grid { @apply grid gap-3 sm:grid-cols-2 xl:grid-cols-4; }
+  .indicator-card { @apply grid gap-1 p-5; }
+  .indicator-card span, .indicator-card small { @apply text-sm text-nss-muted; }
+  .indicator-card strong { @apply break-words text-2xl text-nss-ink; }
+  .analytics-bars { @apply grid gap-2 p-4; }
+  .analytics-bar { @apply grid min-h-12 grid-cols-[minmax(110px,1.2fr)_minmax(100px,3fr)_auto] items-center gap-3 rounded-lg px-2 text-left hover:bg-[#f1f7f5]; }
+  .analytics-bar.selected { @apply bg-[#e8f3ef] ring-2 ring-[#8cc3ac]; }
+  .analytics-bar-label { @apply min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-sm font-semibold; }
+  .analytics-bar-track, .coverage-track { @apply block h-3 overflow-hidden rounded-full bg-[#e6edf0]; }
+  .analytics-bar-track span, .coverage-track span { @apply block h-full rounded-full bg-nss-blue; }
+  .analytics-bar strong { @apply text-sm tabular-nums; }
+  .coverage-card { @apply grid gap-4 p-5; }
+  .coverage-track { @apply h-5; }
+  .coverage-track span { @apply bg-[#2e8b68]; }
+  .coverage-values { @apply flex flex-wrap justify-between gap-3 text-sm; }
+  .analytical-table-wrap { @apply overflow-x-auto; }
+  .analytical-table { @apply w-full min-w-[520px] border-collapse text-left text-sm; }
+  .analytical-table th, .analytical-table td { @apply border-b border-[#e0e7eb] px-4 py-3; }
+  .analytical-table thead th { @apply bg-[#f6f9fa] text-xs uppercase tracking-[0.08em] text-nss-muted; }
   .header-login { @apply ml-auto text-[13px] font-bold; }
   .auth-page { @apply grid min-h-[100dvh] place-items-center p-5; }
   .auth-card { @apply w-full max-w-[460px] p-[30px]; }
@@ -158,6 +184,11 @@
 @media (max-width: 767px) {
   .header { @apply flex-wrap; }
   .header > div:nth-child(2) { @apply min-w-0 flex-1; }
+  .dashboard-view-switcher { @apply items-start; }
+  .dashboard-view-switcher > .section-label { @apply w-full; }
+  .dashboard-view-tabs { @apply grid grid-cols-2; }
+  .dashboard-view-tabs button { @apply w-full px-2 text-xs; }
+  .analytics-bar { @apply grid-cols-[minmax(90px,1fr)_minmax(70px,1.5fr)_auto] gap-2; }
 }
 
 @media (min-width: 1024px) {

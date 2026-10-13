@@ -10,9 +10,12 @@ import { MunicipalityRanking } from "./components/MunicipalityRanking";
 import { TerritoryRanking } from "./components/TerritoryRanking";
 import { MobileDashboardContext } from "./components/MobileDashboardContext";
 import { MobileDashboardNav, type MobileDashboardTab } from "./components/MobileDashboardNav";
+import { DashboardViewSwitcher, type DashboardView } from "./components/DashboardViewSwitcher";
+import { DashboardAnalyticsViews } from "./components/DashboardAnalyticsViews";
 export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onAdmin?: () => void }) {
   const { navigation, mapLevel, selectedGeography, select, navigate, goBack, metadata, filters, query, items, municipal, territorial, selectionInfo, panel } = useDashboardModel();
   const [mobileTab, setMobileTab] = useState<MobileDashboardTab>("map");
+  const [activeView, setActiveView] = useState<DashboardView>("map");
   const rankingAvailable = municipal || mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS";
   const selectedTotal = query.data?.totalNotifications;
   return (
@@ -34,11 +37,12 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
         <div className="page-intro">
           <div className="section-label">TERRITÓRIO E SAÚDE</div>
           <h1>Um olhar sobre o território</h1>
-          <p>
+        <p>
             Explore o mapa e consulte as notificações por período nos municípios cobertos.
           </p>
         </div>
-        <div className={`dashboard-workspace mobile-tab-${mobileTab}`}>
+        <DashboardViewSwitcher activeView={activeView} onChange={(view) => { setActiveView(view); if (view === "map") setMobileTab("map"); }} />
+        {activeView === "map" ? <div className={`dashboard-workspace mobile-tab-${mobileTab}`}>
           <MobileDashboardContext filters={filters} selectionName={selectedGeography?.name ?? mapViews[mapLevel].title} total={selectedTotal} pending={query.isPending} />
           <div className="mobile-map-navigation">
             <GeographyBreadcrumb level={mapLevel} navigate={navigate} selected={selectedGeography} />
@@ -161,7 +165,7 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
               : "Dados fornecidos pela API epidemiológica · V1"}
           </span>
         </footer>
-        </div>
+        </div> : <DashboardAnalyticsViews activeView={activeView} items={items} totalNotifications={query.data?.totalNotifications} coverage={query.data?.coverage} onSelect={select} selected={selectedGeography} />}
       </main>
     </>
   );
