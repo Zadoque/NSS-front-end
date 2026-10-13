@@ -34,6 +34,9 @@ export function FilterDrawer({ panel }: { panel: FilterPanelProps }) {
         onClick={(event) => {
           if (event.target === event.currentTarget) close();
         }}
+        onPointerDown={(event) => {
+          if (event.target === event.currentTarget) close();
+        }}
       >
         <div className="drawer-body">
           <button className="drawer-close" onClick={close} autoFocus>
