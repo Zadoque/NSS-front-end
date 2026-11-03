@@ -35,15 +35,13 @@ for (const width of [375, 1440]) {
     await expect(page.getByLabel("Estado", { exact: true })).toBeDisabled();
     await page.getByLabel("Região", { exact: true }).selectOption("SE");
     await expect(page.locator(".geo")).toHaveCount(4);
-    await page.getByLabel("Estado", { exact: true }).selectOption("RJ");
+    await page.getByLabel("Estado", { exact: true }).selectOption("33");
     await expect(page.locator(".geo")).toHaveCount(92);
     const search = page.getByLabel("Pesquisar município");
     const municipality = page.getByLabel("Município", { exact: true });
     await search.fill("cam");
     await municipality.selectOption("3301009");
-    await expect(page.getByRole("heading", { name: "Distritos de Campos dos Goytacazes" })).toBeVisible();
-    await expect(page.locator(".map-context")).toContainText("120 notificações");
-    await expect(page.getByRole("heading", { name: "Notificações por distrito" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Bairros da notificação" })).toBeVisible();
     await search.fill("maca");
     await expect(municipality.locator("option", { hasText: "Macaé" })).toHaveCount(1);
     await search.fill("macae");
@@ -82,13 +80,12 @@ test("map and ranking update selectors, including unavailable areas", async ({
   await login(page);
   await page.getByRole("button", { name: /^Norte ·/ }).click();
   await expect(page.getByLabel("Região", { exact: true })).toHaveValue("N");
-  await page.getByRole("button", { name: /^Sudeste ·/ }).click();
+  await expect(page.locator(".geo")).toHaveCount(7);
+  await page.getByLabel("Região", { exact: true }).selectOption("SE");
   await expect(page.getByLabel("Região", { exact: true })).toHaveValue("SE");
-  await page.getByRole("button", { name: /^São Paulo ·/ }).click();
-  await expect(page.getByLabel("Estado", { exact: true })).toHaveValue("SP");
-  await page.getByRole("button", { name: /^Rio de Janeiro ·/ }).click();
-  await expect(page.getByLabel("Estado", { exact: true })).toHaveValue("RJ");
-  await page.getByRole("button", { name: /^Campos dos Goytacazes ·/ }).click();
+  await page.getByLabel("Estado", { exact: true }).selectOption("33");
+  await expect(page.getByLabel("Estado", { exact: true })).toHaveValue("33");
+  await page.getByLabel("Município", { exact: true }).selectOption("3301009");
   await expect(page.getByLabel("Município", { exact: true })).toHaveValue(
     "3301009",
   );
