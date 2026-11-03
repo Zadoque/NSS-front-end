@@ -32,11 +32,13 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
       ? filterInput.disease
       : (diseases.data?.[0] ?? ""),
   };
-  const geography = mapLevel === "CAMPOS_DISTRICTS"
+  const geography = mapLevel === "NATIONAL_STATES"
+    ? "STATE"
+    : mapLevel === "CAMPOS_DISTRICTS"
     ? "DISTRICT"
-    : mapLevel === "CAMPOS_NEIGHBORHOODS"
+    : mapLevel === "CAMPOS_NEIGHBORHOODS" || mapLevel === "MUNICIPALITY_NEIGHBORHOODS"
       ? "NEIGHBORHOOD"
-      : mapLevel === "RJ_MUNICIPALITIES"
+      : mapLevel === "RJ_MUNICIPALITIES" || mapLevel === "NATIONAL_MUNICIPALITIES"
         ? "MUNICIPALITY"
         : "REGION";
   const query = useEpidemiologyQuery({
@@ -48,7 +50,9 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
     municipalityCode:
       mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS"
         ? "3301009"
-        : undefined,
+        : mapLevel === "MUNICIPALITY_NEIGHBORHOODS"
+          ? selectedGeography?.municipalityCode
+          : undefined,
     districtCode:
       mapLevel === "CAMPOS_NEIGHBORHOODS"
         ? selectedGeography?.districtCode ??
@@ -56,20 +60,25 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
             ? selectedGeography.code
             : undefined)
         : undefined,
+    ufCode: mapLevel === "NATIONAL_MUNICIPALITIES" && selectedGeography?.level === "state"
+      ? selectedGeography.code
+      : undefined,
   });
   const items = query.isSuccess ? query.data.items : [];
-  const municipal = mapLevel === "RJ_MUNICIPALITIES";
-  const territorial = municipal || mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS";
+  const municipal = mapLevel === "RJ_MUNICIPALITIES" || mapLevel === "NATIONAL_MUNICIPALITIES";
+  const territorial = municipal || mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS" || mapLevel === "MUNICIPALITY_NEIGHBORHOODS";
   const covered =
     selectedGeography?.level === "district" || selectedGeography?.level === "neighborhood"
       ? true
-      : selectedGeography?.level === "municipality" &&
+      : (mapLevel === "NATIONAL_MUNICIPALITIES" || mapLevel === "MUNICIPALITY_NEIGHBORHOODS") && selectedGeography?.level === "municipality"
+        ? true
+        : selectedGeography?.level === "municipality" &&
         demoCoverage.caseDataAvailableForMunicipalities.includes(selectedGeography.code);
   const selectedItem = items.find(
     (item) => item.code === selectedGeography?.code,
   );
   const selectedTotal =
-    (selectedGeography?.level === "municipality" && geography === "DISTRICT") ||
+    (selectedGeography?.level === "municipality" && geography !== "MUNICIPALITY") ||
     (selectedGeography?.level === "district" && geography === "NEIGHBORHOOD")
       ? query.data?.totalNotifications
       : selectedItem?.notificationsTotal;
@@ -95,7 +104,9 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
             : "Sem registros neste recorte. Isso não equivale a zero casos."
     : territorial
       ? "Selecione um município, distrito ou bairro da notificação para consultar."
-      : "Explore o Sudeste e o Rio de Janeiro. Cobertura parcial, sem total agregado.";
+      : isDemo
+        ? "Explore o Sudeste e o Rio de Janeiro. Cobertura parcial, sem total agregado."
+        : "Explore os municípios do Brasil e consulte o detalhamento territorial disponível.";
   const panel = {
     municipal,
     filters,
@@ -149,13 +160,13 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
                     className="map-back"
                     type="button"
                     onClick={goBack}
-                    aria-label={`Voltar para ${mapLevel === "CAMPOS_NEIGHBORHOODS" ? "distritos" : mapLevel === "CAMPOS_DISTRICTS" ? "municípios" : mapLevel === "RJ_MUNICIPALITIES" ? "estados" : "regiões"}`}
+                    aria-label={`Voltar para ${mapLevel === "CAMPOS_NEIGHBORHOODS" ? "distritos" : mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "MUNICIPALITY_NEIGHBORHOODS" ? "municípios" : mapLevel === "RJ_MUNICIPALITIES" || mapLevel === "NATIONAL_MUNICIPALITIES" ? "regiões" : "regiões"}`}
                   >
                     ← Voltar
                   </button>
                 )}
                 <div className="section-label">
-                  {mapLevel === "CAMPOS_NEIGHBORHOODS"
+                  {mapLevel === "CAMPOS_NEIGHBORHOODS" || mapLevel === "MUNICIPALITY_NEIGHBORHOODS"
                     ? "BAIRROS DA NOTIFICAÇÃO"
                     : mapLevel === "CAMPOS_DISTRICTS"
                       ? "DISTRITOS DA NOTIFICAÇÃO"
@@ -204,7 +215,7 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
             <FilterPanel {...panel} />
           </aside>
           {municipal && query.isSuccess && <MunicipalityRanking items={items} onSelect={select} selected={selectedGeography} />}
-          {(mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS") && query.isSuccess && (
+          {(mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS" || mapLevel === "MUNICIPALITY_NEIGHBORHOODS") && query.isSuccess && (
             <TerritoryRanking level={mapLevel === "CAMPOS_DISTRICTS" ? "district" : "neighborhood"} items={items} onSelect={select} selected={selectedGeography} />
           )}
         </div>
