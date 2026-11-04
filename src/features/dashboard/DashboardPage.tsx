@@ -19,7 +19,8 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
   const viewScrollY = useRef<Partial<Record<DashboardView, number>>>({});
   const visitedViews = useRef<Set<DashboardView>>(new Set(["map"]));
   const previousView = useRef<DashboardView>("map");
-  const rankingAvailable = municipal || mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS" || mapLevel === "MUNICIPALITY_NEIGHBORHOODS";
+  const rankingAvailable = mapLevel === "BRAZIL_REGIONS" || mapLevel === "SOUTHEAST_STATES" || mapLevel === "NATIONAL_STATES" || municipal || mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS" || mapLevel === "MUNICIPALITY_NEIGHBORHOODS";
+  const areaRankingLevel = mapLevel === "BRAZIL_REGIONS" ? "region" : mapLevel === "SOUTHEAST_STATES" || mapLevel === "NATIONAL_STATES" ? "state" : null;
   const selectedTotal = query.data?.totalNotifications;
   useLayoutEffect(() => {
     if (previousView.current === activeView) return;
@@ -159,6 +160,7 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
             <FilterPanel {...panel} />
           </aside>
           {municipal && query.isSuccess && <MunicipalityRanking items={items} onSelect={select} selected={selectedGeography} />}
+          {areaRankingLevel && query.isSuccess && <TerritoryRanking level={areaRankingLevel} items={items} onSelect={select} selected={selectedGeography} />}
           {(mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS" || mapLevel === "MUNICIPALITY_NEIGHBORHOODS") && query.isSuccess && (
             <TerritoryRanking level={mapLevel === "CAMPOS_DISTRICTS" ? "district" : "neighborhood"} items={items} onSelect={select} selected={selectedGeography} />
           )}
@@ -169,6 +171,7 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
           </section>
           <section id="mobile-panel-ranking" className="mobile-dashboard-panel mobile-ranking-panel" role="tabpanel" aria-label="Ranking" hidden={mobileTab !== "ranking"}>
             {query.isSuccess && municipal && <MunicipalityRanking items={items} onSelect={select} selected={selectedGeography} />}
+            {query.isSuccess && areaRankingLevel && <TerritoryRanking level={areaRankingLevel} items={items} onSelect={select} selected={selectedGeography} />}
             {query.isSuccess && (mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS" || mapLevel === "MUNICIPALITY_NEIGHBORHOODS") && (
               <TerritoryRanking level={mapLevel === "CAMPOS_DISTRICTS" ? "district" : "neighborhood"} items={items} onSelect={select} selected={selectedGeography} />
             )}

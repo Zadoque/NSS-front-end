@@ -68,7 +68,15 @@ export function useMapNavigation() {
     if (!isDemo) {
       if (navigation.mapLevel === "MUNICIPALITY_NEIGHBORHOODS") {
         const municipalityCode = current?.level === "municipality" ? current.code : current?.municipalityCode;
-        setNavigation({ mapLevel: "NATIONAL_MUNICIPALITIES", selectedGeography: current?.level === "state" ? current : municipalityCode ? { level: "municipality", code: municipalityCode, name: current?.name ?? "Município selecionado" } : null });
+        const ufCode = municipalityCode?.slice(0, 2);
+        setNavigation({
+          mapLevel: "NATIONAL_MUNICIPALITIES",
+          selectedGeography: current?.level === "state"
+            ? current
+            : ufCode
+              ? { level: "state", code: ufCode, name: "Estado selecionado" }
+              : null,
+        });
       } else if (navigation.mapLevel === "NATIONAL_MUNICIPALITIES") {
         setNavigation({ mapLevel: "NATIONAL_STATES", selectedGeography: current?.level === "state" ? current : null });
       } else if (navigation.mapLevel === "NATIONAL_STATES") {
