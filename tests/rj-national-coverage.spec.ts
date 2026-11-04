@@ -37,6 +37,7 @@ test("RJ: 92 municípios, distritos e bairros permanecem navegáveis", async ({ 
   await expect(page.getByLabel("Estado", { exact: true }).locator("option")).toHaveCount(5);
   await expect(page.locator(".ranking:visible")).toContainText("4 ESTADOS");
   await expect(page.locator(".ranking:visible li")).toHaveCount(4);
+  await expect(page.getByRole("button", { name: /^Minas Gerais · 1 notificações/ })).toBeVisible();
   await page.getByLabel("Estado", { exact: true }).selectOption("33");
   await expect(page.locator(".ranking:visible")).toContainText("92 MUNICÍPIOS");
   await expect(page.locator(".ranking:visible li")).toHaveCount(92);

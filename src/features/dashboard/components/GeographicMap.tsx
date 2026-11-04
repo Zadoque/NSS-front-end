@@ -223,7 +223,7 @@ export function GeographicMap({
                   : level === "SOUTHEAST_STATES" || level === "NATIONAL_STATES"
                     ? {
                         level: "state",
-                        code: level === "NATIONAL_STATES" ? String(p.code_state) : String(p.abbrev_state),
+                        code: String(p.code_state),
                         name: String(p.name_state),
                       }
                     : level === "RJ_MUNICIPALITIES" || level === "NATIONAL_MUNICIPALITIES"
