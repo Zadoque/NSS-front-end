@@ -200,6 +200,11 @@
   .post-detail-body h2 { @apply text-[clamp(26px,4vw,42px)]; }
   .post-detail-body > small { @apply text-xs text-nss-muted; }
   .post-detail-body > p { @apply max-w-[760px] text-base; }
+  .post-detail-section { @apply max-w-[760px] rounded-xl border border-[#dfe9ed] bg-[#f8fbfc] p-5; }
+  .post-detail-section h3 { @apply mb-3 text-lg text-nss-blue; }
+  .post-detail-section ol, .post-detail-section ul { @apply m-0 grid gap-3 pl-5 text-sm leading-[1.65]; }
+  .post-detail-section li::marker { @apply font-bold text-[#298267]; }
+  .post-tips { @apply border-[#b9ded0] bg-[#edf7f1]; }
   .post-detail-note { @apply rounded-xl bg-[#edf7f1] p-4 text-sm text-[#286c59]; }
   .post-tag, .pill { @apply w-fit rounded-full bg-[#e8f3ef] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#286c59]; }
   .portal-form { @apply mt-6 grid gap-4 p-6; }

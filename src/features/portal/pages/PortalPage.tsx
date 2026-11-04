@@ -1,7 +1,7 @@
 import { useState, type ChangeEvent, type FormEvent } from "react";
 
 type Role = "ADMIN" | "EPIDEMIOLOGICAL_AGENT" | "REPORTING_CLINIC";
-type Post = { id: string; title: string; disease: string; body: string; image?: string; date: string };
+type Post = { id: string; title: string; disease: string; body: string; image?: string; date: string; steps?: string[]; tips?: string[] };
 type Clinic = { id: string; name: string; email: string; uf: string; municipality: string; district: string };
 type AnimalDisease = { id: string; name: string; fields: string[] };
 type Notification = { id: string; disease: string; clinic: string; breed: string; sex: string; neutered: string; ownerLocation: string; uf: string; municipality: string; district: string; date: string };
@@ -16,9 +16,9 @@ const STORAGE = {
 };
 
 const initialPosts: Post[] = [
-  { id: "post-dengue", title: "Dengue: elimine a água parada", disease: "Dengue (DENG)", body: "Reserve alguns minutos por semana para esvaziar recipientes, tampar caixas d’água e manter calhas limpas. A prevenção começa dentro de casa.", date: "2026-03-12", image: "/posts/dengue-prevencao.png" },
-  { id: "post-chik", title: "Chikungunya: reconheça os sinais", disease: "Chikungunya (CHIK)", body: "Febre e dor intensa nas articulações merecem atenção. Procure a unidade de saúde e evite a automedicação, especialmente em caso de piora.", date: "2026-03-05", image: "/posts/chikungunya-cuidados.png" },
-  { id: "post-toxo", title: "Toxoplasmose: cuidado durante a gestação", disease: "Toxoplasmose gestacional (TOXG)", body: "Lave bem frutas e verduras, cozinhe completamente as carnes e siga o acompanhamento do pré-natal. Converse com a equipe de saúde sobre dúvidas.", date: "2026-02-26", image: "/posts/toxoplasmose-prevencao.png" },
+  { id: "post-dengue", title: "Dengue: elimine a água parada", disease: "Dengue (DENG)", body: "A dengue é transmitida pelo Aedes aegypti, que se reproduz em pequenas quantidades de água acumulada. A prevenção depende de uma vistoria frequente em casa, no trabalho e nas áreas comuns.", date: "2026-03-12", image: "/posts/dengue-prevencao.png", steps: ["Faça uma vistoria semanal no quintal, varanda e áreas de serviço.", "Esvazie pratos de plantas, baldes, garrafas e brinquedos; guarde-os cobertos ou virados para baixo.", "Mantenha caixas d’água tampadas e limpe calhas, ralos e piscinas.", "Se houver febre, dor no corpo ou manchas, procure uma unidade de saúde e evite a automedicação."], tips: ["Use repelente conforme as instruções do rótulo.", "Convide vizinhos e familiares para fazerem a mesma vistoria.", "Ao encontrar um possível criadouro em área pública, comunique a vigilância do município."] },
+  { id: "post-chik", title: "Chikungunya: reconheça os sinais", disease: "Chikungunya (CHIK)", body: "A chikungunya pode causar febre de início súbito e dor intensa nas articulações. Reconhecer os sinais e buscar orientação ajuda a reduzir complicações e evita o uso inadequado de medicamentos.", date: "2026-03-05", image: "/posts/chikungunya-cuidados.png", steps: ["Observe febre, dor articular, manchas na pele, dor de cabeça ou cansaço intenso.", "Procure a unidade de saúde para avaliação, principalmente se a dor for forte ou persistente.", "Beba água e siga somente os medicamentos orientados pelo profissional de saúde.", "Continue eliminando recipientes com água parada para evitar que mosquitos transmitam a doença a outras pessoas."], tips: ["Não tome anti-inflamatórios por conta própria antes de receber orientação.", "Descanse e registre quando os sintomas começaram para informar na consulta.", "Gestantes, crianças, idosos e pessoas com doenças crônicas devem buscar orientação com atenção redobrada."] },
+  { id: "post-toxo", title: "Toxoplasmose: cuidado durante a gestação", disease: "Toxoplasmose gestacional (TOXG)", body: "A toxoplasmose pode ser prevenida com cuidados no preparo dos alimentos, na higiene das mãos e no acompanhamento pré-natal. A presença de gatos não significa risco automático: o cuidado está principalmente na higiene e no manejo adequado da caixa de areia.", date: "2026-02-26", image: "/posts/toxoplasmose-prevencao.png", steps: ["Lave bem frutas, verduras e utensílios antes do consumo.", "Cozinhe completamente carnes e não prove alimentos crus durante o preparo.", "Lave as mãos depois de mexer em terra ou areia e use luvas em jardinagem.", "Faça o pré-natal e informe à equipe de saúde qualquer exposição ou dúvida."], tips: ["Se possível, peça a outra pessoa para limpar a caixa de areia; se não for possível, use luvas e lave as mãos depois.", "Não ofereça carne crua aos gatos e mantenha a caixa de areia limpa.", "Não abandone animais: converse com a equipe de saúde para receber orientação individualizada."] },
 ];
 const initialDiseases: AnimalDisease[] = [{ id: "animal-toxoplasmosis", name: "Toxoplasmose animal", fields: ["Raça do cachorro", "Sexo", "É castrado?", "Local onde o dono mora", "UF", "Município", "Distrito/Bairro"] }];
 const initialTeam: TeamMember[] = [{ id: "team-uenf", name: "Núcleo de Situação de Saúde", role: "Coordenação NSS", description: "Equipe interdisciplinar de vigilância, dados e território da UENF.", email: "nss@uenf.br" }];
@@ -28,11 +28,16 @@ function read<T>(key: string, fallback: T): T {
 }
 function save(key: string, value: unknown) { localStorage.setItem(key, JSON.stringify(value)); }
 function id(prefix: string) { return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`; }
+function loadPosts(): Post[] {
+  const stored = read(STORAGE.posts, [] as Post[]);
+  const seeded = initialPosts.map(post => ({ ...post, ...stored.find(item => item.id === post.id) }));
+  return [...seeded, ...stored.filter(item => !initialPosts.some(post => post.id === item.id))];
+}
 
 export function PortalPage({ onBack }: { onBack: () => void }) {
   const [role, setRole] = useState<Role>("ADMIN");
   const [section, setSection] = useState("overview");
-  const [posts, setPosts] = useState(() => read(STORAGE.posts, initialPosts));
+  const [posts, setPosts] = useState(loadPosts);
   const [clinics, setClinics] = useState(() => read(STORAGE.clinics, [] as Clinic[]));
   const [diseases, setDiseases] = useState(() => read(STORAGE.diseases, initialDiseases));
   const [notifications, setNotifications] = useState(() => read(STORAGE.notifications, [] as Notification[]));
@@ -103,7 +108,7 @@ function PostCard({ post, onOpen, onDelete, canEdit }: { post: Post; onOpen?: ()
 }
 
 function PostDetail({ post, onBack }: { post: Post; onBack: () => void }) {
-  return <article className="card post-detail"><button className="back-home" onClick={onBack}>← Voltar para notícias</button>{post.image ? <img src={post.image} alt="" /> : <div className="post-art" aria-hidden="true">NSS</div>}<div className="post-detail-body"><span className="post-tag">{post.disease}</span><h2>{post.title}</h2><small>Publicado em {new Date(`${post.date}T12:00:00`).toLocaleDateString("pt-BR")}</small><p>{post.body}</p><p className="post-detail-note">Acompanhe as informações do NSS e procure a rede de saúde quando precisar de orientação.</p></div></article>;
+  return <article className="card post-detail"><button className="back-home" onClick={onBack}>← Voltar para notícias</button>{post.image ? <img src={post.image} alt="" /> : <div className="post-art" aria-hidden="true">NSS</div>}<div className="post-detail-body"><span className="post-tag">{post.disease}</span><h2>{post.title}</h2><small>Publicado em {new Date(`${post.date}T12:00:00`).toLocaleDateString("pt-BR")}</small><p>{post.body}</p>{post.steps?.length ? <section className="post-detail-section"><h3>Como agir</h3><ol>{post.steps.map(step => <li key={step}>{step}</li>)}</ol></section> : null}{post.tips?.length ? <section className="post-detail-section post-tips"><h3>Dicas práticas</h3><ul>{post.tips.map(tip => <li key={tip}>{tip}</li>)}</ul></section> : null}<p className="post-detail-note">Acompanhe as informações do NSS e procure a rede de saúde quando precisar de orientação.</p></div></article>;
 }
 
 function News({ posts, canEdit, onOpenPost, onChange }: { posts: Post[]; canEdit: boolean; onOpenPost: (post: Post) => void; onChange: (value: Post[]) => void }) {
