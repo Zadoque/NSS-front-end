@@ -91,6 +91,19 @@ test("zero, missing and invalid API records remain distinct", () => {
   ).toThrow();
 });
 
+test("Todos os meses aceita a resposta agregada do Java", () => {
+  const request = { disease: "DENG", year: 2026 as const, month: "ALL" as const };
+  const response = parseCases({
+    filters: { disease: "DENG", year: 2026, month: null },
+    items: [{ code: "3301009", name: "Campos dos Goytacazes", notificationsTotal: 42 }],
+    totalNotifications: 42,
+    coverage: { status: "AVAILABLE", mappedNotificationsTotal: 42, unmappedNotificationsTotal: 0 },
+  }, request);
+
+  expect(response.totalNotifications).toBe(42);
+  expect(response.items[0].notificationsTotal).toBe(42);
+});
+
 test("touch activation, outside dismissal and cartography error recovery", async ({
   browser,
 }) => {

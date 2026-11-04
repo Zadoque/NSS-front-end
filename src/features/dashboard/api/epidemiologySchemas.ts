@@ -11,15 +11,15 @@ const itemSchema = z.union([
 
 export const epidemiologyResponseSchema = z.object({
   items: z.array(itemSchema),
-  year: z.union([z.number().int(), z.literal("ALL")]).optional(),
-  month: z.union([z.number().int(), z.literal("ALL")]).optional(),
+  year: z.union([z.number().int(), z.literal("ALL")]).nullable().optional(),
+  month: z.union([z.number().int(), z.literal("ALL")]).nullable().optional(),
   totalNotifications: z.number().int().nonnegative().nullable().optional(),
   coverage: z.object({
     status: z.enum(["AVAILABLE", "UNAVAILABLE", "PARTIAL"]),
     mappedNotificationsTotal: z.number().int().nonnegative(),
     unmappedNotificationsTotal: z.number().int().nonnegative(),
   }).optional(),
-  filters: z.object({ year: z.union([z.number().int(), z.literal("ALL")]).optional(), month: z.union([z.number().int(), z.literal("ALL")]).optional() }).optional(),
+  filters: z.object({ year: z.union([z.number().int(), z.literal("ALL")]).nullable().optional(), month: z.union([z.number().int(), z.literal("ALL")]).nullable().optional() }).optional(),
   sourceExtractedAt: z.string().datetime({ offset: true }).nullable().optional(),
   addedAt: z.string().datetime({ offset: true }).nullable().optional(),
 });

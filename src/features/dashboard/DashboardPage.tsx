@@ -88,7 +88,7 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
         </div>
         <DashboardViewSwitcher activeView={activeView} onChange={changeView} />
         {activeView === "map" ? <div id="dashboard-panel-map" className={`dashboard-workspace mobile-tab-${mobileTab}`} role="tabpanel" aria-labelledby="dashboard-tab-map" tabIndex={0}>
-          <div id="mobile-panel-map" className={`dashboard-grid${territorial && query.isSuccess ? " has-ranking" : ""}`}>
+          <div id="mobile-panel-map" className={`dashboard-grid${(territorial || areaRankingLevel) && query.isSuccess ? " has-ranking" : ""}`}>
           <section className="card map-card" aria-label="Exploração geográfica">
             <div className="map-heading">
               <div>

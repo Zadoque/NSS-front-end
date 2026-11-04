@@ -10,8 +10,8 @@ export function parseCases(value: unknown, request: EpidemiologyRequest): Epidem
     : { code: item.cdMun, name: item.nmMun, notificationsTotal: item.casesTotal, cdMun: item.cdMun, nmMun: item.nmMun, casesTotal: item.casesTotal });
   if (new Set(items.map((item) => item.code)).size !== items.length) throw new Error("Territórios duplicados na resposta epidemiológica.");
   const responseFilters = parsed.data.filters ?? parsed.data;
-  if (responseFilters?.year !== undefined && responseFilters.year !== request.year) throw new Error("Filtros divergentes na resposta epidemiológica.");
-  if (responseFilters?.month !== undefined && responseFilters.month !== request.month) throw new Error("Filtros divergentes na resposta epidemiológica.");
+  if (responseFilters?.year != null && request.year !== "ALL" && responseFilters.year !== request.year) throw new Error("Filtros divergentes na resposta epidemiológica.");
+  if (responseFilters?.month != null && request.month !== "ALL" && responseFilters.month !== request.month) throw new Error("Filtros divergentes na resposta epidemiológica.");
   return {
     metric: "notifications", geography: request.geography, filters: request,
     totalNotifications: parsed.data.totalNotifications ?? null,
