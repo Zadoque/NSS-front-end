@@ -13,7 +13,7 @@ export function TerritoryRanking({ level, items, onSelect, selected }: { level: 
       <ol>
         {rows.map((item, index) => (
           <li key={item.code}>
-            <button aria-pressed={selected?.code === item.code} onClick={() => onSelect({ level, code: item.code, name: item.name, municipalityCode: selected?.municipalityCode, ...(level === "neighborhood" ? { districtCode: item.parentDistrictId } : {}) })}>
+            <button aria-pressed={selected?.code === item.code} onClick={() => onSelect({ level, code: item.code, name: item.name, municipalityCode: level === "district" && selected?.level === "municipality" ? selected.code : selected?.municipalityCode, ...(level === "neighborhood" ? { districtCode: item.parentDistrictId } : {}) })}>
               <span className="rank-number">{index + 1}</span><span>{item.name}</span><strong>{item.notificationsTotal} notificações</strong>
             </button>
           </li>
