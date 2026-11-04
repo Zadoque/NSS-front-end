@@ -21,7 +21,7 @@ test.describe("prod-mock sem backend", () => {
     await page.getByRole("button", { name: /^Sudeste ·/ }).click();
     await page.getByRole("button", { name: /^Rio de Janeiro ·/ }).click();
     await expect(page.locator(".ranking li").first()).toBeVisible();
-    await expect(page.locator(".ranking")).not.toContainText("Sem registros");
+    await expect(page.locator(".ranking").first()).not.toContainText("Sem registros");
     await page.getByRole("button", { name: "Sair", exact: true }).click();
     await expect(page).toHaveURL(/\/$/);
   });
