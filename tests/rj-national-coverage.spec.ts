@@ -49,6 +49,7 @@ test("RJ: 92 municípios, distritos e bairros permanecem navegáveis", async ({ 
   await page.getByLabel("Município", { exact: true }).selectOption({ label: municipalities[0].name });
   await expect(page.getByLabel("Distrito", { exact: true })).toBeVisible();
   await expect(page.getByLabel("Distrito", { exact: true }).locator("option")).toHaveCount(2);
+  await expect(page.getByRole("heading", { name: "Bairros da notificação", exact: true })).toBeVisible();
   await page.getByLabel("Distrito", { exact: true }).selectOption({ index: 1 });
   await expect(page.getByLabel("Bairro da notificação", { exact: true })).toBeVisible();
   expect(await page.getByLabel("Bairro da notificação", { exact: true }).locator("option").count()).toBeGreaterThan(1);

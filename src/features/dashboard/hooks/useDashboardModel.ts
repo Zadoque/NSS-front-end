@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { isDemo } from "../api/sources/dataSource";
 import { mapViews } from "../geography/maps";
 import type { EpidemiologyFilters } from "../domain/epidemiologyTypes";
 import { useDiseases, useEpidemiologyQuery, useMetadata } from "./useEpidemiologyQuery";
 import { useMapNavigation } from "./useMapNavigation";
-import { isCoveredMunicipality, territoryScope } from "../geography/geographyDomain";
+import { canExpandToNeighborhoods, isCoveredMunicipality, territoryScope, CAMPOS_MUNICIPALITY_CODE } from "../geography/geographyDomain";
+import { loadMap } from "../geography/maps";
 
 export function useDashboardModel() {
   const navigation = useMapNavigation();
@@ -29,6 +31,49 @@ export function useDashboardModel() {
   });
   const selectedMunicipalityCode = selectedGeography?.level === "municipality" ? selectedGeography.code : selectedGeography?.municipalityCode;
   const districtQuery = useEpidemiologyQuery({ ...filters, geography: "DISTRICT", municipalityCode: selectedMunicipalityCode }, Boolean(selectedMunicipalityCode));
+  const neighborhoodGeometryQuery = useQuery({
+    queryKey: ["map", "municipality-neighborhoods-for-district-fallback", selectedMunicipalityCode],
+    queryFn: () => selectedMunicipalityCode === CAMPOS_MUNICIPALITY_CODE
+      ? loadMap("CAMPOS_NEIGHBORHOODS")
+      : loadMap("MUNICIPALITY_NEIGHBORHOODS", selectedMunicipalityCode),
+    staleTime: Infinity,
+    enabled: mapLevel === "MUNICIPALITY_DISTRICTS" && Boolean(selectedMunicipalityCode),
+  });
+  const autoExpandedMunicipality = useRef("");
+  const neighborhoodDistrictCodes = useMemo(() => [...new Set((neighborhoodGeometryQuery.data?.features ?? []).map((feature) => {
+    const properties = feature.properties ?? {};
+    return selectedMunicipalityCode === CAMPOS_MUNICIPALITY_CODE
+      ? String(properties.parentDistrictId ?? "")
+      : "IBGE_DIST_" + String(properties.CD_DIST ?? "");
+  }).filter(Boolean))], [neighborhoodGeometryQuery.data?.features, selectedMunicipalityCode]);
+  useEffect(() => {
+    if (mapLevel !== "MUNICIPALITY_DISTRICTS" || !selectedMunicipalityCode || !districtQuery.isSuccess) return;
+    if (autoExpandedMunicipality.current === selectedMunicipalityCode) return;
+    const districtItems = districtQuery.data.items;
+    if (selectedMunicipalityCode !== CAMPOS_MUNICIPALITY_CODE && districtItems.length === 0 && neighborhoodDistrictCodes.length > 0) {
+      autoExpandedMunicipality.current = selectedMunicipalityCode;
+      select({
+        level: "neighborhood",
+        code: "__ALL_NEIGHBORHOODS__",
+        name: "Bairros disponíveis",
+        municipalityCode: selectedMunicipalityCode,
+      });
+      return;
+    }
+    const district = districtItems.length === 1
+      ? districtItems[0]
+      : districtItems.length === 0 && neighborhoodDistrictCodes.length === 1
+        ? { code: neighborhoodDistrictCodes[0], name: "Distrito com bairros disponíveis", notificationsTotal: 0 }
+        : undefined;
+    if (!district || !canExpandToNeighborhoods(selectedMunicipalityCode, district.code)) return;
+    autoExpandedMunicipality.current = selectedMunicipalityCode;
+    select({
+      level: "district",
+      code: district.code,
+      name: district.name,
+      municipalityCode: selectedMunicipalityCode,
+    });
+  }, [districtQuery.data, districtQuery.isSuccess, mapLevel, neighborhoodDistrictCodes, select, selectedMunicipalityCode]);
   const items = query.isSuccess ? query.data.items : [];
   const municipal = mapLevel === "RJ_MUNICIPALITIES" || mapLevel === "NATIONAL_MUNICIPALITIES";
   const territorial = municipal || mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS" || mapLevel === "MUNICIPALITY_DISTRICTS" || mapLevel === "MUNICIPALITY_NEIGHBORHOODS";
