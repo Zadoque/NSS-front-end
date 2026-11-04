@@ -205,6 +205,8 @@
   .post-detail-section ol, .post-detail-section ul { @apply m-0 grid gap-3 pl-5 text-sm leading-[1.65]; }
   .post-detail-section li::marker { @apply font-bold text-[#298267]; }
   .post-tips { @apply border-[#b9ded0] bg-[#edf7f1]; }
+  .post-sources { @apply bg-white; }
+  .post-sources a { @apply text-sm font-semibold; }
   .post-detail-note { @apply rounded-xl bg-[#edf7f1] p-4 text-sm text-[#286c59]; }
   .post-tag, .pill { @apply w-fit rounded-full bg-[#e8f3ef] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#286c59]; }
   .portal-form { @apply mt-6 grid gap-4 p-6; }
