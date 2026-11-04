@@ -29,10 +29,18 @@ export const mockDataSource: EpidemiologyDataSource = {
       const items = districts.map((feature, index) => ({ code: String(feature.properties?.territoryId), name: String(feature.properties?.name), notificationsTotal: index === 0 ? 27 : index % 3 === 0 ? 0 : 4 + index }));
       return response(request, items, 120, 114, 6, "PARTIAL");
     }
+    if (request.geography === "DISTRICT" && request.municipalityCode) {
+      const code = `IBGE_DIST_${request.municipalityCode}05`;
+      return response(request, [{ code, name: "Distrito principal", notificationsTotal: 4 }], 4, 4, 0, "AVAILABLE");
+    }
     if (request.geography === "NEIGHBORHOOD" && request.municipalityCode === CAMPOS_MUNICIPALITY_CODE && request.districtCode === CAMPOS_SEAT_DISTRICT_CODE) {
       const items = neighborhoods.filter((feature) => feature.properties?.parentDistrictId === request.districtCode).map((feature, index) => ({ code: String(feature.properties?.territoryId), name: String(feature.properties?.name), notificationsTotal: index === 0 ? 0 : 1 + (index % 5), parentDistrictId: request.districtCode }));
       const mapped = items.reduce((total, item) => total + item.notificationsTotal, 0);
       return response(request, items, mapped + 2, mapped, 2, "PARTIAL");
+    }
+    if (request.geography === "NEIGHBORHOOD" && request.municipalityCode && request.districtCode) {
+      const code = `IBGE_BAIRRO_${request.municipalityCode}0001`;
+      return response(request, [{ code, name: "Bairro principal", notificationsTotal: 4, parentDistrictId: request.districtCode }], 4, 4, 0, "AVAILABLE");
     }
     return response(request, [], null, 0, 0, "UNAVAILABLE");
   },

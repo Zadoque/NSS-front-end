@@ -5,7 +5,7 @@ export type Sex = "M" | "F" | "I";
 export type AgeBand = "LT1" | "01_04" | "05_09" | "10_14" | "15_19" | "20_39" | "40_59" | "60_64" | "65_69" | "70_74" | "75_79" | "80_PLUS";
 export type PeriodFilter = number | "ALL";
 export type EpidemiologyFilters = { disease: string; year: PeriodFilter; month: PeriodFilter; sex?: "M" | "F"; ageBand?: AgeBand };
-export type EpidemiologyRequest = EpidemiologyFilters & { geography: GeographyLevel; municipalityCode?: string; districtCode?: string; ufCode?: string };
+export type EpidemiologyRequest = EpidemiologyFilters & { geography: GeographyLevel; municipalityCode?: string; districtCode?: string; ufCode?: string; regionCode?: string };
 export type Coverage = { status: CoverageStatus; mappedNotificationsTotal: number; unmappedNotificationsTotal: number };
 export type EpidemiologyItem = {
   code: string;

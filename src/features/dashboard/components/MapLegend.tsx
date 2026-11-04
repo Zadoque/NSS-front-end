@@ -10,7 +10,7 @@ export function caseColor(cases: number) {
 export function MapLegend({ municipal }: { municipal: boolean }) {
   const entries = municipal
     ? [
-        ["#dce2e6", "Sem cobertura nesta V1"],
+        ["#dce2e6", "Sem notificações mapeadas"],
         ["#f6f0d8", "Coberto · sem valor disponível"],
         [caseColor(0), "0 notificações"],
         [caseColor(18), "1–40 notificações"],
@@ -19,7 +19,7 @@ export function MapLegend({ municipal }: { municipal: boolean }) {
       ]
     : [
         ["#b8d9d2", "Disponível para explorar"],
-        ["#dce2e6", "Sem cobertura nesta V1"],
+        ["#f6f0d8", "Sem notificações no período"],
       ];
   return (
     <section className="legend" aria-label="Legenda">
@@ -32,11 +32,7 @@ export function MapLegend({ municipal }: { municipal: boolean }) {
           </li>
         ))}
       </ul>
-      <p>
-        {municipal
-          ? "Contagens absolutas de notificações; não representam incidência nem casos confirmados."
-          : "As cores indicam navegação, sem totais epidemiológicos."}
-      </p>
+      <p>Contagens absolutas de notificações; não representam incidência nem casos confirmados.</p>
     </section>
   );
 }

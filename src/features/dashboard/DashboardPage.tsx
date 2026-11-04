@@ -13,13 +13,13 @@ import { MobileDashboardNav, type MobileDashboardTab } from "./components/Mobile
 import { DashboardViewSwitcher, type DashboardView } from "./components/DashboardViewSwitcher";
 import { DashboardAnalyticsViews } from "./components/DashboardAnalyticsViews";
 export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onAdmin?: () => void }) {
-  const { navigation, mapLevel, selectedGeography, select, navigate, goBack, metadata, filters, query, items, municipal, territorial, selectionInfo, panel } = useDashboardModel();
+  const { navigation, mapLevel, selectedGeography, select, navigate, goBack, metadata, filters, query, districtQuery, items, municipal, territorial, selectionInfo, panel } = useDashboardModel();
   const [mobileTab, setMobileTab] = useState<MobileDashboardTab>("map");
   const [activeView, setActiveView] = useState<DashboardView>("map");
   const viewScrollY = useRef<Partial<Record<DashboardView, number>>>({});
   const visitedViews = useRef<Set<DashboardView>>(new Set(["map"]));
   const previousView = useRef<DashboardView>("map");
-  const rankingAvailable = municipal || mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS";
+  const rankingAvailable = municipal || mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS" || mapLevel === "MUNICIPALITY_NEIGHBORHOODS";
   const selectedTotal = query.data?.totalNotifications;
   useLayoutEffect(() => {
     if (previousView.current === activeView) return;
@@ -82,7 +82,7 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
           <MobileDashboardContext filters={filters} selectionName={selectedGeography?.name ?? mapViews[mapLevel].title} total={selectedTotal} pending={query.isPending} />
           <div className="dashboard-map-navigation">
             <GeographyBreadcrumb level={mapLevel} navigate={navigate} selected={selectedGeography} />
-            <GeographySelector key={mapLevel} navigation={navigation} />
+            <GeographySelector key={mapLevel} navigation={navigation} districtItems={districtQuery.data?.items ?? []} />
           </div>
         </div>
         <DashboardViewSwitcher activeView={activeView} onChange={changeView} />
@@ -159,7 +159,7 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
             <FilterPanel {...panel} />
           </aside>
           {municipal && query.isSuccess && <MunicipalityRanking items={items} onSelect={select} selected={selectedGeography} />}
-          {(mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS") && query.isSuccess && (
+          {(mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS" || mapLevel === "MUNICIPALITY_NEIGHBORHOODS") && query.isSuccess && (
             <TerritoryRanking level={mapLevel === "CAMPOS_DISTRICTS" ? "district" : "neighborhood"} items={items} onSelect={select} selected={selectedGeography} />
           )}
           </div>
@@ -169,7 +169,7 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
           </section>
           <section id="mobile-panel-ranking" className="mobile-dashboard-panel mobile-ranking-panel" role="tabpanel" aria-label="Ranking" hidden={mobileTab !== "ranking"}>
             {query.isSuccess && municipal && <MunicipalityRanking items={items} onSelect={select} selected={selectedGeography} />}
-            {query.isSuccess && (mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS") && (
+            {query.isSuccess && (mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS" || mapLevel === "MUNICIPALITY_NEIGHBORHOODS") && (
               <TerritoryRanking level={mapLevel === "CAMPOS_DISTRICTS" ? "district" : "neighborhood"} items={items} onSelect={select} selected={selectedGeography} />
             )}
             {!query.isSuccess && <p role="status">Carregando o ranking do recorte selecionado…</p>}

@@ -10,7 +10,7 @@ import type {
   EpidemiologyItem,
 } from "../domain/epidemiologyTypes";
 import { caseColor } from "./MapLegend";
-import { canDrillDown, isCoveredMunicipality, CAMPOS_MUNICIPALITY_CODE, CAMPOS_SEAT_DISTRICT_CODE } from "../geography/geographyDomain";
+import { canDrillDown, isCoveredMunicipality, CAMPOS_MUNICIPALITY_CODE } from "../geography/geographyDomain";
 
 function geometryCenter(collection: FeatureCollection): [number, number] | null {
   const points: number[][] = [];
@@ -222,7 +222,7 @@ export function GeographicMap({
                       : level === "CAMPOS_DISTRICTS"
                       ? { level: "district", code: String(p.territoryId), name: String(p.name), municipalityCode: CAMPOS_MUNICIPALITY_CODE }
                       : level === "MUNICIPALITY_NEIGHBORHOODS"
-                        ? { level: "neighborhood", code: String(p.CD_BAIRRO), name: String(p.NM_BAIRRO), municipalityCode: selected?.level === "municipality" ? selected.code : selected?.municipalityCode }
+                        ? { level: "neighborhood", code: `IBGE_BAIRRO_${String(p.CD_BAIRRO)}`, name: String(p.NM_BAIRRO), municipalityCode: selected?.level === "municipality" ? selected.code : selected?.municipalityCode, districtCode: `IBGE_DIST_${String(p.CD_DIST)}` }
                         : { level: "neighborhood", code: String(p.territoryId), name: String(p.name), municipalityCode: CAMPOS_MUNICIPALITY_CODE, districtCode: String(p.parentDistrictId) };
               const navigable = ["NATIONAL_STATES", "NATIONAL_MUNICIPALITIES", "MUNICIPALITY_NEIGHBORHOODS"].includes(level) || canDrillDown(geography);
               const territorial = geography.level === "district" || geography.level === "neighborhood";
@@ -230,25 +230,21 @@ export function GeographicMap({
                 ? Boolean(byCode.get(geography.code))
                 :
                 (geography.level === "municipality" && isCoveredMunicipality(geography.code)) ||
-                (level === "NATIONAL_MUNICIPALITIES" && Boolean(byCode.get(geography.code)));
+                Boolean(byCode.get(geography.code));
               const item = covered ? byCode.get(geography.code) : undefined;
-              const districtNeighborhoodUnavailable =
-                geography.level === "district" && geography.code !== CAMPOS_SEAT_DISTRICT_CODE;
-              const detail = districtNeighborhoodUnavailable
-                ? "Detalhamento por bairro da notificação indisponível neste distrito"
+              const detail = item
+                ? `${item.notificationsTotal} notificações da unidade notificadora`
                 : navigable
                 ? "Toque ou pressione Enter para explorar"
                 : !covered
                 ? territorial
                   ? "Sem notificações mapeadas nesta geometria"
-                  : "Sem cobertura nesta V1"
+                  : "Sem notificações mapeadas neste território"
                   : dataStatus === "loading"
                     ? "Carregando dados"
                     : dataStatus === "error"
                       ? "Dados indisponíveis: erro na consulta"
-                      : item
-                        ? `${item.notificationsTotal} notificações da unidade notificadora`
-                        : "Sem registros neste recorte";
+                      : "Sem registros neste recorte";
               const label = `${geography.name} · ${detail}`;
               return (
                 <Geography

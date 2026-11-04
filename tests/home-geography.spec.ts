@@ -67,9 +67,7 @@ for (const width of [375, 1440]) {
     );
     await search.fill("");
     await municipality.selectOption({ label: "Angra dos Reis" });
-    await expect(page.locator(".map-context")).toContainText(
-      "Sem cobertura nesta V1",
-    );
+    await expect(page.locator(".map-context")).toContainText("Sem registros");
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,

@@ -3,13 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { loadMap, loadMunicipalityIndex } from "../geography/maps";
 import { isDemo } from "../api/sources/dataSource";
 import type { useMapNavigation } from "../hooks/useMapNavigation";
-import {
-  CAMPOS_MUNICIPALITY_CODE,
-  CAMPOS_SEAT_DISTRICT_CODE,
-  CAMPOS_SEAT_DISTRICT_NAME,
-  geographyCapabilities,
-  stateRegion,
-} from "../geography/geographyDomain";
+import { CAMPOS_MUNICIPALITY_CODE, geographyCapabilities, stateRegion } from "../geography/geographyDomain";
 
 const regions = [
   ["N", "Norte"],
@@ -17,7 +11,7 @@ const regions = [
   ["CO", "Centro-Oeste"],
   ["SE", "Sudeste"],
   ["S", "Sul"],
-];
+] as const;
 const states = [
   ["ES", "Espírito Santo"],
   ["MG", "Minas Gerais"],
@@ -37,8 +31,10 @@ const normalize = (text: string) =>
     .toLocaleLowerCase("pt-BR");
 export function GeographySelector({
   navigation,
+  districtItems = [],
 }: {
   navigation: ReturnType<typeof useMapNavigation>;
+  districtItems?: { code: string; name: string }[];
 }) {
   const { region, state, mapLevel, selectedGeography, navigate, select } = navigation;
   const [search, setSearch] = useState("");
@@ -46,7 +42,7 @@ export function GeographySelector({
     queryKey: ["map", "RJ_MUNICIPALITIES"],
     queryFn: () => loadMap("RJ_MUNICIPALITIES"),
     staleTime: Infinity,
-    enabled: state === "RJ" && ["RJ_MUNICIPALITIES", "CAMPOS_DISTRICTS", "CAMPOS_NEIGHBORHOODS"].includes(mapLevel),
+    enabled: state === "RJ" && ["RJ_MUNICIPALITIES", "CAMPOS_DISTRICTS", "CAMPOS_NEIGHBORHOODS", "MUNICIPALITY_NEIGHBORHOODS"].includes(mapLevel),
   });
   const nationalIndex = useQuery({
     queryKey: ["municipality-index"],
@@ -70,29 +66,24 @@ export function GeographySelector({
     selectedGeography?.level === "district"
       ? selectedGeography.code
       : selectedGeography?.districtCode ?? "";
-  const districtMap = useQuery({
-    queryKey: ["map", "CAMPOS_DISTRICTS"],
-    queryFn: () => loadMap("CAMPOS_DISTRICTS"),
-    staleTime: Infinity,
-    enabled: municipality === CAMPOS_MUNICIPALITY_CODE,
-  });
+  const districtMap = useQuery({ queryKey: ["map", "CAMPOS_DISTRICTS"], queryFn: () => loadMap("CAMPOS_DISTRICTS"), staleTime: Infinity, enabled: municipality === CAMPOS_MUNICIPALITY_CODE });
   const neighborhoodMap = useQuery({
-    queryKey: ["map", "CAMPOS_NEIGHBORHOODS", district],
-    queryFn: () => loadMap("CAMPOS_NEIGHBORHOODS"),
+    queryKey: ["map", "MUNICIPALITY_NEIGHBORHOODS", municipality],
+    queryFn: () => municipality === CAMPOS_MUNICIPALITY_CODE ? loadMap("CAMPOS_NEIGHBORHOODS") : loadMap("MUNICIPALITY_NEIGHBORHOODS", municipality),
     staleTime: Infinity,
-    enabled: district === CAMPOS_SEAT_DISTRICT_CODE,
+    enabled: Boolean(municipality && district),
   });
-  const districts = (districtMap.data?.features ?? [])
-    .map(({ properties }) => ({
+  const districts = districtItems.length ? districtItems : (districtMap.data?.features ?? [])
+      .map(({ properties }) => ({
       code: String(properties?.territoryId),
       name: String(properties?.name),
     }))
     .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
   const neighborhoods = (neighborhoodMap.data?.features ?? [])
-    .filter(({ properties }) => String(properties?.parentDistrictId) === CAMPOS_SEAT_DISTRICT_CODE)
+    .filter(({ properties }) => String(properties?.CD_DIST ?? properties?.parentDistrictId) === district.replace(/^IBGE_DIST_/, ""))
     .map(({ properties }) => ({
-      code: String(properties?.territoryId),
-      name: String(properties?.name),
+      code: properties?.CD_BAIRRO ? `IBGE_BAIRRO_${String(properties.CD_BAIRRO)}` : String(properties?.territoryId),
+      name: String(properties?.NM_BAIRRO ?? properties?.name),
     }))
     .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
   const matches = municipalities.filter((item) =>
@@ -109,8 +100,7 @@ export function GeographySelector({
     >
       <h2 id="geography-title">Escolha o território</h2>
       <p>
-        Use os controles ou o mapa. Navegação disponível pelo Sudeste e Rio de
-        Janeiro.
+        Use os controles ou o mapa. Cobertura Nacional em tempo integral.
       </p>
       <div className="geography-fields">
         <div>
@@ -136,10 +126,9 @@ export function GeographySelector({
               <option
                 key={code}
                 value={code}
-                disabled={!geographyCapabilities.drilldownRegions.includes(code as "SE")}
+                disabled={!geographyCapabilities.drilldownRegions.includes(code)}
               >
                 {name}
-                {code !== "SE" ? " · Navegação indisponível" : ""}
               </option>
             ))}
           </select>
@@ -162,7 +151,7 @@ export function GeographySelector({
             }}
           >
             <option value="">Todos os estados</option>
-            {region === "SE" && isDemo &&
+            {isDemo && region === "SE" &&
               states.map(([code, name]) => (
                 <option
                   key={code}
@@ -172,7 +161,7 @@ export function GeographySelector({
                   }
                 >
                   {name}
-                  {isDemo && code !== "RJ" ? " · Navegação indisponível" : ""}
+                    {isDemo && code !== "RJ" ? " · Navegação indisponível" : ""}
                 </option>
               ))}
             {region === "SE" && !isDemo && nationalStates.filter(([code]) => stateRegion[code] === region).map(([code, name]) => (
@@ -215,19 +204,19 @@ export function GeographySelector({
             ))}
           </select>
         </div>
-        {municipality === CAMPOS_MUNICIPALITY_CODE && (
+        {municipality && (
           <div>
             <label htmlFor="district">Distrito</label>
             <select
               id="district"
-              disabled={!districtMap.isSuccess}
+              disabled={!districtItems.length && !districtMap.isSuccess}
               value={district}
               onChange={(event) => {
                 const item = districts.find((candidate) => candidate.code === event.target.value);
                 if (item) {
-                  select({ level: "district", ...item, municipalityCode: CAMPOS_MUNICIPALITY_CODE });
+                  select({ level: "district", ...item, municipalityCode: municipality });
                 } else if (selectedGeography?.level !== "municipality") {
-                  select({ level: "municipality", code: CAMPOS_MUNICIPALITY_CODE, name: "Campos dos Goytacazes" });
+                  select({ level: "municipality", code: municipality, name: selectedGeography?.name ?? "Município selecionado" });
                 }
               }}
             >
@@ -235,23 +224,23 @@ export function GeographySelector({
               {districts.map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}
             </select>
             <p className="selector-help">
-              {districtMap.isPending ? "Carregando distritos…" : "Campos possui detalhamento distrital."}
+              {districtMap.isPending && !districtItems.length ? "Carregando distritos…" : "Distritos derivados do catálogo territorial IBGE/CNES."}
             </p>
           </div>
         )}
-        {district === CAMPOS_SEAT_DISTRICT_CODE && (
+        {district && (
           <div>
             <label htmlFor="neighborhood">Bairro da notificação</label>
             <select
               id="neighborhood"
-              disabled={!neighborhoodMap.isSuccess}
+                disabled={!neighborhoodMap.isSuccess}
               value={selectedGeography?.level === "neighborhood" ? selectedGeography.code : ""}
               onChange={(event) => {
                 const item = neighborhoods.find((candidate) => candidate.code === event.target.value);
                 if (item) {
-                  select({ level: "neighborhood", ...item, municipalityCode: CAMPOS_MUNICIPALITY_CODE, districtCode: CAMPOS_SEAT_DISTRICT_CODE });
+                  select({ level: "neighborhood", ...item, municipalityCode: municipality, districtCode: district });
                 } else {
-                  select({ level: "district", code: CAMPOS_SEAT_DISTRICT_CODE, name: CAMPOS_SEAT_DISTRICT_NAME, municipalityCode: CAMPOS_MUNICIPALITY_CODE });
+                  select({ level: "district", code: district, name: districts.find((item) => item.code === district)?.name ?? district, municipalityCode: municipality });
                 }
               }}
             >

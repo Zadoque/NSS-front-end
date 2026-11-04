@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { dataSource } from "../api/sources/dataSource";
 import type { EpidemiologyRequest } from "../domain/epidemiologyTypes";
-export function useEpidemiologyQuery(request: EpidemiologyRequest) {
+export function useEpidemiologyQuery(request: EpidemiologyRequest, enabled = true) {
   return useQuery({
     queryKey: ["epidemiology", request],
     queryFn: () => dataSource.getEpidemiology(request),
-    enabled: !!request.disease,
+    enabled: enabled && !!request.disease,
   });
 }
 export function useDiseases() {

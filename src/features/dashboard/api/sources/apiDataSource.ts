@@ -44,6 +44,7 @@ export const apiDataSource: EpidemiologyDataSource = {
     if (request.municipalityCode) params.set("municipalityCode", request.municipalityCode);
     if (request.districtCode) params.set("districtCode", request.districtCode);
     if (request.ufCode) params.set("ufCode", request.ufCode);
+    if (request.regionCode) params.set("regionCode", request.regionCode);
     const endpoint = request.geography === "MUNICIPALITY"
       ? "municipalities"
       : request.geography === "DISTRICT"

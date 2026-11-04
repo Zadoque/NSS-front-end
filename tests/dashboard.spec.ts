@@ -14,9 +14,7 @@ for (const width of [375, 768, 1024, 1440]) {
     await expect(areas).toHaveCount(5);
     await page.getByRole("button", { name: /^Norte ·/ }).click();
     await expect(areas).toHaveCount(5);
-    await expect(page.locator(".map-context")).toContainText(
-      "Sem cobertura nesta V1",
-    );
+    await expect(page.locator(".map-context")).toContainText("Sem registros");
     await page.getByRole("button", { name: /^Sudeste ·/ }).focus();
     await page.keyboard.press("Enter");
     await expect(areas).toHaveCount(4);
