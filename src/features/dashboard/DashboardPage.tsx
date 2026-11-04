@@ -59,9 +59,7 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
   return (
     <>
       <header className="header">
-        <div className="brand-mark" aria-hidden="true">
-          NSS
-        </div>
+        <img className="brand-image" src="/logo.jpg" alt="NSS" />
         <div>
           <strong>Núcleo de Situação de Saúde</strong>
           <p>UENF · Vigilância epidemiológica</p>
