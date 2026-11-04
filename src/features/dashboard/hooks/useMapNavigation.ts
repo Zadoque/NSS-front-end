@@ -35,7 +35,7 @@ export function useMapNavigation() {
       return;
     }
     if (isDemo && selection.level === "state") {
-      if (selection.code === "RJ") {
+      if (selection.code === "RJ" || selection.code === "33") {
         setNavigation({ mapLevel: "RJ_MUNICIPALITIES", selectedGeography: null });
       } else {
         setNavigation({ mapLevel: "SOUTHEAST_STATES", selectedGeography: selection });
