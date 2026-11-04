@@ -12,8 +12,11 @@ test("catálogo cartográfico mantém município e asset intramunicipal para os 
   expect(rio).toHaveLength(92);
   for (const municipality of rio) {
     const municipalityMap = JSON.parse(readFileSync(resolve(root, municipality.path), "utf8"));
+    const districts = JSON.parse(readFileSync(resolve(root, `districts/${municipality.code}.geojson`), "utf8"));
     const neighborhoods = JSON.parse(readFileSync(resolve(root, `neighborhoods/${municipality.code}.geojson`), "utf8"));
     expect(municipalityMap.type).toBe("FeatureCollection");
+    expect(districts.type).toBe("FeatureCollection");
+    expect(districts.features.length, municipality.code).toBeGreaterThan(0);
     expect(neighborhoods.type).toBe("FeatureCollection");
   }
 });

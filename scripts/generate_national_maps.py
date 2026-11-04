@@ -35,6 +35,11 @@ NEIGHBORHOOD_URL = (
     "malhas_territoriais/malhas_de_setores_censitarios__divisoes_intramunicipais/"
     "censo_2022/bairros/shp/UF/{uf}_bairros_CD2022.zip"
 )
+DISTRICT_URL = (
+    "https://geoftp.ibge.gov.br/organizacao_do_territorio/"
+    "malhas_territoriais/malhas_de_setores_censitarios__divisoes_intramunicipais/"
+    "censo_2022/distritos/shp/UF/{uf}_distritos_CD2022.zip"
+)
 
 
 def write_json(path: Path, value: object) -> None:
@@ -230,6 +235,50 @@ def export_neighborhoods(municipality_items: list[dict[str, str]], keep_raw: boo
     return total
 
 
+def export_districts(municipality_items: list[dict[str, str]], keep_raw: bool) -> int:
+    """Export official IBGE district polygons split by municipality."""
+    total = 0
+    by_uf = {item["uf"]: [] for item in municipality_items}
+    for item in municipality_items:
+        by_uf[item["uf"]].append(item)
+    for uf, items in sorted(by_uf.items()):
+        try:
+            archive = download(DISTRICT_URL.format(uf=uf), RAW / f"{uf}_distritos_CD2022.zip")
+        except OSError:
+            raise RuntimeError(f"official district source unavailable for {uf}") from None
+        with tempfile.TemporaryDirectory(prefix=f"nss-{uf.lower()}-districts-") as directory:
+            with zipfile.ZipFile(archive) as source:
+                source.extractall(directory)
+            source_path = next(Path(directory).rglob("*.shp"))
+            converted = Path(directory) / "districts.geojson"
+            subprocess.run([
+                "ogr2ogr", "-f", "GeoJSON", str(converted), str(source_path),
+                "-t_srs", "EPSG:4326", "-select", "CD_MUN,CD_DIST,NM_DIST,NM_MUN",
+            ], check=True, stdout=subprocess.DEVNULL)
+            districts = json.loads(converted.read_text(encoding="utf-8"))
+            by_municipality: dict[str, list[dict]] = {}
+            for feature in districts.get("features", []):
+                properties = feature.get("properties", {})
+                code = str(properties.get("CD_MUN", "")).zfill(7)
+                feature["geometry"] = rewind_geometry(feature.get("geometry"))
+                feature["properties"] = {
+                    "territoryId": f"IBGE_DIST_{properties.get('CD_DIST')}",
+                    "name": properties.get("NM_DIST") or "Distrito",
+                    "type": "DISTRICT",
+                    "municipalityCode": code,
+                    "ibgeCode": str(properties.get("CD_DIST")),
+                }
+                by_municipality.setdefault(code, []).append(feature)
+            for item in items:
+                selected = by_municipality.get(item["code"], [])
+                write_json(OUTPUT / "districts" / f"{item['code']}.geojson", {"type": "FeatureCollection", "features": selected})
+                total += len(selected)
+        print(f"{uf}: {len(items)} municipalities, {total} districts exported")
+    if not keep_raw:
+        shutil.rmtree(RAW, ignore_errors=True)
+    return total
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--municipalities-only", action="store_true")
@@ -248,6 +297,7 @@ def main() -> int:
     items = export_municipalities(municipalities())
     export_municipality_overview(items)
     export_municipality_state_overviews(items)
+    district_count = None if args.municipalities_only else export_districts(items, args.keep_raw)
     neighborhood_count = None if args.municipalities_only else export_neighborhoods(items, args.keep_raw)
     write_json(OUTPUT / "municipalities.index.json", {"year": YEAR, "items": items})
     write_json(OUTPUT / "manifest.json", {
@@ -256,6 +306,7 @@ def main() -> int:
         "year": YEAR,
         "municipalityCount": len(items),
         "stateCount": len(state_items),
+        "districtCount": district_count,
         "neighborhoodCount": neighborhood_count,
         "municipalitiesIndex": "municipalities.index.json",
     })
