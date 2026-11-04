@@ -16,6 +16,13 @@ export const geographyCapabilities = {
   ],
 } as const;
 
+export const stateRegion: Record<string, string> = {
+  "11": "N", "12": "N", "13": "N", "14": "N", "15": "N", "16": "N", "17": "N",
+  "21": "NE", "22": "NE", "23": "NE", "24": "NE", "25": "NE", "26": "NE", "27": "NE", "28": "NE", "29": "NE",
+  "31": "SE", "32": "SE", "33": "SE", "35": "SE",
+  "41": "S", "42": "S", "43": "S", "50": "CO", "51": "CO", "52": "CO", "53": "CO",
+};
+
 export function canDrillDown(selection: GeographySelection) {
   if (selection.level === "region") return geographyCapabilities.drilldownRegions.includes(selection.code as "SE");
   if (selection.level === "state") return geographyCapabilities.drilldownStates.includes(selection.code as "RJ");
@@ -39,6 +46,13 @@ export function mapLevelForSelection(selection: GeographySelection): MapLevel {
     case "neighborhood":
       return "CAMPOS_NEIGHBORHOODS";
   }
+}
+
+export function nationalMapLevelForSelection(selection: GeographySelection): MapLevel {
+  if (selection.level === "region") return "NATIONAL_STATES";
+  if (selection.level === "state") return "NATIONAL_MUNICIPALITIES";
+  if (selection.level === "municipality") return "MUNICIPALITY_NEIGHBORHOODS";
+  return "MUNICIPALITY_NEIGHBORHOODS";
 }
 
 export function camposMunicipalitySelection(): GeographySelection {

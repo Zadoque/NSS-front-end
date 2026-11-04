@@ -17,6 +17,8 @@ export function parseCases(value: unknown, request: EpidemiologyRequest): Epidem
     totalNotifications: parsed.data.totalNotifications ?? null,
     coverage: parsed.data.coverage ?? { status: "PARTIAL", mappedNotificationsTotal: 0, unmappedNotificationsTotal: 0 },
     items,
+    sourceExtractedAt: parsed.data.sourceExtractedAt,
+    addedAt: parsed.data.addedAt,
   };
 }
 
@@ -41,6 +43,7 @@ export const apiDataSource: EpidemiologyDataSource = {
     if (request.ageBand) params.set("ageBand", request.ageBand);
     if (request.municipalityCode) params.set("municipalityCode", request.municipalityCode);
     if (request.districtCode) params.set("districtCode", request.districtCode);
+    if (request.ufCode) params.set("ufCode", request.ufCode);
     const endpoint = request.geography === "MUNICIPALITY"
       ? "municipalities"
       : request.geography === "DISTRICT"

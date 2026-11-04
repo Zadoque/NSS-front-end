@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { loadMap } from "../geography/maps";
+import { loadMap, loadMunicipalityIndex } from "../geography/maps";
+import { isDemo } from "../api/sources/dataSource";
 import type { useMapNavigation } from "../hooks/useMapNavigation";
 import {
   CAMPOS_MUNICIPALITY_CODE,
   CAMPOS_SEAT_DISTRICT_CODE,
   CAMPOS_SEAT_DISTRICT_NAME,
   geographyCapabilities,
+  stateRegion,
 } from "../geography/geographyDomain";
 
 const regions = [
@@ -22,6 +24,12 @@ const states = [
   ["RJ", "Rio de Janeiro"],
   ["SP", "São Paulo"],
 ];
+const nationalStates = [
+  ["11", "Rondônia"], ["12", "Acre"], ["13", "Amazonas"], ["14", "Roraima"], ["15", "Pará"], ["16", "Amapá"], ["17", "Tocantins"],
+  ["21", "Maranhão"], ["22", "Piauí"], ["23", "Ceará"], ["24", "Rio Grande do Norte"], ["25", "Paraíba"], ["26", "Pernambuco"], ["27", "Alagoas"], ["28", "Sergipe"], ["29", "Bahia"],
+  ["31", "Minas Gerais"], ["32", "Espírito Santo"], ["33", "Rio de Janeiro"], ["35", "São Paulo"], ["41", "Paraná"], ["42", "Santa Catarina"], ["43", "Rio Grande do Sul"],
+  ["50", "Mato Grosso do Sul"], ["51", "Mato Grosso"], ["52", "Goiás"], ["53", "Distrito Federal"],
+];
 const normalize = (text: string) =>
   text
     .normalize("NFD")
@@ -32,20 +40,29 @@ export function GeographySelector({
 }: {
   navigation: ReturnType<typeof useMapNavigation>;
 }) {
-  const { region, state, selectedGeography, navigate, select } = navigation;
+  const { region, state, mapLevel, selectedGeography, navigate, select } = navigation;
   const [search, setSearch] = useState("");
   const map = useQuery({
     queryKey: ["map", "RJ_MUNICIPALITIES"],
     queryFn: () => loadMap("RJ_MUNICIPALITIES"),
     staleTime: Infinity,
-    enabled: state === "RJ",
+    enabled: state === "RJ" && ["RJ_MUNICIPALITIES", "CAMPOS_DISTRICTS", "CAMPOS_NEIGHBORHOODS"].includes(mapLevel),
   });
-  const municipalities = (map.data?.features ?? [])
+  const nationalIndex = useQuery({
+    queryKey: ["municipality-index"],
+    queryFn: loadMunicipalityIndex,
+    staleTime: Infinity,
+    enabled: !isDemo && mapLevel === "NATIONAL_MUNICIPALITIES" && Boolean(state),
+  });
+  const municipalities = mapLevel === "NATIONAL_MUNICIPALITIES"
+    ? (nationalIndex.data ?? []).filter((item) => item.code.startsWith(state)).map((item) => ({ code: item.code, name: item.name }))
+    : (map.data?.features ?? [])
     .map(({ properties }) => ({
       code: String(properties?.code_muni),
       name: String(properties?.name_muni),
     }))
     .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+  const municipalityDataReady = mapLevel === "NATIONAL_MUNICIPALITIES" ? nationalIndex.isSuccess : map.isSuccess;
   const municipality =
     selectedGeography?.municipalityCode ??
     (selectedGeography?.level === "municipality" ? selectedGeography.code : "");
@@ -131,21 +148,21 @@ export function GeographySelector({
           <label htmlFor="state">Estado</label>
           <select
             id="state"
-            disabled={region !== "SE"}
+            disabled={!region}
             value={state}
             onChange={(event) => {
               setSearch("");
-              if (!event.target.value) navigate("SOUTHEAST_STATES");
+              if (!event.target.value) navigate(region === "SE" ? "SOUTHEAST_STATES" : "NATIONAL_STATES");
               else
                 select({
                   level: "state",
                   code: event.target.value,
-                  name: "Rio de Janeiro",
+                  name: (isDemo ? states : nationalStates).find((item) => item[0] === event.target.value)![1],
                 });
             }}
           >
             <option value="">Todos os estados</option>
-            {region === "SE" &&
+            {region === "SE" && isDemo &&
               states.map(([code, name]) => (
                 <option
                   key={code}
@@ -155,9 +172,15 @@ export function GeographySelector({
                   }
                 >
                   {name}
-                  {code !== "RJ" ? " · Navegação indisponível" : ""}
+                  {isDemo && code !== "RJ" ? " · Navegação indisponível" : ""}
                 </option>
               ))}
+            {region === "SE" && !isDemo && nationalStates.filter(([code]) => stateRegion[code] === region).map(([code, name]) => (
+              <option key={code} value={code}>{name}</option>
+            ))}
+            {region !== "SE" && !isDemo && nationalStates.filter(([code]) => stateRegion[code] === region).map(([code, name]) => (
+              <option key={code} value={code}>{name}</option>
+            ))}
           </select>
         </div>
         <div>
@@ -165,7 +188,7 @@ export function GeographySelector({
           <input
             id="municipality-search"
             type="search"
-            disabled={state !== "RJ" || !map.isSuccess}
+            disabled={!state || !municipalityDataReady}
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Digite parte do nome"
@@ -174,14 +197,14 @@ export function GeographySelector({
           <label htmlFor="municipality">Município</label>
           <select
             id="municipality"
-            disabled={state !== "RJ" || !map.isSuccess}
+            disabled={!state || !municipalityDataReady}
             value={municipality}
             onChange={(event) => {
               const item = municipalities.find(
                 (item) => item.code === event.target.value,
               );
               if (item) select({ level: "municipality", ...item });
-              else navigate("RJ_MUNICIPALITIES");
+              else navigate(mapLevel === "NATIONAL_MUNICIPALITIES" ? "NATIONAL_MUNICIPALITIES" : "RJ_MUNICIPALITIES");
             }}
           >
             <option value="">Todos os municípios</option>
@@ -242,16 +265,16 @@ export function GeographySelector({
         )}
       </div>
       <p id="municipality-help" role="status">
-        {state === "RJ"
-          ? map.isPending
+        {state
+          ? (mapLevel === "NATIONAL_MUNICIPALITIES" ? nationalIndex.isPending : map.isPending)
             ? "Carregando municípios…"
-            : map.isError
+            : (mapLevel === "NATIONAL_MUNICIPALITIES" ? nationalIndex.isError : map.isError)
               ? "Não foi possível carregar os municípios."
               : `${matches.length} municípios encontrados. A pesquisa filtra opções; a seleção só muda ao escolher um município. Geometria disponível não significa cobertura de dados.`
-          : "Selecione Rio de Janeiro para pesquisar os municípios."}
+          : "Selecione um estado para pesquisar os municípios."}
       </p>
-      {state === "RJ" && map.isError && (
-        <button onClick={() => void map.refetch()}>
+      {state && (mapLevel === "NATIONAL_MUNICIPALITIES" ? nationalIndex.isError : map.isError) && (
+        <button onClick={() => void (mapLevel === "NATIONAL_MUNICIPALITIES" ? nationalIndex.refetch() : map.refetch())}>
           Tentar carregar municípios novamente
         </button>
       )}

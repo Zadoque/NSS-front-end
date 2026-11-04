@@ -142,8 +142,16 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
                     : "Navegação pelo território")}
               </strong>
               <p>{selectionInfo}</p>
+              {query.data?.sourceExtractedAt && (
+                <p className="data-lineage" role="status">
+                  Dados SINAN extraídos em {new Date(query.data.sourceExtractedAt).toLocaleString("pt-BR")}.
+                </p>
+              )}
               {query.isSuccess && query.data.coverage.status === "PARTIAL" && (
                 <p role="status">Cobertura territorial parcial: {query.data.coverage.unmappedNotificationsTotal} notificações da unidade notificadora sem distrito/bairro oficial mapeado. Elas permanecem no total municipal.</p>
+              )}
+              {query.isSuccess && query.data.coverage.status === "AVAILABLE" && (
+                <p role="status">Cobertura Nacional em tempo integral.</p>
               )}
             </div>
           </section>

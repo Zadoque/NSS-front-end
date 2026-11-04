@@ -20,6 +20,8 @@ export const epidemiologyResponseSchema = z.object({
     unmappedNotificationsTotal: z.number().int().nonnegative(),
   }).optional(),
   filters: z.object({ year: z.union([z.number().int(), z.literal("ALL")]).optional(), month: z.union([z.number().int(), z.literal("ALL")]).optional() }).optional(),
+  sourceExtractedAt: z.string().datetime({ offset: true }).nullable().optional(),
+  addedAt: z.string().datetime({ offset: true }).nullable().optional(),
 });
 
 export const diseasesResponseSchema = z.object({ items: z.array(z.string().min(1)) });
