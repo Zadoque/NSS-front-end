@@ -27,6 +27,7 @@
   .header { @apply flex items-center gap-[14px] border-b border-[#dde5eb] bg-white px-5 py-5; }
   .header > div:nth-child(2) { @apply min-w-0; }
   .brand-mark { @apply grid h-[52px] w-[52px] shrink-0 place-items-center rounded-xl bg-nss-blue font-extrabold text-white; }
+  .brand-image { @apply h-[52px] w-[52px] shrink-0 rounded-xl object-cover; }
   .header strong { @apply text-sm; }
   .header p { @apply mt-[3px] text-xs text-[#617583]; }
   .badge { @apply ml-auto rounded-[5px] border border-[#b8d5ca] bg-[#edf7f1] px-2 py-[5px] text-[10px] font-extrabold tracking-[0.1em] text-[#29664f]; }
@@ -160,6 +161,83 @@
   .home-section p + p { @apply mt-4; }
   .home-section ul { @apply mb-0 list-disc pl-5; }
   .home-section li { @apply mt-3.5 leading-[1.6]; }
+  .home-menu { @apply relative ml-auto; }
+  .home-menu summary { @apply grid h-10 w-10 cursor-pointer place-items-center list-none rounded-full border border-nss-border text-lg font-bold tracking-[0.14em] text-nss-blue; }
+  .home-menu summary::-webkit-details-marker { @apply hidden; }
+  .home-menu-popover { @apply absolute right-0 z-30 mt-2 grid min-w-[190px] gap-1 rounded-xl border border-[#dbe5ea] bg-white p-2 shadow-[0_12px_30px_#1b3d5526]; }
+  .home-menu-popover a { @apply rounded-lg px-3 py-2 text-sm no-underline hover:bg-[#edf6f2]; }
+  .portal-link { @apply mt-4 inline-block text-sm font-semibold; }
+  .portal-page { @apply max-w-[1280px]; }
+  .portal-header { @apply sticky top-0 z-40; }
+  .portal-hero { @apply mb-7 flex items-end justify-between gap-8 rounded-2xl bg-[linear-gradient(120deg,#174a7e,#267d75)] p-7 text-white shadow-[0_8px_28px_#174a7e22]; }
+  .portal-hero .section-label, .portal-hero p { @apply text-[#d9f0ec]; }
+  .portal-hero h1 { @apply max-w-[760px]; }
+  .portal-hero p { @apply max-w-[680px]; }
+  .role-switch { @apply grid min-w-[220px] gap-2 text-sm font-semibold; }
+  .role-switch select { @apply min-h-11 rounded-lg border border-white/40 bg-white/95 p-2.5 text-nss-ink; }
+  .portal-nav { @apply mb-6 flex flex-wrap gap-2 border-b border-[#dbe5ea] pb-3; }
+  .portal-nav button { @apply rounded-lg px-4 py-2.5 text-sm font-semibold text-nss-muted hover:bg-[#eaf4f1] hover:text-nss-blue; }
+  .portal-nav button.active { @apply bg-nss-blue text-white; }
+  .portal-notice { @apply mb-5; }
+  .portal-grid { @apply grid gap-5 md:grid-cols-2; }
+  .portal-feature, .portal-animal-feature { @apply grid min-h-[250px] content-center gap-3 p-7; }
+  .portal-feature { @apply bg-[#eaf3f8]; }
+  .portal-animal-feature { @apply bg-[#edf7f1]; }
+  .portal-section { @apply mt-7; }
+  .section-heading { @apply mb-4 flex flex-wrap items-end justify-between gap-3; }
+  .section-heading button { @apply border-0 bg-transparent text-sm font-semibold text-nss-blue; }
+  .news-grid { @apply grid gap-5 sm:grid-cols-2 lg:grid-cols-3; }
+  .post-card { @apply overflow-hidden; }
+  .post-card > img, .post-art { @apply h-40 w-full object-cover; }
+  .post-art { @apply grid place-items-center bg-[linear-gradient(135deg,#174a7e,#4d9a8c)] text-4xl font-black tracking-[0.12em] text-white/80; }
+  .post-card-body { @apply grid gap-2 p-5; }
+  .post-card h3 { @apply text-lg leading-tight; }
+  .post-card p { @apply text-sm text-nss-muted; }
+  .post-card small { @apply text-xs text-[#71828c]; }
+  .post-tag, .pill { @apply w-fit rounded-full bg-[#e8f3ef] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#286c59]; }
+  .portal-form { @apply mt-6 grid gap-4 p-6; }
+  .portal-form h3 { @apply mt-[-5px]; }
+  .form-grid { @apply grid gap-4 sm:grid-cols-2; }
+  .form-grid label { @apply grid gap-1.5 text-sm font-semibold; }
+  .form-grid input, .form-grid select, .form-grid textarea, .inline-form input { @apply min-h-11 rounded-lg border border-[#a8bcc8] bg-white p-2.5 text-sm font-normal; }
+  .form-grid textarea { @apply resize-y; }
+  .form-wide { @apply sm:col-span-2; }
+  .form-grid small, .helper-text, .catalog-row small { @apply text-xs font-normal text-nss-muted; }
+  .compact-button { @apply w-fit justify-center px-5; }
+  .secondary-button { @apply w-fit rounded-lg border border-nss-blue bg-white px-4 py-2.5 text-sm font-semibold text-nss-blue hover:bg-[#edf6f2]; }
+  .danger-button { @apply w-fit rounded-lg border border-[#e4b5ad] bg-white px-3 py-1.5 text-xs font-semibold text-[#a63c2d] hover:bg-[#fff1ee]; }
+  .portal-button { @apply mt-2 max-w-[260px] justify-center no-underline; }
+  .bulletin-intro { @apply mb-5 grid gap-5 p-6 md:grid-cols-[1fr_auto] md:items-center; }
+  .bulletin-intro p { @apply mt-2 max-w-[720px] text-sm text-nss-muted; }
+  .bulletin-current { @apply grid gap-1 rounded-xl bg-[#edf7f1] p-4 text-sm; }
+  .bulletin-current span, .bulletin-card small { @apply text-xs text-nss-muted; }
+  .bulletin-current strong { @apply text-nss-blue; }
+  .bulletin-current b { @apply text-[#28775d]; }
+  .bulletin-grid { @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-3; }
+  .bulletin-card { @apply grid gap-2 p-5; }
+  .bulletin-card > strong { @apply mt-2 text-3xl text-nss-blue; }
+  .bulletin-lines { @apply my-2 grid gap-2 border-y border-[#e4ebef] py-3 text-sm; }
+  .bulletin-lines span { @apply flex justify-between gap-4 text-nss-muted; }
+  .bulletin-lines b { @apply text-nss-ink; }
+  .bulletin-card .secondary-button { @apply mt-1; }
+  .animal-map { @apply mb-5 grid gap-5 overflow-hidden p-6 md:grid-cols-[1fr_1.4fr] md:items-center; }
+  .district-map { @apply grid grid-cols-2 gap-2 rounded-xl bg-[linear-gradient(135deg,#e5f0f1,#f6faf8)] p-3; }
+  .district-map span { @apply grid min-h-16 content-center rounded-lg border border-white/80 bg-white/80 px-3 text-sm font-semibold text-nss-blue shadow-sm; }
+  .district-map b { @apply mt-1 text-xl text-[#298267]; }
+  .animal-grid { @apply grid gap-5 lg:grid-cols-2; }
+  .catalog-row, .admin-row { @apply flex items-center justify-between gap-3 border-b border-[#e4ebef] py-3; }
+  .catalog-row:last-child, .admin-row:last-child { @apply border-b-0; }
+  .catalog-row span, .admin-row span { @apply grid gap-1; }
+  .inline-form { @apply mt-3 flex flex-wrap gap-2; }
+  .inline-form input { @apply min-w-[220px] flex-1; }
+  .admin-list { @apply overflow-hidden rounded-2xl border border-[#e0e7eb] bg-white p-5 shadow-[0_4px_22px_#1b3d5510]; }
+  .empty-card { @apply py-8 text-center text-sm text-nss-muted; }
+  .team-grid { @apply grid gap-5 sm:grid-cols-2 lg:grid-cols-3; }
+  .team-card { @apply grid content-start gap-2 p-6; }
+  .team-card > strong { @apply text-sm text-[#286c59]; }
+  .team-card p { @apply text-sm text-nss-muted; }
+  .team-card small { @apply text-xs text-[#71828c]; }
+  .avatar { @apply grid h-12 w-12 place-items-center rounded-full bg-nss-blue text-lg font-bold text-white; }
   .location { @apply mt-[22px]; }
   address { @apply not-italic leading-[1.8]; }
   .geography-selector { @apply mb-[22px] p-5; }
@@ -195,6 +273,11 @@
   .dashboard-view-tabs { @apply grid grid-cols-2; }
   .dashboard-view-tabs button { @apply w-full px-2 text-xs; }
   .analytics-bar { @apply grid-cols-[minmax(90px,1fr)_minmax(70px,1.5fr)_auto] gap-2; }
+  .portal-hero { @apply items-stretch p-5; flex-direction: column; }
+  .role-switch { @apply min-w-0; }
+  .portal-nav { @apply overflow-x-auto; }
+  .portal-nav button { @apply whitespace-nowrap px-3; }
+  .portal-form { @apply p-4; }
 }
 
 @media (min-width: 1024px) {

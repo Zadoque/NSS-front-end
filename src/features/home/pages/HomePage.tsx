@@ -3,14 +3,15 @@ export function HomePage() {
   return (
     <>
       <header className="header">
-        <div className="brand-mark" aria-hidden="true">
-          NSS
-        </div>
+        <img className="brand-image" src="/logo.jpg" alt="NSS" />
         <div>
           <strong>Núcleo de Situação de Saúde</strong>
           <p>UENF · Saúde e território</p>
         </div>
-        <a className="header-login" href="/login">Entrar</a>
+        <details className="home-menu">
+          <summary aria-label="Abrir menu">•••</summary>
+          <div className="home-menu-popover"><a href="/portal">Portal NSS</a><a href="/login">Entrar no mapa</a></div>
+        </details>
       </header>
       <main className="home">
         <section className="home-hero">
@@ -25,6 +26,7 @@ export function HomePage() {
           <a className="primary home-cta" href="/login">
             Acessar o mapa <span aria-hidden="true">→</span>
           </a>
+          <a className="portal-link" href="/portal">Conheça o portal, notícias e equipe →</a>
         </section>
         <div className="home-grid">
           <section className="card home-section">
