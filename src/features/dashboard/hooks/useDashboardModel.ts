@@ -50,13 +50,18 @@ export function useDashboardModel() {
     if (mapLevel !== "MUNICIPALITY_DISTRICTS" || !selectedMunicipalityCode || !districtQuery.isSuccess) return;
     if (autoExpandedMunicipality.current === selectedMunicipalityCode) return;
     const districtItems = districtQuery.data.items;
-    if (selectedMunicipalityCode !== CAMPOS_MUNICIPALITY_CODE && districtItems.length === 0 && neighborhoodDistrictCodes.length > 0) {
+    // A municipality with a single territorial subdivision should open the
+    // neighborhood view directly. The API may contain several district rows
+    // for the same subdivision (or use a different source code), so the
+    // cartographic catalog is the source of truth for this UX decision.
+    if (selectedMunicipalityCode !== CAMPOS_MUNICIPALITY_CODE && neighborhoodDistrictCodes.length === 1) {
       autoExpandedMunicipality.current = selectedMunicipalityCode;
       select({
         level: "neighborhood",
         code: "__ALL_NEIGHBORHOODS__",
         name: "Bairros disponíveis",
         municipalityCode: selectedMunicipalityCode,
+        districtCode: neighborhoodDistrictCodes[0],
       });
       return;
     }

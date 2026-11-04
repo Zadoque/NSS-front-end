@@ -110,7 +110,9 @@ export function GeographicMap({
     return (
       <div className={`geographic-map${expanded ? " map-expanded" : ""}`} ref={mapContainerRef}>
         <div className="map-placeholder" role="status">
-          A geometria dos distritos ainda não está disponível para este município. O ranking e os dados oficiais continuam disponíveis abaixo.
+          {level === "MUNICIPALITY_NEIGHBORHOODS"
+            ? "A geometria dos bairros ainda não está disponível para este município. O ranking e os dados oficiais continuam disponíveis abaixo."
+            : "A geometria dos distritos ainda não está disponível para este município. O ranking e os dados oficiais continuam disponíveis abaixo."}
         </div>
       </div>
     );

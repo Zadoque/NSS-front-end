@@ -58,6 +58,13 @@ test("RJ: 92 municípios, distritos e bairros permanecem navegáveis", async ({ 
   await page.getByRole("button", { name: "Voltar para municípios" }).click();
   await expect(page.getByLabel("Estado", { exact: true })).toHaveValue("33");
   await expect(page.getByLabel("Município", { exact: true }).locator("option")).toHaveCount(93);
+
+  // Rio de Janeiro has one district in the cartographic catalog. It must
+  // open the neighborhood ranking directly instead of showing an empty
+  // intermediate district map.
+  await page.getByLabel("Município", { exact: true }).selectOption("3304557");
+  await expect(page.getByRole("heading", { name: "Bairros da notificação", exact: true })).toBeVisible();
+  await expect(page.locator("section.ranking:visible")).toContainText("Notificações por bairro da notificação");
 });
 
 test.setTimeout(180_000);
