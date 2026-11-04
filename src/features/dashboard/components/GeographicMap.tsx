@@ -50,7 +50,7 @@ export function GeographicMap({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const initialZoom = level === "CAMPOS_NEIGHBORHOODS" || level === "MUNICIPALITY_NEIGHBORHOODS" ? 3.5 : 1;
+  const initialZoom = level === "CAMPOS_NEIGHBORHOODS" || level === "MUNICIPALITY_NEIGHBORHOODS" ? 3.5 : level === "MUNICIPALITY_DISTRICTS" ? 2 : 1;
   const [zoom, setZoom] = useState(initialZoom);
   const [displayZoom, setDisplayZoom] = useState(initialZoom);
   const [center, setCenter] = useState(mapViews[level].center);
@@ -84,25 +84,38 @@ export function GeographicMap({
     };
   }, [expanded]);
   const view = mapViews[level];
-  const mapCenter = ["NATIONAL_STATES", "NATIONAL_MUNICIPALITIES", "MUNICIPALITY_NEIGHBORHOODS"].includes(level)
+  const mapCenter = ["NATIONAL_STATES", "NATIONAL_MUNICIPALITIES", "MUNICIPALITY_DISTRICTS", "MUNICIPALITY_NEIGHBORHOODS"].includes(level)
     ? geometryCenter(map.data ?? { type: "FeatureCollection", features: [] }) ?? view.center
     : view.center;
   const mapKey = `${level}:${selected?.code ?? selected?.municipalityCode ?? ""}`;
   const mapViewportCenter = centerKey === mapKey ? center : mapCenter;
   if (map.isPending)
     return (
-      <div className="map-placeholder" role="status">
-        Carregando mapa…
+      <div className={`geographic-map${expanded ? " map-expanded" : ""}`} ref={mapContainerRef}>
+        <div className="map-placeholder" role="status">
+          Carregando mapa…
+        </div>
       </div>
     );
   if (map.isError)
     return (
-      <div className="map-placeholder" role="alert">
-        Não foi possível carregar o mapa.
-        <button onClick={() => void map.refetch()}>Tentar novamente</button>
+      <div className={`geographic-map${expanded ? " map-expanded" : ""}`} ref={mapContainerRef}>
+        <div className="map-placeholder" role="alert">
+          Não foi possível carregar o mapa.
+          <button onClick={() => void map.refetch()}>Tentar novamente</button>
+        </div>
+      </div>
+    );
+  if (!map.data?.features?.length)
+    return (
+      <div className={`geographic-map${expanded ? " map-expanded" : ""}`} ref={mapContainerRef}>
+        <div className="map-placeholder" role="status">
+          A geometria dos distritos ainda não está disponível para este município. O ranking e os dados oficiais continuam disponíveis abaixo.
+        </div>
       </div>
     );
   const byCode = new Map(items.map((item) => [item.code, item]));
+  const visibleMaximum = Math.max(1, ...items.map((item) => item.notificationsTotal));
   const minZoom = initialZoom;
   const maxZoom = initialZoom * 3;
   const zoomStep = initialZoom * 0.5;
@@ -219,12 +232,12 @@ export function GeographicMap({
                       code: String(p.code_muni),
                       name: String(p.name_muni),
                     }
-                      : level === "CAMPOS_DISTRICTS"
-                      ? { level: "district", code: String(p.territoryId), name: String(p.name), municipalityCode: CAMPOS_MUNICIPALITY_CODE }
+                      : level === "CAMPOS_DISTRICTS" || level === "MUNICIPALITY_DISTRICTS"
+                      ? { level: "district", code: String(p.territoryId), name: byCode.get(String(p.territoryId))?.name ?? String(p.name), municipalityCode: selected?.level === "municipality" ? selected.code : selected?.municipalityCode ?? CAMPOS_MUNICIPALITY_CODE }
                       : level === "MUNICIPALITY_NEIGHBORHOODS"
                         ? { level: "neighborhood", code: `IBGE_BAIRRO_${String(p.CD_BAIRRO)}`, name: String(p.NM_BAIRRO), municipalityCode: selected?.level === "municipality" ? selected.code : selected?.municipalityCode, districtCode: `IBGE_DIST_${String(p.CD_DIST)}` }
                         : { level: "neighborhood", code: String(p.territoryId), name: String(p.name), municipalityCode: CAMPOS_MUNICIPALITY_CODE, districtCode: String(p.parentDistrictId) };
-              const navigable = ["NATIONAL_STATES", "NATIONAL_MUNICIPALITIES", "MUNICIPALITY_NEIGHBORHOODS"].includes(level) || canDrillDown(geography);
+              const navigable = ["NATIONAL_STATES", "NATIONAL_MUNICIPALITIES", "MUNICIPALITY_DISTRICTS", "MUNICIPALITY_NEIGHBORHOODS"].includes(level) || canDrillDown(geography);
               const territorial = geography.level === "district" || geography.level === "neighborhood";
               const covered = territorial
                 ? Boolean(byCode.get(geography.code))
@@ -259,7 +272,7 @@ export function GeographicMap({
                   }
                   fill={
                     item
-                      ? caseColor(item.notificationsTotal)
+                      ? caseColor(item.notificationsTotal, visibleMaximum)
                       : covered
                         ? "#f6f0d8"
                         : navigable

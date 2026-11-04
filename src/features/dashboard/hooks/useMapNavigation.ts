@@ -47,7 +47,7 @@ export function useMapNavigation() {
       return;
     }
     if (!isDemo && selection.level === "municipality" && navigation.mapLevel === "NATIONAL_MUNICIPALITIES") {
-      setNavigation({ mapLevel: "MUNICIPALITY_NEIGHBORHOODS", selectedGeography: selection });
+      setNavigation({ mapLevel: selection.code === CAMPOS_MUNICIPALITY_CODE ? "CAMPOS_DISTRICTS" : "MUNICIPALITY_DISTRICTS", selectedGeography: selection });
       return;
     }
     if (!isDemo && selection.level === "state" && navigation.mapLevel === "SOUTHEAST_STATES") {
@@ -67,6 +67,9 @@ export function useMapNavigation() {
     const current = navigation.selectedGeography;
     if (!isDemo) {
       if (navigation.mapLevel === "MUNICIPALITY_NEIGHBORHOODS") {
+        const municipalityCode = current?.municipalityCode;
+        setNavigation({ mapLevel: "MUNICIPALITY_DISTRICTS", selectedGeography: municipalityCode ? { level: "municipality", code: municipalityCode, name: "Município selecionado" } : null });
+      } else if (navigation.mapLevel === "MUNICIPALITY_DISTRICTS") {
         const municipalityCode = current?.level === "municipality" ? current.code : current?.municipalityCode;
         const ufCode = municipalityCode?.slice(0, 2);
         setNavigation({
@@ -122,8 +125,8 @@ export function useMapNavigation() {
   const state =
     ["RJ_MUNICIPALITIES", "CAMPOS_DISTRICTS", "CAMPOS_NEIGHBORHOODS"].includes(navigation.mapLevel)
       ? "RJ"
-      : navigation.mapLevel === "MUNICIPALITY_NEIGHBORHOODS" && (navigation.selectedGeography?.municipalityCode ?? navigation.selectedGeography?.code)?.startsWith("33")
-        ? "RJ"
+      : ["MUNICIPALITY_DISTRICTS", "MUNICIPALITY_NEIGHBORHOODS"].includes(navigation.mapLevel)
+        ? (navigation.selectedGeography?.municipalityCode ?? navigation.selectedGeography?.code)?.slice(0, 2) ?? ""
       : navigation.selectedGeography?.level === "state"
         ? navigation.selectedGeography.code
         : "";

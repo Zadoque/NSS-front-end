@@ -13,8 +13,14 @@ const months = [
 ];
 
 const diseases: Record<string, string> = {
-  DENG: "Dengue", CHIK: "Chikungunya", ZIKA: "Zika", FMAC: "Febre maculosa",
-  TOXC: "Toxoplasmose congênita", TOXG: "Toxoplasmose gestacional",
+  DENG: "Dengue", CHIK: "Chikungunya", ZIKA: "Zika", TUBE: "Tuberculose",
+  HANS: "Hanseníase", HEPA: "Hepatites virais", SIFA: "Sífilis adquirida",
+  SIFC: "Sífilis congênita", SIFG: "Sífilis em gestante", LEPT: "Leptospirose",
+  MENI: "Meningite", FMAC: "Febre maculosa", TOXC: "Toxoplasmose congênita",
+  TOXG: "Toxoplasmose gestacional", ACBI: "Acidente de trabalho com material biológico",
+  ANIM: "Acidente por animais peçonhentos", ANTR: "Atendimento antirrábico",
+  CHAG: "Doença de Chagas aguda", IEXO: "Intoxicação exógena", RAIV: "Raiva",
+  VIOL: "Violência doméstica, sexual ou outras violências",
 };
 
 function periodLabel(filters: EpidemiologyFilters) {

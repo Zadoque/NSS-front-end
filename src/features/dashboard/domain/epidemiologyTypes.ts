@@ -26,7 +26,7 @@ export interface EpidemiologyDataSource {
   getEpidemiology(request: EpidemiologyRequest): Promise<EpidemiologyResponse>;
 }
 export type MapLevel =
-  "BRAZIL_REGIONS" | "SOUTHEAST_STATES" | "NATIONAL_STATES" | "RJ_MUNICIPALITIES" | "NATIONAL_MUNICIPALITIES" | "CAMPOS_DISTRICTS" | "CAMPOS_NEIGHBORHOODS" | "MUNICIPALITY_NEIGHBORHOODS";
+  "BRAZIL_REGIONS" | "SOUTHEAST_STATES" | "NATIONAL_STATES" | "RJ_MUNICIPALITIES" | "NATIONAL_MUNICIPALITIES" | "CAMPOS_DISTRICTS" | "CAMPOS_NEIGHBORHOODS" | "MUNICIPALITY_DISTRICTS" | "MUNICIPALITY_NEIGHBORHOODS";
 export type GeographySelection = {
   level: "region" | "state" | "municipality" | "district" | "neighborhood";
   code: string;

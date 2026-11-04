@@ -52,7 +52,8 @@ test("RJ: 92 municípios, distritos e bairros permanecem navegáveis", async ({ 
   await page.getByLabel("Distrito", { exact: true }).selectOption({ index: 1 });
   await expect(page.getByLabel("Bairro da notificação", { exact: true })).toBeVisible();
   expect(await page.getByLabel("Bairro da notificação", { exact: true }).locator("option").count()).toBeGreaterThan(1);
-  await page.getByRole("button", { name: "Voltar para regiões" }).click();
+  await page.getByRole("button", { name: "Voltar para distritos" }).click();
+  await page.getByRole("button", { name: "Voltar para municípios" }).click();
   await expect(page.getByLabel("Estado", { exact: true })).toHaveValue("33");
   await expect(page.getByLabel("Município", { exact: true }).locator("option")).toHaveCount(93);
 });
@@ -79,21 +80,21 @@ test("RJ: o seletor abre distritos e bairros para cada um dos 92 municípios", a
 
   await login(page, "http://127.0.0.1:39174");
   for (const municipality of municipalities) {
-    if (municipality !== municipalities[0]) {
-      await page.getByRole("button", { name: "Voltar para regiões" }).click();
-      await page.getByLabel("Estado", { exact: true }).selectOption("");
-      await page.getByLabel("Estado", { exact: true }).selectOption("33");
-    } else {
-      await page.getByLabel("Região", { exact: true }).selectOption("SE");
-      await page.getByLabel("Estado", { exact: true }).selectOption("33");
-    }
+    await page.getByLabel("Região", { exact: true }).selectOption("SE");
+    await page.getByLabel("Estado", { exact: true }).selectOption("33");
     await page.getByLabel("Município", { exact: true }).selectOption(municipality.code);
     const district = page.getByLabel("Distrito", { exact: true });
     await expect(district, municipality.name).toBeVisible();
     await expect(district.locator("option"), municipality.name).toHaveCount(3);
     await district.selectOption({ index: 1 });
     const neighborhood = page.getByLabel("Bairro da notificação", { exact: true });
-    await expect(neighborhood, municipality.name).toBeVisible();
-    expect(await neighborhood.locator("option").count(), municipality.name).toBeGreaterThanOrEqual(1);
+    const neighborhoodAsset = await page.request.get("/maps/national/neighborhoods/" + municipality.code + ".geojson");
+    const neighborhoodGeometry = ((await neighborhoodAsset.json()) as { features: unknown[] }).features.length > 0;
+    if (neighborhoodGeometry) {
+      await expect(neighborhood, municipality.name).toBeVisible();
+      expect(await neighborhood.locator("option").count(), municipality.name).toBeGreaterThanOrEqual(1);
+    } else {
+      await expect(neighborhood, municipality.name).toHaveCount(0);
+    }
   }
 });

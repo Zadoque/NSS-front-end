@@ -91,6 +91,13 @@ test("zero, missing and invalid API records remain distinct", () => {
   ).toThrow();
 });
 
+test("escala de cor dinâmica preserva a ordem de intensidade no recorte", () => {
+  const values = [770, 2763, 3133, 5147, 6953];
+  const colors = values.map((value) => caseColor(value, 6953));
+  expect(new Set(colors).size).toBe(values.length);
+  expect(colors[0]).not.toBe(colors.at(-1));
+});
+
 test("Todos os meses aceita a resposta agregada do Java", () => {
   const request = { disease: "DENG", year: 2026 as const, month: "ALL" as const };
   const response = parseCases({

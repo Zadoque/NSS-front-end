@@ -16,13 +16,13 @@ export function useDashboardModel() {
     ...filterInput,
     disease: diseases.data?.includes(filterInput.disease) ? filterInput.disease : (diseases.data?.[0] ?? ""),
   };
-  const geography = mapLevel === "NATIONAL_STATES" || mapLevel === "SOUTHEAST_STATES" ? "STATE" : mapLevel === "CAMPOS_DISTRICTS" ? "DISTRICT" : ["CAMPOS_NEIGHBORHOODS", "MUNICIPALITY_NEIGHBORHOODS"].includes(mapLevel) ? "NEIGHBORHOOD" : ["RJ_MUNICIPALITIES", "NATIONAL_MUNICIPALITIES"].includes(mapLevel) ? "MUNICIPALITY" : "REGION";
+  const geography = mapLevel === "NATIONAL_STATES" || mapLevel === "SOUTHEAST_STATES" ? "STATE" : ["CAMPOS_DISTRICTS", "MUNICIPALITY_DISTRICTS"].includes(mapLevel) ? "DISTRICT" : ["CAMPOS_NEIGHBORHOODS", "MUNICIPALITY_NEIGHBORHOODS"].includes(mapLevel) ? "NEIGHBORHOOD" : ["RJ_MUNICIPALITIES", "NATIONAL_MUNICIPALITIES"].includes(mapLevel) ? "MUNICIPALITY" : "REGION";
   const scope = territoryScope(selectedGeography, mapLevel);
   const query = useEpidemiologyQuery({
     ...filters,
     geography,
     ...scope,
-    municipalityCode: mapLevel === "MUNICIPALITY_NEIGHBORHOODS" ? selectedGeography?.municipalityCode : scope.municipalityCode,
+    municipalityCode: ["MUNICIPALITY_NEIGHBORHOODS", "MUNICIPALITY_DISTRICTS"].includes(mapLevel) ? selectedGeography?.municipalityCode ?? (selectedGeography?.level === "municipality" ? selectedGeography.code : undefined) : scope.municipalityCode,
     districtCode: mapLevel === "MUNICIPALITY_NEIGHBORHOODS" ? selectedGeography?.districtCode : scope.districtCode,
     ufCode: mapLevel === "NATIONAL_MUNICIPALITIES" && selectedGeography?.level === "state" ? selectedGeography.code : mapLevel === "RJ_MUNICIPALITIES" ? "33" : undefined,
     regionCode: selectedGeography?.level === "region" ? selectedGeography.code : mapLevel === "SOUTHEAST_STATES" ? "SE" : undefined,
@@ -31,10 +31,10 @@ export function useDashboardModel() {
   const districtQuery = useEpidemiologyQuery({ ...filters, geography: "DISTRICT", municipalityCode: selectedMunicipalityCode }, Boolean(selectedMunicipalityCode));
   const items = query.isSuccess ? query.data.items : [];
   const municipal = mapLevel === "RJ_MUNICIPALITIES" || mapLevel === "NATIONAL_MUNICIPALITIES";
-  const territorial = municipal || mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS" || mapLevel === "MUNICIPALITY_NEIGHBORHOODS";
+  const territorial = municipal || mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS" || mapLevel === "MUNICIPALITY_DISTRICTS" || mapLevel === "MUNICIPALITY_NEIGHBORHOODS";
   const covered = selectedGeography?.level === "district" || selectedGeography?.level === "neighborhood"
     ? true
-    : selectedGeography?.level === "municipality" && (mapLevel === "NATIONAL_MUNICIPALITIES" || mapLevel === "MUNICIPALITY_NEIGHBORHOODS" || mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS" || isCoveredMunicipality(selectedGeography.code));
+    : selectedGeography?.level === "municipality" && (mapLevel === "NATIONAL_MUNICIPALITIES" || mapLevel === "MUNICIPALITY_DISTRICTS" || mapLevel === "MUNICIPALITY_NEIGHBORHOODS" || mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS" || isCoveredMunicipality(selectedGeography.code));
   const selectedItem = items.find((item) => item.code === selectedGeography?.code);
   const selectedTotal = (selectedGeography?.level === "municipality" && geography === "DISTRICT") || (selectedGeography?.level === "district" && geography === "NEIGHBORHOOD")
     ? query.data?.totalNotifications

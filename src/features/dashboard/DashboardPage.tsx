@@ -19,7 +19,7 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
   const viewScrollY = useRef<Partial<Record<DashboardView, number>>>({});
   const visitedViews = useRef<Set<DashboardView>>(new Set(["map"]));
   const previousView = useRef<DashboardView>("map");
-  const rankingAvailable = mapLevel === "BRAZIL_REGIONS" || mapLevel === "SOUTHEAST_STATES" || mapLevel === "NATIONAL_STATES" || municipal || mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS" || mapLevel === "MUNICIPALITY_NEIGHBORHOODS";
+  const rankingAvailable = mapLevel === "BRAZIL_REGIONS" || mapLevel === "SOUTHEAST_STATES" || mapLevel === "NATIONAL_STATES" || municipal || mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS" || mapLevel === "MUNICIPALITY_DISTRICTS" || mapLevel === "MUNICIPALITY_NEIGHBORHOODS";
   const areaRankingLevel = mapLevel === "BRAZIL_REGIONS" ? "region" : mapLevel === "SOUTHEAST_STATES" || mapLevel === "NATIONAL_STATES" ? "state" : null;
   const selectedTotal = query.data?.totalNotifications;
   useLayoutEffect(() => {
@@ -97,7 +97,7 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
                     className="map-back"
                     type="button"
                     onClick={goBack}
-                    aria-label={`Voltar para ${mapLevel === "CAMPOS_NEIGHBORHOODS" ? "distritos" : mapLevel === "CAMPOS_DISTRICTS" ? "municípios" : mapLevel === "RJ_MUNICIPALITIES" ? "estados" : "regiões"}`}
+                    aria-label={`Voltar para ${mapLevel === "CAMPOS_NEIGHBORHOODS" || mapLevel === "MUNICIPALITY_NEIGHBORHOODS" ? "distritos" : mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "MUNICIPALITY_DISTRICTS" ? "municípios" : mapLevel === "RJ_MUNICIPALITIES" ? "estados" : "regiões"}`}
                   >
                     ← Voltar
                   </button>
@@ -105,7 +105,7 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
                 <div className="section-label">
                   {mapLevel === "CAMPOS_NEIGHBORHOODS"
                     ? "BAIRROS DA NOTIFICAÇÃO"
-                    : mapLevel === "CAMPOS_DISTRICTS"
+                    : mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "MUNICIPALITY_DISTRICTS"
                       ? "DISTRITOS DA NOTIFICAÇÃO"
                       : municipal
                         ? "MUNICÍPIOS"
@@ -121,7 +121,6 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
               </span>
             </div>
             <GeographicMap
-              key={mapLevel}
               level={mapLevel}
               selected={selectedGeography}
               items={items}
@@ -161,8 +160,8 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
           </aside>
           {municipal && query.isSuccess && <MunicipalityRanking items={items} onSelect={select} selected={selectedGeography} />}
           {areaRankingLevel && query.isSuccess && <TerritoryRanking level={areaRankingLevel} items={items} onSelect={select} selected={selectedGeography} />}
-          {(mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS" || mapLevel === "MUNICIPALITY_NEIGHBORHOODS") && query.isSuccess && (
-            <TerritoryRanking level={mapLevel === "CAMPOS_DISTRICTS" ? "district" : "neighborhood"} items={items} onSelect={select} selected={selectedGeography} />
+          {(mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "MUNICIPALITY_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS" || mapLevel === "MUNICIPALITY_NEIGHBORHOODS") && query.isSuccess && (
+            <TerritoryRanking level={mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "MUNICIPALITY_DISTRICTS" ? "district" : "neighborhood"} items={items} onSelect={select} selected={selectedGeography} />
           )}
           </div>
           <div className="mobile-dashboard-panels">
@@ -172,8 +171,8 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
           <section id="mobile-panel-ranking" className="mobile-dashboard-panel mobile-ranking-panel" role="tabpanel" aria-label="Ranking" hidden={mobileTab !== "ranking"}>
             {query.isSuccess && municipal && <MunicipalityRanking items={items} onSelect={select} selected={selectedGeography} />}
             {query.isSuccess && areaRankingLevel && <TerritoryRanking level={areaRankingLevel} items={items} onSelect={select} selected={selectedGeography} />}
-            {query.isSuccess && (mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS" || mapLevel === "MUNICIPALITY_NEIGHBORHOODS") && (
-              <TerritoryRanking level={mapLevel === "CAMPOS_DISTRICTS" ? "district" : "neighborhood"} items={items} onSelect={select} selected={selectedGeography} />
+            {query.isSuccess && (mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "MUNICIPALITY_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS" || mapLevel === "MUNICIPALITY_NEIGHBORHOODS") && (
+              <TerritoryRanking level={mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "MUNICIPALITY_DISTRICTS" ? "district" : "neighborhood"} items={items} onSelect={select} selected={selectedGeography} />
             )}
             {!query.isSuccess && <p role="status">Carregando o ranking do recorte selecionado…</p>}
           </section>

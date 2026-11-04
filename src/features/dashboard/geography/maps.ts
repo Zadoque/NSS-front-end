@@ -52,6 +52,12 @@ export const mapViews: Record<
     center: [-54, -15],
     scale: 65000,
   },
+  MUNICIPALITY_DISTRICTS: {
+    file: "",
+    title: "Distritos do município",
+    center: [-43, -22.5],
+    scale: 30000,
+  },
 };
 const stateUf: Record<string, string> = {
   "11": "RO", "12": "AC", "13": "AM", "14": "RR", "15": "PA", "16": "AP", "17": "TO",
@@ -62,7 +68,9 @@ const stateUf: Record<string, string> = {
 export type MunicipalityMapIndexItem = { code: string; name: string; uf: string; path: string; geometryStatus?: string; neighborhoodsPath?: string; neighborhoodCount?: number; neighborhoodGeometryStatus?: string };
 
 export async function loadMap(level: MapLevel, code?: string): Promise<FeatureCollection> {
-  const file = level === "MUNICIPALITY_NEIGHBORHOODS"
+  const file = level === "MUNICIPALITY_DISTRICTS"
+    ? `national/districts/${code ?? ""}`
+    : level === "MUNICIPALITY_NEIGHBORHOODS"
     ? `national/neighborhoods/${code ?? ""}`
     : level === "NATIONAL_MUNICIPALITIES" && code
       ? `national/municipalities-by-state/${stateUf[code] ?? code}`
@@ -72,7 +80,7 @@ export async function loadMap(level: MapLevel, code?: string): Promise<FeatureCo
   );
   if (!response.ok) throw new Error("Não foi possível carregar a cartografia.");
   const data = (await response.json()) as FeatureCollection;
-  if (data.type !== "FeatureCollection" || !data.features?.length)
+  if (data.type !== "FeatureCollection" || (!data.features?.length && !["MUNICIPALITY_DISTRICTS", "MUNICIPALITY_NEIGHBORHOODS"].includes(level)))
     throw new Error("Cartografia inválida.");
   if (level === "NATIONAL_STATES" && code) {
     data.features = data.features.filter((feature) => feature.properties?.abbrev_region === code);

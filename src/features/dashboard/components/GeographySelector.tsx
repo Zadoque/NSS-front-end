@@ -42,7 +42,7 @@ export function GeographySelector({
     queryKey: ["map", "RJ_MUNICIPALITIES"],
     queryFn: () => loadMap("RJ_MUNICIPALITIES"),
     staleTime: Infinity,
-    enabled: state === "RJ" && ["RJ_MUNICIPALITIES", "CAMPOS_DISTRICTS", "CAMPOS_NEIGHBORHOODS", "MUNICIPALITY_NEIGHBORHOODS"].includes(mapLevel),
+    enabled: state === "RJ" && ["RJ_MUNICIPALITIES", "CAMPOS_DISTRICTS", "CAMPOS_NEIGHBORHOODS", "MUNICIPALITY_DISTRICTS", "MUNICIPALITY_NEIGHBORHOODS"].includes(mapLevel),
   });
   const nationalIndex = useQuery({
     queryKey: ["municipality-index"],
@@ -66,12 +66,13 @@ export function GeographySelector({
     selectedGeography?.level === "district"
       ? selectedGeography.code
       : selectedGeography?.districtCode ?? "";
-  const districtMap = useQuery({ queryKey: ["map", "CAMPOS_DISTRICTS"], queryFn: () => loadMap("CAMPOS_DISTRICTS"), staleTime: Infinity, enabled: municipality === CAMPOS_MUNICIPALITY_CODE });
+  const districtMapLevel = municipality === CAMPOS_MUNICIPALITY_CODE ? "CAMPOS_DISTRICTS" : "MUNICIPALITY_DISTRICTS";
+  const districtMap = useQuery({ queryKey: ["map", districtMapLevel, municipality], queryFn: () => loadMap(districtMapLevel, municipality), staleTime: Infinity, enabled: Boolean(municipality) && ["MUNICIPALITY_DISTRICTS", "MUNICIPALITY_NEIGHBORHOODS"].includes(mapLevel) });
   const neighborhoodMap = useQuery({
     queryKey: ["map", "MUNICIPALITY_NEIGHBORHOODS", municipality],
     queryFn: () => municipality === CAMPOS_MUNICIPALITY_CODE ? loadMap("CAMPOS_NEIGHBORHOODS") : loadMap("MUNICIPALITY_NEIGHBORHOODS", municipality),
     staleTime: Infinity,
-    enabled: Boolean(municipality && district),
+    enabled: Boolean(municipality && district && mapLevel !== "MUNICIPALITY_DISTRICTS"),
   });
   const districts = districtItems.length ? districtItems : (districtMap.data?.features ?? [])
       .map(({ properties }) => ({
@@ -228,7 +229,7 @@ export function GeographySelector({
             </p>
           </div>
         )}
-        {district && (
+        {district && neighborhoodMap.data?.features?.length ? (
           <div>
             <label htmlFor="neighborhood">Bairro da notificação</label>
             <select
@@ -251,7 +252,7 @@ export function GeographySelector({
               {neighborhoodMap.isPending ? "Carregando bairros…" : "O bairro é derivado da unidade notificadora no CNES."}
             </p>
           </div>
-        )}
+        ) : null}
       </div>
       <p id="municipality-help" role="status">
         {state

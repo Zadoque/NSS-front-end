@@ -7,6 +7,7 @@ const levels: MapLevel[] = [
   "NATIONAL_MUNICIPALITIES",
   "CAMPOS_DISTRICTS",
   "CAMPOS_NEIGHBORHOODS",
+  "MUNICIPALITY_DISTRICTS",
   "MUNICIPALITY_NEIGHBORHOODS",
 ];
 const labels: Record<MapLevel, string> = {
@@ -17,6 +18,7 @@ const labels: Record<MapLevel, string> = {
   NATIONAL_MUNICIPALITIES: "Municípios do estado",
   CAMPOS_DISTRICTS: "Campos dos Goytacazes",
   CAMPOS_NEIGHBORHOODS: "Distrito Sede",
+  MUNICIPALITY_DISTRICTS: "Distritos do município",
   MUNICIPALITY_NEIGHBORHOODS: "Bairros da notificação",
 };
 export function GeographyBreadcrumb({
@@ -34,7 +36,9 @@ export function GeographyBreadcrumb({
     : level === "NATIONAL_MUNICIPALITIES"
       ? ["BRAZIL_REGIONS", "NATIONAL_STATES", "NATIONAL_MUNICIPALITIES"] as MapLevel[]
       : level === "MUNICIPALITY_NEIGHBORHOODS"
-        ? ["BRAZIL_REGIONS", "NATIONAL_STATES", "NATIONAL_MUNICIPALITIES", "MUNICIPALITY_NEIGHBORHOODS"] as MapLevel[]
+        ? ["BRAZIL_REGIONS", "NATIONAL_STATES", "NATIONAL_MUNICIPALITIES", "MUNICIPALITY_DISTRICTS", "MUNICIPALITY_NEIGHBORHOODS"] as MapLevel[]
+        : level === "MUNICIPALITY_DISTRICTS"
+          ? ["BRAZIL_REGIONS", "NATIONAL_STATES", "NATIONAL_MUNICIPALITIES", "MUNICIPALITY_DISTRICTS"] as MapLevel[]
         : level === "CAMPOS_DISTRICTS" ? ["BRAZIL_REGIONS", "SOUTHEAST_STATES", "RJ_MUNICIPALITIES", "CAMPOS_DISTRICTS"] as MapLevel[]
           : level === "CAMPOS_NEIGHBORHOODS" ? ["BRAZIL_REGIONS", "SOUTHEAST_STATES", "RJ_MUNICIPALITIES", "CAMPOS_DISTRICTS", "CAMPOS_NEIGHBORHOODS"] as MapLevel[]
             : levels.slice(0, index + 1);

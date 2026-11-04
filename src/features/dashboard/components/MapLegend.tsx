@@ -1,11 +1,12 @@
-export function caseColor(cases: number) {
-  return cases === 0
-    ? "#e0f2ee"
-    : cases <= 40
-      ? "#8ccbb8"
-      : cases <= 100
-        ? "#328b77"
-        : "#125345";
+export function caseColor(cases: number, visibleMaximum = 100) {
+  if (cases <= 0) return "#e0f2ee";
+  const maximum = Math.max(1, visibleMaximum);
+  // Logarithmic normalization preserves contrast when a national ranking
+  // contains both small and very large territories.
+  const ratio = Math.min(1, Math.log1p(cases) / Math.log1p(maximum));
+  const lightness = 92 - ratio * 60;
+  const saturation = 42 + ratio * 38;
+  return `hsl(164 ${saturation.toFixed(1)}% ${lightness.toFixed(1)}%)`;
 }
 export function MapLegend({ municipal }: { municipal: boolean }) {
   const entries = municipal
