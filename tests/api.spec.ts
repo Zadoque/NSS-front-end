@@ -1,9 +1,11 @@
 import { test, expect } from "@playwright/test";
 import { login } from "./helpers";
+const apiTestBaseUrl = process.env.PLAYWRIGHT_API_BASE_URL || "http://127.0.0.1:39174";
 
 test("Java adapter uses filters, zero, empty, loading and retry without demo fallback", async ({
   page,
 }) => {
+  test.skip(Boolean(process.env.PLAYWRIGHT_BASE_URL), "Este cenário exige o servidor API local, não o build prod-mock.");
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.route("**/api/v1/diseases", (route) =>
     route.fulfill({ json: { items: ["DENG", "TEST"] } }),
@@ -53,7 +55,7 @@ test("Java adapter uses filters, zero, empty, loading and retry without demo fal
       items: isDeng ? [{ code: "CG_DIST_SEDE", name: "Distrito Sede", notificationsTotal: 0, parentDistrictId: null }] : [],
     } });
   });
-  await login(page, "http://127.0.0.1:5174");
+  await login(page, apiTestBaseUrl);
   await expect(page.locator(".badge")).toHaveCount(0);
   await page.getByRole("button", { name: /^Sudeste ·/ }).click();
   await page.getByRole("button", { name: /^Rio de Janeiro ·/ }).click();

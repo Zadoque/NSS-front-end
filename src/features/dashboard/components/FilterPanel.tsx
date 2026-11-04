@@ -1,5 +1,6 @@
 import { useId } from "react";
-import type { EpidemiologyFilters } from "../../../types/epidemiology";
+import { isProdMock } from "../api/sources/dataSource";
+import type { EpidemiologyFilters } from "../domain/epidemiologyTypes";
 import { MapLegend } from "./MapLegend";
 export type FilterPanelProps = {
   filters: EpidemiologyFilters;
@@ -33,9 +34,52 @@ const diseaseNames: Record<string, string> = {
   DENG: "Dengue",
   CHIK: "Chikungunya",
   ZIKA: "Zika",
+  TUBE: "Tuberculose",
+  HANS: "Hanseníase",
+  HEPA: "Hepatites virais",
+  SIFA: "Sífilis adquirida",
+  SIFC: "Sífilis congênita",
+  SIFG: "Sífilis em gestante",
+  LEPT: "Leptospirose",
+  MENI: "Meningite",
   FMAC: "Febre maculosa",
   TOXC: "Toxoplasmose congênita",
   TOXG: "Toxoplasmose gestacional",
+  ACBI: "Acidente de trabalho com material biológico",
+  ACGR: "Acidente de trabalho",
+  ANIM: "Acidente por animais peçonhentos",
+  ANTR: "Atendimento antirrábico",
+  BOTU: "Botulismo",
+  CANC: "Câncer relacionado ao trabalho",
+  CHAG: "Doença de Chagas aguda",
+  ESQU: "Esquistossomose",
+  COLE: "Cólera",
+  COQU: "Coqueluche",
+  DERM: "Dermatoses ocupacionais",
+  DIFT: "Difteria",
+  EXAN: "Doenças exantemáticas",
+  FTIF: "Febre tifoide",
+  HANT: "Hantavirose",
+  IEXO: "Intoxicação exógena",
+  INFL: "Influenza pandêmica",
+  LEIV: "Leishmaniose visceral",
+  LTAN: "Leishmaniose tegumentar americana",
+  LERD: "LER/Dort",
+  MALA: "Malária",
+  MENT: "Transtornos mentais relacionados ao trabalho",
+  NTRA: "Notificação de tracoma",
+  PAIR: "Perda auditiva por ruído relacionada ao trabalho",
+  PFAN: "Paralisia flácida aguda",
+  PNEU: "Pneumoconioses relacionadas ao trabalho",
+  PEST: "Peste",
+  RAIV: "Raiva",
+  SDTA: "Surto de doenças transmitidas por alimentos",
+  SRC: "Síndrome da rubéola congênita",
+  TETA: "Tétano acidental",
+  TETN: "Tétano neonatal",
+  TRAC: "Inquérito de tracoma",
+  VARC: "Varicela",
+  VIOL: "Violência doméstica, sexual ou outras violências",
 };
 
 function diseaseLabel(code: string) {
@@ -159,8 +203,7 @@ export function FilterPanel({
       <MapLegend municipal={municipal} />
       {demo && (
         <p className="demo-note">
-          <strong>DEMO</strong> Dados sintéticos para demonstração. Não são
-          estatísticas reais.
+          <strong>{isProdMock ? 'SNAPSHOT REAL' : 'DEMO'}</strong> {isProdMock ? 'Dados reais agregados, publicados estaticamente. O território é o da unidade notificadora, não o de residência.' : 'Dados sintéticos para demonstração. Não são estatísticas reais.'}
         </p>
       )}
     </div>

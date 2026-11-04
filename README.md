@@ -16,18 +16,28 @@ Abra o endereço indicado pelo Vite. O modo padrão é **DEMO**, com dados expli
 
 Navegue pelo mapa: **Brasil → Sudeste → Rio de Janeiro**. Somente Sudeste e RJ permitem avançar. Use o breadcrumb ou **Voltar** para retornar. Cada polígono aceita clique, toque, foco, Enter e Space. No celular, abra **Filtros e informações**; feche pelo botão, Escape ou toque fora. Em larguras a partir de 1024 px o mesmo conteúdo aparece no painel lateral sticky.
 
-### Dados de demonstração
+### Dados da demonstração estática
 
-A única fixture fornecida pela especificação é **DENG / janeiro / 2026**:
+O modo de desenvolvimento continua usando fixtures sintéticas. Já o build
+`prod-mock` publica um snapshot real agregado, sem backend e sem atualização em
+tempo real. O snapshot inclui seis agravos, de 2023 a 2026, nos quatro
+municípios do escopo:
 
-| Município | Código IBGE | Casos sintéticos |
-| --- | --- | ---: |
-| Campos dos Goytacazes | 3301009 | 120 |
-| Macaé | 3302403 | 85 |
-| Itaperuna | 3302205 | 42 |
-| São João da Barra | 3305000 | 18 |
+| Agravos | Período | Municípios | Notificações agregadas |
+| --- | --- | --- | ---: |
+| CHIK, DENG, FMAC, TOXC, TOXG e ZIKA | 2023–2026 | Campos dos Goytacazes, Macaé, Itaperuna e São João da Barra | 38.782 |
 
-Outros anos/meses retornam uma lista vazia, mostrada como **sem registros neste recorte**. Não foram inventadas outras doenças ou séries. A lista de doenças do mock contém apenas DENG; o seletor suporta a lista retornada pelo Java. Zero só é exibido quando um registro declara `casesTotal: 0`. Municípios sem cobertura são cinza. Não há totais estaduais, regionais ou nacionais.
+Para Campos dos Goytacazes, a demonstração permite o drill-down de município
+para distritos e, no Distrito Sede, para bairros/localidades da unidade
+notificadora. Os filtros de ano, mês, sexo e faixa etária são aplicados no
+navegador sobre os agregados publicados. O território representa a unidade
+notificadora, não a residência do paciente.
+
+O snapshot preserva ausência de mapeamento como ausência explícita; ela não é
+convertida em território válido nem em zero. Municípios sem cobertura no recorte
+selecionado continuam identificados na interface. Não são publicados usuários,
+credenciais ou linhas individuais do SINAN. A data da publicação e os hashes dos
+arquivos estão em `data/static-snapshot/manifest.json`.
 
 ## API Java
 
@@ -47,7 +57,7 @@ não use `npm run dev` ou `vite preview` como servidor público.
 O build normal limpa `dist/`, portanto, quando precisar dos dois artefatos,
 gere primeiro `npm run build` e depois `npm run build:prod-mock`.
 
-`prod-mock` usa dados sintéticos independentemente de `VITE_USE_MOCKS`,
+`prod-mock` usa um snapshot real agregado independentemente de `VITE_USE_MOCKS`,
 `VITE_DATA_SOURCE` ou da URL da API. A entrada pública não pede credenciais.
 Primeiro acesso, recuperação de senha e administração não estão disponíveis,
 inclusive por URL direta. Não há proteção de acesso real nessa demonstração.
@@ -59,15 +69,42 @@ essas rotas ao Java. O Compose e os serviços NixOS da stack completa precisam
 de configuração independente antes de publicar somente esta imagem.
 Não são necessários banco, Java, pipeline ou segredos desses serviços.
 
-O mock atual oferece resultados para DENG/janeiro/2026; outros recortes ficam
-indisponíveis. Sexo e faixa etária não alteram os números sintéticos atuais.
-A demonstração não deve ser usada como dado epidemiológico real.
+O snapshot inclui CHIK, DENG, FMAC, TOXC, TOXG e ZIKA de 2023 a 2026 nos quatro
+municípios, com filtros reais de período, sexo e faixa etária. Inclui os distritos
+de Campos e bairros/localidades da sede. É território da unidade notificadora,
+não de residência. Mapeamento ausente não é convertido em território ou zero.
+O modo de desenvolvimento continua com suas fixtures sintéticas, sem mudanças.
+
+O snapshot atual representa 38.782 notificações em 6.020 combinações agregadas.
+Foi extraído em 08/10/2026, com última publicação no banco em 07/10/2026. Não é
+atualizado em tempo real. O manifest inclui data, catálogo e SHA-256 dos arquivos.
+Arquivos são carregados sob demanda por agravo, sem compor o bundle JavaScript.
+Os dados ficam em `data/static-snapshot`, fora de `public`: apenas o comando
+`build:prod-mock` os copia para o artefato. O build habitual não os publica.
+
+Para atualizar, com Docker e Python 3 disponíveis, use um container PostgreSQL
+autorizado e o catálogo territorial do Java:
+
+```sh
+python3 scripts/export-static-snapshot.py --container nss-v1-db-1 --catalog ../Site-Sala-de-Situa-o-de-Saude-Java/src/main/resources/territories/campos.tsv
+npm run test:builds
+npm run build:prod-mock
+```
+
+O exportador usa transação repeatable-read/read-only e whitelist de municípios
+e colunas. Gera também 180 resultados SQL de referência para testes. Mantém nulos,
+sexo ignorado e a situação do mapeamento; elimina unidade, nascimento, semana,
+classificação, evolução e identificadores internos, que não são filtros da UI.
+Atualize e versione arquivos, manifest e oráculo juntos. A publicação foi
+autorizada como snapshot público: inclusive contagens pequenas serão baixáveis.
 
 Validação dos dois builds finais, sem backend (também executada no CI):
 
 ```sh
 npm run test:builds
 # NixOS: CHROMIUM_PATH=/caminho/para/chromium npm run test:builds
+# Contra a stack Caddy já iniciada (somente a suíte UI):
+NSS_BUILD_TEST_BASE_URL=http://127.0.0.1:8080 npm run test:builds -- snapshot-ui.spec.ts
 ```
 
 Variáveis Vite são públicas e resolvidas durante o build. Nunca inclua segredos.
@@ -147,4 +184,4 @@ A geometria completa não amplia a cobertura: somente Sudeste/RJ permitem drill-
 
 Os testes adicionais cobrem homepage, histórico, seletores → mapa, mapa/ranking → seletores, breadcrumb, pesquisa sem acentos, teclado, municípios sem cobertura e ausência de overflow no smartphone.
 
-Validação desta ampliação: `npm ci`, `npm run lint` e `npm run build` concluídos; suíte completa com **11 testes aprovados**. Neste ambiente NixOS, `npm test` precisou de execução fora do sandbox para abrir as portas 5173/5174 e de `CHROMIUM_PATH` apontando para o Chromium 152 instalado em `/nix/store` (o navegador padrão do Playwright não estava instalado). Nenhum backend externo foi necessário: os testes da API interceptam HTTP com respostas controladas.
+Validação desta ampliação: `npm ci`, `npm run lint` e `npm run build` concluídos; suíte completa com **24 testes aprovados**. Os testes Playwright usam por padrão as portas altas `39173` (mock) e `39174` (API simulada), configuráveis por `PLAYWRIGHT_MOCK_PORT` e `PLAYWRIGHT_API_PORT`, para evitar conflito com outros projetos. Neste ambiente NixOS, `npm test` precisou de execução fora do sandbox e de `CHROMIUM_PATH` apontando para o Chromium 152 instalado em `/nix/store` (o navegador padrão do Playwright não estava instalado). Nenhum backend externo foi necessário: os testes da API interceptam HTTP com respostas controladas.

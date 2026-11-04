@@ -1,7 +1,10 @@
 import { test, expect } from "@playwright/test";
-import { parseCases } from "../src/data/apiDataSource";
+import { parseCases } from "../src/features/dashboard/api/sources/apiDataSource";
 import { caseColor } from "../src/features/dashboard/components/MapLegend";
 import { login } from "./helpers";
+
+const externalBuild = Boolean(process.env.PLAYWRIGHT_BASE_URL);
+const apiTestBaseUrl = process.env.PLAYWRIGHT_API_BASE_URL || "http://127.0.0.1:39174";
 
 for (const width of [375, 768, 1024, 1440]) {
   test(`navigation, coverage and drawer at ${width}px`, async ({ page }) => {
@@ -11,9 +14,7 @@ for (const width of [375, 768, 1024, 1440]) {
     await expect(areas).toHaveCount(5);
     await page.getByRole("button", { name: /^Norte ·/ }).click();
     await expect(areas).toHaveCount(5);
-    await expect(page.locator(".map-context")).toContainText(
-      "Sem cobertura nesta V1",
-    );
+    await expect(page.locator(".map-context")).toContainText("Sem registros");
     await page.getByRole("button", { name: /^Sudeste ·/ }).focus();
     await page.keyboard.press("Enter");
     await expect(areas).toHaveCount(4);
@@ -22,11 +23,13 @@ for (const width of [375, 768, 1024, 1440]) {
     await page.getByRole("button", { name: /^Rio de Janeiro ·/ }).focus();
     await page.keyboard.press("Space");
     await expect(areas).toHaveCount(92);
-    await expect(page.locator(".ranking")).toContainText("120 notificações");
+    if (width >= 1024) await expect(page.locator(".ranking:visible")).toContainText(externalBuild ? /\d+ notificações/ : "120 notificações");
     await page
       .getByRole("button", { name: /^Campos dos Goytacazes ·/ })
       .click();
-    await expect(page.locator(".map-context")).toContainText("120 notificações");
+    await expect(page.locator(".map-context")).toContainText(externalBuild ? /\d+ notificações/ : "120 notificações");
+    if (width < 1024) await page.getByRole("tablist", { name: "Visualização do painel" }).getByRole("tab", { name: "Ranking" }).click();
+    await expect(page.locator(".ranking:visible")).toContainText(/\d+ notificações/);
     await page.screenshot({ path: `/tmp/nss-rj-${width}.png`, fullPage: true });
     expect(
       await page.evaluate(
@@ -34,29 +37,26 @@ for (const width of [375, 768, 1024, 1440]) {
       ),
     ).toBeTruthy();
     if (width < 1024) {
-      await expect(page.locator("dialog")).not.toBeVisible();
-      await page.getByRole("button", { name: "Filtros e informações" }).click();
-      await expect(
-        page.getByRole("button", { name: "Fechar ×" }),
-      ).toBeFocused();
-      await page.keyboard.press("Shift+Tab");
-      expect(
-        await page.evaluate(() => !!document.activeElement?.closest("dialog")),
-      ).toBeTruthy();
-      await page.keyboard.press("Escape");
-      await expect(page.locator("dialog")).not.toBeVisible();
-      await expect(
-        page.getByRole("button", { name: "Filtros e informações" }),
-      ).toBeFocused();
-      await page.getByRole("button", { name: "Filtros e informações" }).click();
-      await page.screenshot({ path: `/tmp/nss-drawer-${width}.png` });
+      const mobileTabs = page.getByRole("tablist", { name: "Visualização do painel" });
+      await mobileTabs.getByRole("tab", { name: "Mapa" }).dispatchEvent("click");
+      await expect(mobileTabs.getByRole("tab", { name: "Mapa" })).toHaveAttribute("aria-selected", "true");
+      await mobileTabs.getByRole("tab", { name: "Filtros" }).click();
+      await expect(page.locator("#mobile-panel-filters")).toBeVisible();
+      await expect(page.locator(".mobile-dashboard-context")).toContainText("Dengue");
+      await page.screenshot({ path: `/tmp/nss-mobile-filters-${width}.png` });
     }
-    const panel = width < 1024 ? page.locator("dialog") : page.locator("aside");
+    const panel = width < 1024 ? page.locator("#mobile-panel-filters") : page.locator("aside");
     await panel.getByLabel("Mês", { exact: true }).selectOption("2");
     if (width < 1024)
-      await page.getByRole("button", { name: "Fechar ×" }).click();
-    await expect(page.locator(".map-context")).toContainText("Sem registros");
-    await expect(page.locator(".ranking")).not.toContainText("120 notificações");
+      await page.getByRole("tablist", { name: "Visualização do painel" }).getByRole("tab", { name: "Mapa" }).click();
+    if (externalBuild) {
+      await expect(page.locator(".map-context")).toContainText(/\d+ notificações|Sem registros/);
+    } else {
+      await expect(page.locator(".map-context")).toContainText("Sem registros");
+    }
+    if (width < 1024) await page.getByRole("tablist", { name: "Visualização do painel" }).getByRole("tab", { name: "Ranking" }).click();
+    if (!externalBuild) await expect(page.locator(".ranking:visible")).not.toContainText("120 notificações");
+    if (width < 1024) await page.getByRole("tablist", { name: "Visualização do painel" }).getByRole("tab", { name: "Mapa" }).dispatchEvent("click");
     await page.getByRole("button", { name: "Brasil", exact: true }).click();
     await expect(areas).toHaveCount(5);
     await page.screenshot({
@@ -91,6 +91,26 @@ test("zero, missing and invalid API records remain distinct", () => {
   ).toThrow();
 });
 
+test("escala de cor dinâmica preserva a ordem de intensidade no recorte", () => {
+  const values = [770, 2763, 3133, 5147, 6953];
+  const colors = values.map((value) => caseColor(value, 6953));
+  expect(new Set(colors).size).toBe(values.length);
+  expect(colors[0]).not.toBe(colors.at(-1));
+});
+
+test("Todos os meses aceita a resposta agregada do Java", () => {
+  const request = { disease: "DENG", year: 2026 as const, month: "ALL" as const };
+  const response = parseCases({
+    filters: { disease: "DENG", year: 2026, month: null },
+    items: [{ code: "3301009", name: "Campos dos Goytacazes", notificationsTotal: 42 }],
+    totalNotifications: 42,
+    coverage: { status: "AVAILABLE", mappedNotificationsTotal: 42, unmappedNotificationsTotal: 0 },
+  }, request);
+
+  expect(response.totalNotifications).toBe(42);
+  expect(response.items[0].notificationsTotal).toBe(42);
+});
+
 test("touch activation, outside dismissal and cartography error recovery", async ({
   browser,
 }) => {
@@ -115,13 +135,15 @@ test("touch activation, outside dismissal and cartography error recovery", async
   await page.screenshot({ path: "/tmp/nss-southeast-375.png", fullPage: true });
   await page.getByRole("button", { name: /^Rio de Janeiro ·/ }).tap();
   await expect(page.locator(".geo")).toHaveCount(92);
-  await page.getByRole("button", { name: "Filtros e informações" }).tap();
-  await page.touchscreen.tap(5, 400);
-  await expect(page.locator("dialog")).not.toBeVisible();
+  await page.getByRole("tablist", { name: "Visualização do painel" }).getByRole("tab", { name: "Filtros" }).tap();
+  await expect(page.locator("#mobile-panel-filters")).toBeVisible();
+  await page.getByRole("tablist", { name: "Visualização do painel" }).getByRole("tab", { name: "Mapa" }).tap();
+  await expect(page.locator("#mobile-panel-filters")).not.toBeVisible();
   await context.close();
 });
 
 test("real API mode keeps the municipal ranking unscoped after leaving Campos", async ({ page }) => {
+  test.skip(Boolean(process.env.PLAYWRIGHT_BASE_URL), "Este cenário exige o servidor API local do teste.");
   const municipalRequests: URL[] = [];
   await page.route("**/api/v1/diseases", (route) =>
     route.fulfill({ json: { items: ["DENG"] } }),
@@ -158,21 +180,21 @@ test("real API mode keeps the municipal ranking unscoped after leaving Campos", 
     });
   });
 
-  await login(page, "http://127.0.0.1:5174");
+  await login(page, apiTestBaseUrl);
   await page.getByRole("button", { name: /^Sudeste ·/ }).click();
   await page.getByRole("button", { name: /^Rio de Janeiro ·/ }).click();
-  await expect(page.locator(".ranking")).toContainText("Macaé");
+  await expect(page.locator(".ranking:visible")).toContainText("Macaé");
   await page.getByRole("button", { name: /^Campos dos Goytacazes ·/ }).click();
   await expect(page.getByRole("heading", { name: "Distritos de Campos dos Goytacazes" })).toBeVisible();
   await page.getByRole("button", { name: /Voltar para municípios/ }).click();
   await expect(page.locator(".map-card").getByRole("heading", { name: "Rio de Janeiro" })).toBeVisible();
-  await expect(page.locator(".ranking")).toContainText("Macaé");
+  await expect(page.locator(".ranking:visible")).toContainText("Macaé");
   await page.getByRole("button", { name: /^Macaé ·/ }).click();
-  await expect(page.locator(".ranking")).toContainText("120 notificações");
+  await expect(page.locator(".ranking:visible")).toContainText("120 notificações");
   await page.getByLabel("Município", { exact: true }).selectOption({ label: "Angra dos Reis" });
   await expect(page.locator(".map-context")).toContainText("Sem cobertura");
-  await expect(page.locator(".ranking")).toContainText("120 notificações");
-  await expect(page.locator(".ranking")).toContainText("48 notificações");
+  await expect(page.locator(".ranking:visible")).toContainText("120 notificações");
+  await expect(page.locator(".ranking:visible")).toContainText("48 notificações");
   expect(municipalRequests).not.toHaveLength(0);
   expect(municipalRequests.every((url) => !url.searchParams.has("municipalityCode"))).toBeTruthy();
 });
@@ -237,8 +259,8 @@ test("fullscreen fallback and ranking on the left on large screens", async ({ pa
   await login(page);
   await page.getByLabel("Região", { exact: true }).selectOption("SE");
   await page.getByLabel("Estado", { exact: true }).selectOption("RJ");
-  await expect(page.locator(".ranking")).toBeVisible();
-  const ranking = (await page.locator(".ranking").boundingBox())!;
+  await expect(page.locator(".ranking:visible")).toBeVisible();
+  const ranking = (await page.locator(".ranking:visible").boundingBox())!;
   const map = (await page.locator(".map-card").boundingBox())!;
   expect(ranking.x + ranking.width).toBeLessThan(map.x);
   await page.getByRole("button", { name: "Abrir mapa em tela cheia" }).click();
@@ -264,10 +286,18 @@ test("map can enter and leave fullscreen mode", async ({ page }) => {
 test("disease filter shows the full name followed by its code", async ({ page }) => {
   await login(page);
   const disease = page.getByLabel("Doença", { exact: true }).first();
-  await expect(disease.locator("option")).toHaveText([
-    "Dengue · DENG",
-    "Febre maculosa · FMAC",
-    "Toxoplasmose congênita · TOXC",
-  ]);
+  if (externalBuild) {
+    await expect(disease.locator("option")).toContainText([
+      "Dengue · DENG",
+      "Febre maculosa · FMAC",
+      "Toxoplasmose congênita · TOXC",
+    ]);
+  } else {
+    await expect(disease.locator("option")).toHaveText([
+      "Dengue · DENG",
+      "Febre maculosa · FMAC",
+      "Toxoplasmose congênita · TOXC",
+    ]);
+  }
   await expect(disease).toHaveAttribute("title", "Dengue · DENG");
 });

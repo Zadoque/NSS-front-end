@@ -1,119 +1,60 @@
-import { useState } from "react";
-import { isDemo } from "../../data/dataSource";
-import { demoCoverage } from "../../data/coverage";
-import { mapViews } from "../../data/maps";
-import type { EpidemiologyFilters } from "../../types/epidemiology";
-import {
-  useDiseases,
-  useMetadata,
-  useEpidemiologyQuery,
-} from "./hooks/useEpidemiologyQuery";
-import { useMapNavigation } from "./hooks/useMapNavigation";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { isDemo, isProdMock } from "./api/sources/dataSource";
+import { mapViews } from "./geography/maps";
+import { useDashboardModel } from "./hooks/useDashboardModel";
 import { GeographicMap } from "./components/GeographicMap";
 import { GeographyBreadcrumb } from "./components/GeographyBreadcrumb";
 import { GeographySelector } from "./components/GeographySelector";
 import { FilterPanel } from "./components/FilterPanel";
-import { FilterDrawer } from "./components/FilterDrawer";
 import { MunicipalityRanking } from "./components/MunicipalityRanking";
 import { TerritoryRanking } from "./components/TerritoryRanking";
+import { MobileDashboardContext } from "./components/MobileDashboardContext";
+import { MobileDashboardNav, type MobileDashboardTab } from "./components/MobileDashboardNav";
+import { DashboardViewSwitcher, type DashboardView } from "./components/DashboardViewSwitcher";
+import { DashboardAnalyticsViews } from "./components/DashboardAnalyticsViews";
 export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onAdmin?: () => void }) {
-  const navigation = useMapNavigation();
-  const { mapLevel, selectedGeography, select, navigate, goBack } = navigation;
-  const diseases = useDiseases();
-  const metadata = useMetadata();
-  const [filterInput, setFilters] = useState<EpidemiologyFilters>({
-    disease: "DENG",
-    year: 2026,
-    month: 1,
-  });
-  const filters = {
-    ...filterInput,
-    disease: diseases.data?.includes(filterInput.disease)
-      ? filterInput.disease
-      : (diseases.data?.[0] ?? ""),
-  };
-  const geography = mapLevel === "CAMPOS_DISTRICTS"
-    ? "DISTRICT"
-    : mapLevel === "CAMPOS_NEIGHBORHOODS"
-      ? "NEIGHBORHOOD"
-      : mapLevel === "RJ_MUNICIPALITIES"
-        ? "MUNICIPALITY"
-        : "REGION";
-  const query = useEpidemiologyQuery({
-    ...filters,
-    geography,
-    // A seleção no mapa municipal é apenas visual: o ranking deve continuar
-    // trazendo todos os municípios do RJ. O escopo Campos é necessário apenas
-    // para as consultas de distrito e bairro.
-    municipalityCode:
-      mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS"
-        ? "3301009"
-        : undefined,
-    districtCode:
-      mapLevel === "CAMPOS_NEIGHBORHOODS"
-        ? selectedGeography?.districtCode ??
-          (selectedGeography?.level === "district"
-            ? selectedGeography.code
-            : undefined)
-        : undefined,
-  });
-  const items = query.isSuccess ? query.data.items : [];
-  const municipal = mapLevel === "RJ_MUNICIPALITIES";
-  const territorial = municipal || mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS";
-  const covered =
-    selectedGeography?.level === "district" || selectedGeography?.level === "neighborhood"
-      ? true
-      : selectedGeography?.level === "municipality" &&
-        demoCoverage.caseDataAvailableForMunicipalities.includes(selectedGeography.code);
-  const selectedItem = items.find(
-    (item) => item.code === selectedGeography?.code,
-  );
-  const selectedTotal =
-    (selectedGeography?.level === "municipality" && geography === "DISTRICT") ||
-    (selectedGeography?.level === "district" && geography === "NEIGHBORHOOD")
-      ? query.data?.totalNotifications
-      : selectedItem?.notificationsTotal;
-  const periodDescription =
-    filters.year === "ALL" && filters.month === "ALL"
-      ? "no período selecionado"
-      : filters.month === "ALL"
-        ? "no ano selecionado"
-        : filters.year === "ALL"
-          ? "no mês selecionado em todos os anos"
-          : "no mês selecionado";
-  const selectionInfo = selectedGeography
-    ? selectedGeography.level === "district" && selectedGeography.code !== "CG_DIST_SEDE"
-      ? "Detalhamento por bairro da notificação indisponível neste distrito. O total distrital permanece disponível."
-      : !covered
-      ? "Sem cobertura nesta V1. Dados ainda não disponíveis."
-      : query.isError
-        ? "Não foi possível consultar os dados."
-          : query.isPending
-          ? "Carregando dados…"
-          : selectedTotal !== undefined && selectedTotal !== null
-            ? `${selectedTotal} notificações da unidade notificadora ${periodDescription}.`
-            : "Sem registros neste recorte. Isso não equivale a zero casos."
-    : territorial
-      ? "Selecione um município, distrito ou bairro da notificação para consultar."
-      : "Explore o Sudeste e o Rio de Janeiro. Cobertura parcial, sem total agregado.";
-  const panel = {
-    municipal,
-    filters,
-    onChange: setFilters,
-    diseases: diseases.data ?? [],
-    diseasesLoading: diseases.isPending,
-    diseasesError: diseases.isError,
-    retryDiseases: () => {
-      void diseases.refetch();
-    },
-    selectionName: selectedGeography?.name ?? mapViews[mapLevel].title,
-    selectionInfo,
-    demo: isDemo,
-    availableYears: metadata.data?.availableYears ?? [],
-    availableMonths:
-      filters.year === "ALL"
-        ? Array.from({ length: 12 }, (_, index) => index + 1)
-        : metadata.data?.availableMonthsByYear[String(filters.year)] ?? [],
+  const { navigation, mapLevel, selectedGeography, select, navigate, goBack, metadata, filters, query, districtQuery, items, municipal, territorial, selectionInfo, panel } = useDashboardModel();
+  const [mobileTab, setMobileTab] = useState<MobileDashboardTab>("map");
+  const [activeView, setActiveView] = useState<DashboardView>("map");
+  const viewScrollY = useRef<Partial<Record<DashboardView, number>>>({});
+  const visitedViews = useRef<Set<DashboardView>>(new Set(["map"]));
+  const previousView = useRef<DashboardView>("map");
+  const rankingAvailable = mapLevel === "BRAZIL_REGIONS" || mapLevel === "SOUTHEAST_STATES" || mapLevel === "NATIONAL_STATES" || municipal || mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS" || mapLevel === "MUNICIPALITY_DISTRICTS" || mapLevel === "MUNICIPALITY_NEIGHBORHOODS";
+  const areaRankingLevel = mapLevel === "BRAZIL_REGIONS" ? "region" : mapLevel === "SOUTHEAST_STATES" || mapLevel === "NATIONAL_STATES" ? "state" : null;
+  const selectedTotal = query.data?.totalNotifications;
+  useLayoutEffect(() => {
+    if (previousView.current === activeView) return;
+    const hasVisited = visitedViews.current.has(activeView);
+    const savedPosition = viewScrollY.current[activeView];
+    let secondFrame = 0;
+    const firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(() => {
+        const switcher = document.getElementById("dashboard-view-switcher");
+        const firstVisitTarget = switcher ? window.scrollY + switcher.getBoundingClientRect().top - 16 : 0;
+        const target = hasVisited && savedPosition !== undefined ? savedPosition : Math.max(0, firstVisitTarget);
+        const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+        window.scrollTo(0, Math.min(target, maxScroll));
+      });
+    });
+    previousView.current = activeView;
+    visitedViews.current.add(activeView);
+    return () => {
+      window.cancelAnimationFrame(firstFrame);
+      if (secondFrame) window.cancelAnimationFrame(secondFrame);
+    };
+  }, [activeView]);
+  useEffect(() => {
+    const saveScroll = () => { if (visitedViews.current.has(activeView)) viewScrollY.current[activeView] = window.scrollY; };
+    window.addEventListener("scroll", saveScroll, { passive: true });
+    return () => window.removeEventListener("scroll", saveScroll);
+  }, [activeView]);
+  const changeView = (view: DashboardView) => {
+    if (view !== activeView) {
+      viewScrollY.current[activeView] = window.scrollY;
+      visitedViews.current.add(activeView);
+    }
+    setActiveView(view);
+    if (view === "map") setMobileTab("map");
   };
   return (
     <>
@@ -125,7 +66,7 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
           <strong>Núcleo de Situação de Saúde</strong>
           <p>UENF · Vigilância epidemiológica</p>
         </div>
-        {isDemo && <span className="badge">DEMO</span>}
+        {isDemo && <span className="badge">{isProdMock ? 'SNAPSHOT REAL' : 'DEMO'}</span>}
         {onAdmin && <button className="header-action" type="button" onClick={onAdmin}>Usuários</button>}
         <button className="header-action" type="button" onClick={onLogout}>Sair</button>
       </header>
@@ -134,13 +75,20 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
         <div className="page-intro">
           <div className="section-label">TERRITÓRIO E SAÚDE</div>
           <h1>Um olhar sobre o território</h1>
-          <p>
+        <p>
             Explore o mapa e consulte as notificações por período nos municípios cobertos.
           </p>
         </div>
-        <GeographyBreadcrumb level={mapLevel} navigate={navigate} selected={selectedGeography} />
-        <GeographySelector key={mapLevel} navigation={navigation} />
-        <div className={`dashboard-grid${territorial && query.isSuccess ? " has-ranking" : ""}`}>
+        <div className="dashboard-territory-selection">
+          <MobileDashboardContext filters={filters} selectionName={selectedGeography?.name ?? mapViews[mapLevel].title} total={selectedTotal} pending={query.isPending} />
+          <div className="dashboard-map-navigation">
+            <GeographyBreadcrumb level={mapLevel} navigate={navigate} selected={selectedGeography} />
+            <GeographySelector key={mapLevel} navigation={navigation} districtItems={districtQuery.data?.items ?? []} />
+          </div>
+        </div>
+        <DashboardViewSwitcher activeView={activeView} onChange={changeView} />
+        {activeView === "map" ? <div id="dashboard-panel-map" className={`dashboard-workspace mobile-tab-${mobileTab}`} role="tabpanel" aria-labelledby="dashboard-tab-map" tabIndex={0}>
+          <div id="mobile-panel-map" className={`dashboard-grid${(territorial || areaRankingLevel) && query.isSuccess ? " has-ranking" : ""}`}>
           <section className="card map-card" aria-label="Exploração geográfica">
             <div className="map-heading">
               <div>
@@ -149,7 +97,7 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
                     className="map-back"
                     type="button"
                     onClick={goBack}
-                    aria-label={`Voltar para ${mapLevel === "CAMPOS_NEIGHBORHOODS" ? "distritos" : mapLevel === "CAMPOS_DISTRICTS" ? "municípios" : mapLevel === "RJ_MUNICIPALITIES" ? "estados" : "regiões"}`}
+                    aria-label={`Voltar para ${mapLevel === "CAMPOS_NEIGHBORHOODS" || mapLevel === "MUNICIPALITY_NEIGHBORHOODS" ? "distritos" : mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "MUNICIPALITY_DISTRICTS" ? "municípios" : mapLevel === "RJ_MUNICIPALITIES" ? "estados" : "regiões"}`}
                   >
                     ← Voltar
                   </button>
@@ -157,7 +105,7 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
                 <div className="section-label">
                   {mapLevel === "CAMPOS_NEIGHBORHOODS"
                     ? "BAIRROS DA NOTIFICAÇÃO"
-                    : mapLevel === "CAMPOS_DISTRICTS"
+                    : mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "MUNICIPALITY_DISTRICTS"
                       ? "DISTRITOS DA NOTIFICAÇÃO"
                       : municipal
                         ? "MUNICÍPIOS"
@@ -173,7 +121,6 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
               </span>
             </div>
             <GeographicMap
-              key={mapLevel}
               level={mapLevel}
               selected={selectedGeography}
               items={items}
@@ -195,8 +142,16 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
                     : "Navegação pelo território")}
               </strong>
               <p>{selectionInfo}</p>
+              {query.data?.sourceExtractedAt && (
+                <p className="data-lineage" role="status">
+                  Dados SINAN extraídos em {new Date(query.data.sourceExtractedAt).toLocaleString("pt-BR")}.
+                </p>
+              )}
               {query.isSuccess && query.data.coverage.status === "PARTIAL" && (
                 <p role="status">Cobertura territorial parcial: {query.data.coverage.unmappedNotificationsTotal} notificações da unidade notificadora sem distrito/bairro oficial mapeado. Elas permanecem no total municipal.</p>
+              )}
+              {query.isSuccess && query.data.coverage.status === "AVAILABLE" && (
+                <p role="status">Cobertura Nacional em tempo integral.</p>
               )}
             </div>
           </section>
@@ -204,11 +159,25 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
             <FilterPanel {...panel} />
           </aside>
           {municipal && query.isSuccess && <MunicipalityRanking items={items} onSelect={select} selected={selectedGeography} />}
-          {(mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS") && query.isSuccess && (
-            <TerritoryRanking level={mapLevel === "CAMPOS_DISTRICTS" ? "district" : "neighborhood"} items={items} onSelect={select} selected={selectedGeography} />
+          {areaRankingLevel && query.isSuccess && <TerritoryRanking level={areaRankingLevel} items={items} onSelect={select} selected={selectedGeography} />}
+          {(mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "MUNICIPALITY_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS" || mapLevel === "MUNICIPALITY_NEIGHBORHOODS") && query.isSuccess && (
+            <TerritoryRanking level={mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "MUNICIPALITY_DISTRICTS" ? "district" : "neighborhood"} items={items} onSelect={select} selected={selectedGeography} />
           )}
-        </div>
-        <FilterDrawer panel={panel} />
+          </div>
+          <div className="mobile-dashboard-panels">
+          <section id="mobile-panel-filters" className="mobile-dashboard-panel card" role="tabpanel" aria-label="Filtros" hidden={mobileTab !== "filters"}>
+            <FilterPanel {...panel} />
+          </section>
+          <section id="mobile-panel-ranking" className="mobile-dashboard-panel mobile-ranking-panel" role="tabpanel" aria-label="Ranking" hidden={mobileTab !== "ranking"}>
+            {query.isSuccess && municipal && <MunicipalityRanking items={items} onSelect={select} selected={selectedGeography} />}
+            {query.isSuccess && areaRankingLevel && <TerritoryRanking level={areaRankingLevel} items={items} onSelect={select} selected={selectedGeography} />}
+            {query.isSuccess && (mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "MUNICIPALITY_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS" || mapLevel === "MUNICIPALITY_NEIGHBORHOODS") && (
+              <TerritoryRanking level={mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "MUNICIPALITY_DISTRICTS" ? "district" : "neighborhood"} items={items} onSelect={select} selected={selectedGeography} />
+            )}
+            {!query.isSuccess && <p role="status">Carregando o ranking do recorte selecionado…</p>}
+          </section>
+          </div>
+          <MobileDashboardNav activeTab={mobileTab} onChange={setMobileTab} rankingAvailable={rankingAvailable} />
         {territorial && (
           <div className="query-state" aria-live="polite">
             {query.isPending && (
@@ -240,11 +209,12 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
         <footer>
           NSS / UENF{" "}
           <span>
-            {isDemo
+            {isProdMock ? `Dados reais agregados · Snapshot publicado em ${(metadata.data as { sourcePublishedAt?: string } | undefined)?.sourcePublishedAt?.slice(0, 10) ?? 'carregamento'} · Sem atualização em tempo real · Território da unidade notificadora, não residência` : isDemo
               ? "Demonstração com dados sintéticos · V1"
               : "Dados fornecidos pela API epidemiológica · V1"}
           </span>
         </footer>
+        </div> : <DashboardAnalyticsViews activeView={activeView} status={query.isPending ? "loading" : query.isError ? "error" : "success"} items={items} totalNotifications={query.data?.totalNotifications} coverage={query.data?.coverage} onSelect={select} selected={selectedGeography} />}
       </main>
     </>
   );
