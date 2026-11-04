@@ -176,7 +176,7 @@
   .role-switch { @apply grid min-w-[220px] gap-2 text-sm font-semibold; }
   .role-switch select { @apply min-h-11 rounded-lg border border-white/40 bg-white/95 p-2.5 text-nss-ink; }
   .portal-nav { @apply mb-6 flex flex-wrap gap-2 border-b border-[#dbe5ea] pb-3; }
-  .portal-nav button { @apply rounded-lg px-4 py-2.5 text-sm font-semibold text-nss-muted hover:bg-[#eaf4f1] hover:text-nss-blue; }
+  .portal-nav button { @apply rounded-lg border border-[#c3dce9] bg-[#e6f3fa] px-4 py-2.5 text-sm font-semibold text-nss-blue shadow-[0_1px_2px_#174a7e12] hover:bg-[#d4ebf5] hover:text-nss-blue; }
   .portal-nav button.active { @apply bg-nss-blue text-white; }
   .portal-notice { @apply mb-5; }
   .portal-grid { @apply grid gap-5 md:grid-cols-2; }
@@ -187,13 +187,20 @@
   .section-heading { @apply mb-4 flex flex-wrap items-end justify-between gap-3; }
   .section-heading button { @apply border-0 bg-transparent text-sm font-semibold text-nss-blue; }
   .news-grid { @apply grid gap-5 sm:grid-cols-2 lg:grid-cols-3; }
-  .post-card { @apply overflow-hidden; }
+  .post-card { @apply cursor-pointer overflow-hidden transition-transform hover:-translate-y-0.5 hover:shadow-[0_8px_26px_#1b3d5520]; }
   .post-card > img, .post-art { @apply h-40 w-full object-cover; }
   .post-art { @apply grid place-items-center bg-[linear-gradient(135deg,#174a7e,#4d9a8c)] text-4xl font-black tracking-[0.12em] text-white/80; }
   .post-card-body { @apply grid gap-2 p-5; }
   .post-card h3 { @apply text-lg leading-tight; }
   .post-card p { @apply text-sm text-nss-muted; }
   .post-card small { @apply text-xs text-[#71828c]; }
+  .post-detail { @apply mx-auto max-w-[900px] overflow-hidden; }
+  .post-detail > img, .post-detail > .post-art { @apply max-h-[420px] h-auto min-h-[240px] object-cover; }
+  .post-detail-body { @apply grid gap-3 p-6 md:p-9; }
+  .post-detail-body h2 { @apply text-[clamp(26px,4vw,42px)]; }
+  .post-detail-body > small { @apply text-xs text-nss-muted; }
+  .post-detail-body > p { @apply max-w-[760px] text-base; }
+  .post-detail-note { @apply rounded-xl bg-[#edf7f1] p-4 text-sm text-[#286c59]; }
   .post-tag, .pill { @apply w-fit rounded-full bg-[#e8f3ef] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#286c59]; }
   .portal-form { @apply mt-6 grid gap-4 p-6; }
   .portal-form h3 { @apply mt-[-5px]; }
@@ -235,10 +242,16 @@
   .empty-card { @apply py-8 text-center text-sm text-nss-muted; }
   .team-grid { @apply grid gap-5 sm:grid-cols-2 lg:grid-cols-3; }
   .team-card { @apply grid content-start gap-2 p-6; }
+  .team-photo { @apply h-20 w-20 rounded-full object-cover ring-4 ring-[#e5f0f4]; }
   .team-card > strong { @apply text-sm text-[#286c59]; }
   .team-card p { @apply text-sm text-nss-muted; }
   .team-card small { @apply text-xs text-[#71828c]; }
   .avatar { @apply grid h-12 w-12 place-items-center rounded-full bg-nss-blue text-lg font-bold text-white; }
+  .about-page { @apply grid gap-4; }
+  .about-grid { @apply grid gap-5 md:grid-cols-3; }
+  .about-card { @apply grid content-start gap-3 p-6; }
+  .about-card p { @apply text-sm text-nss-muted; }
+  .contact-form { @apply mt-3; }
   .location { @apply mt-[22px]; }
   address { @apply not-italic leading-[1.8]; }
   .geography-selector { @apply mb-[22px] p-5; }
