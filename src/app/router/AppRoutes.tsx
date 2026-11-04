@@ -5,7 +5,6 @@ import { FirstAccessPage } from "../../features/auth/pages/FirstAccessPage";
 import { ForgotPasswordPage } from "../../features/auth/pages/ForgotPasswordPage";
 import { LoginPage } from "../../features/auth/pages/LoginPage";
 import { ResetPasswordPage } from "../../features/auth/pages/ResetPasswordPage";
-import { HomePage } from "../../features/home/pages/HomePage";
 import { PortalPage } from "../../features/portal/pages/PortalPage";
 import { RequirePermission, RequireSession } from "./guards";
 
@@ -28,10 +27,9 @@ export function AppRoutes({ path, session, auth, demo, prodMock, go, logout }: P
   if (path === "/redefinir-senha") return <ResetPasswordPage onDone={done("/login")} />;
   if (path === "/esqueci-senha") return <ForgotPasswordPage onBack={done("/login")} />;
   if (path === "/admin/usuarios") return <RequirePermission session={session} permission="USER_MANAGEMENT"><AdminUsersPage onBack={done("/mapa")} /></RequirePermission>;
-  if (path === "/portal") return <PortalPage onBack={done("/")} />;
+  if (path === "/" || path === "/portal") return <PortalPage onBack={done("/mapa")} />;
   if (path === "/mapa" || path === "/login") return <RequireSession session={session} fallback={<LoginPage auth={auth} demo={demo} onSuccess={done("/mapa")} />}>
     <DashboardPage onLogout={logout} onAdmin={session?.permissions.includes("USER_MANAGEMENT") ? done("/admin/usuarios") : undefined} />
   </RequireSession>;
-  if (path === "/") return <HomePage />;
   return <main><h1>Página não encontrada</h1><a href="/">Voltar ao início</a></main>;
 }

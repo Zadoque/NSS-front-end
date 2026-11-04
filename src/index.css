@@ -165,7 +165,7 @@
   .home-menu summary { @apply grid h-10 w-10 cursor-pointer place-items-center list-none rounded-full border border-nss-border text-lg font-bold tracking-[0.14em] text-nss-blue; }
   .home-menu summary::-webkit-details-marker { @apply hidden; }
   .home-menu-popover { @apply absolute right-0 z-30 mt-2 grid min-w-[190px] gap-1 rounded-xl border border-[#dbe5ea] bg-white p-2 shadow-[0_12px_30px_#1b3d5526]; }
-  .home-menu-popover a { @apply rounded-lg px-3 py-2 text-sm no-underline hover:bg-[#edf6f2]; }
+  .home-menu-popover a, .home-menu-popover button { @apply rounded-lg bg-transparent px-3 py-2 text-left text-sm no-underline hover:bg-[#edf6f2]; }
   .portal-link { @apply mt-4 inline-block text-sm font-semibold; }
   .portal-page { @apply max-w-[1280px]; }
   .portal-header { @apply sticky top-0 z-40; }
@@ -207,6 +207,7 @@
   .secondary-button { @apply w-fit rounded-lg border border-nss-blue bg-white px-4 py-2.5 text-sm font-semibold text-nss-blue hover:bg-[#edf6f2]; }
   .danger-button { @apply w-fit rounded-lg border border-[#e4b5ad] bg-white px-3 py-1.5 text-xs font-semibold text-[#a63c2d] hover:bg-[#fff1ee]; }
   .portal-button { @apply mt-2 max-w-[260px] justify-center no-underline; }
+  .portal-actions { @apply flex flex-wrap items-center gap-3; }
   .bulletin-intro { @apply mb-5 grid gap-5 p-6 md:grid-cols-[1fr_auto] md:items-center; }
   .bulletin-intro p { @apply mt-2 max-w-[720px] text-sm text-nss-muted; }
   .bulletin-current { @apply grid gap-1 rounded-xl bg-[#edf7f1] p-4 text-sm; }

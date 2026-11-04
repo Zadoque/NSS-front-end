@@ -16,9 +16,9 @@ const STORAGE = {
 };
 
 const initialPosts: Post[] = [
-  { id: "post-dengue", title: "Dengue: elimine a água parada", disease: "Dengue (DENG)", body: "Reserve alguns minutos por semana para esvaziar recipientes, tampar caixas d’água e manter calhas limpas. A prevenção começa dentro de casa.", date: "2026-03-12" },
-  { id: "post-chik", title: "Chikungunya: reconheça os sinais", disease: "Chikungunya (CHIK)", body: "Febre e dor intensa nas articulações merecem atenção. Procure a unidade de saúde e evite a automedicação, especialmente em caso de piora.", date: "2026-03-05" },
-  { id: "post-toxo", title: "Toxoplasmose: cuidado durante a gestação", disease: "Toxoplasmose gestacional (TOXG)", body: "Lave bem frutas e verduras, cozinhe completamente as carnes e siga o acompanhamento do pré-natal. Converse com a equipe de saúde sobre dúvidas.", date: "2026-02-26" },
+  { id: "post-dengue", title: "Dengue: elimine a água parada", disease: "Dengue (DENG)", body: "Reserve alguns minutos por semana para esvaziar recipientes, tampar caixas d’água e manter calhas limpas. A prevenção começa dentro de casa.", date: "2026-03-12", image: "/posts/dengue-prevencao.png" },
+  { id: "post-chik", title: "Chikungunya: reconheça os sinais", disease: "Chikungunya (CHIK)", body: "Febre e dor intensa nas articulações merecem atenção. Procure a unidade de saúde e evite a automedicação, especialmente em caso de piora.", date: "2026-03-05", image: "/posts/chikungunya-cuidados.png" },
+  { id: "post-toxo", title: "Toxoplasmose: cuidado durante a gestação", disease: "Toxoplasmose gestacional (TOXG)", body: "Lave bem frutas e verduras, cozinhe completamente as carnes e siga o acompanhamento do pré-natal. Converse com a equipe de saúde sobre dúvidas.", date: "2026-02-26", image: "/posts/toxoplasmose-prevencao.png" },
 ];
 const initialDiseases: AnimalDisease[] = [{ id: "animal-toxoplasmosis", name: "Toxoplasmose animal", fields: ["Raça do cachorro", "Sexo", "É castrado?", "Local onde o dono mora", "UF", "Município", "Distrito/Bairro"] }];
 const initialTeam: TeamMember[] = [{ id: "team-uenf", name: "Núcleo de Situação de Saúde", role: "Coordenação NSS", description: "Equipe interdisciplinar de vigilância, dados e território da UENF.", email: "nss@uenf.br" }];
@@ -49,6 +49,10 @@ export function PortalPage({ onBack }: { onBack: () => void }) {
       <img className="brand-image" src="/logo.jpg" alt="NSS" />
       <div><strong>Núcleo de Situação de Saúde</strong><p>Portal integrado de saúde humana e saúde animal</p></div>
       <button className="header-action" onClick={onBack}>Mapa epidemiológico</button>
+      <details className="home-menu">
+        <summary aria-label="Abrir menu">•••</summary>
+        <div className="home-menu-popover"><button type="button" onClick={() => setSection("team")}>Equipe NSS</button><a href="/mapa">Mapa de saúde humana</a></div>
+      </details>
     </header>
     <main className="portal-page">
       <section className="portal-hero">
@@ -81,7 +85,7 @@ function Bulletins() {
 }
 
 function Overview({ posts, onNews, onAnimal }: { posts: Post[]; onNews: () => void; onAnimal: () => void }) {
-  return <><section className="portal-grid portal-overview"><article className="card portal-feature"><div className="section-label">DESTAQUE · SAÚDE HUMANA</div><h2>Dados para decisões mais próximas das pessoas</h2><p>Explore o mapa nacional com dados epidemiológicos de 2026, detalhamento territorial e os metadados de publicação.</p><button className="primary portal-button" onClick={onNews}>Ver notícias e análises →</button></article><article className="card portal-animal-feature"><div className="section-label">SAÚDE ANIMAL · CAMPOS DOS GOYTACAZES</div><h2>Uma saúde, um território</h2><p>Notificações clínicas e vigilância animal organizadas para Campos dos Goytacazes.</p><button className="secondary-button" onClick={onAnimal}>Abrir módulo animal →</button></article></section><section className="portal-section"><div className="section-heading"><div><div className="section-label">PUBLICAÇÕES RECENTES</div><h2>Notícias do NSS</h2></div><button onClick={onNews}>Todas as notícias</button></div><div className="news-grid">{posts.slice(0, 3).map(post => <PostCard key={post.id} post={post} />)}</div></section></>;
+  return <><section className="portal-grid portal-overview"><article className="card portal-feature"><div className="section-label">DESTAQUE · SAÚDE HUMANA</div><h2>Dados para decisões mais próximas das pessoas</h2><p>Explore o mapa nacional com dados epidemiológicos de 2026, detalhamento territorial e os metadados de publicação.</p><div className="portal-actions"><a className="primary portal-button" href="/mapa">Abrir mapa de saúde humana →</a><button className="secondary-button" onClick={onNews}>Ver notícias e análises</button></div></article><article className="card portal-animal-feature"><div className="section-label">SAÚDE ANIMAL · CAMPOS DOS GOYTACAZES</div><h2>Uma saúde, um território</h2><p>Notificações clínicas e vigilância animal organizadas para Campos dos Goytacazes.</p><button className="secondary-button" onClick={onAnimal}>Abrir módulo animal →</button></article></section><section className="portal-section"><div className="section-heading"><div><div className="section-label">PUBLICAÇÕES RECENTES</div><h2>Notícias do NSS</h2></div><button onClick={onNews}>Todas as notícias</button></div><div className="news-grid">{posts.slice(0, 3).map(post => <PostCard key={post.id} post={post} />)}</div></section></>;
 }
 
 function PostCard({ post, onDelete, canEdit }: { post: Post; onDelete?: () => void; canEdit?: boolean }) {
