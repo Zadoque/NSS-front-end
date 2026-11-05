@@ -11,6 +11,12 @@ export const municipalitiesWithNeighborhoodGeometry = new Set([
   "3304128", "3304151", "3304201", "3304524", "3304557", "3304904",
   "3305109", "3305208", "3305505", "3305752", "3305802", "3306107",
   "3306305",
+  // OpenStreetMap fallback assets imported when the official IBGE file has
+  // no neighborhood polygon for the municipality.
+  "3300209", "3300233", "3300258", "3300704", "3300936", "3301306",
+  "3302007", "3302205", "3302502", "3302700", "3303856", "3304110",
+  "3304144", "3304300", "3304607", "3304755", "3304805", "3305000",
+  "3305554", "3306206",
 ]);
 
 export const stateRegion: Record<string, string> = {

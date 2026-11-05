@@ -44,7 +44,7 @@ export function useDashboardModel() {
     const properties = feature.properties ?? {};
     return selectedMunicipalityCode === CAMPOS_MUNICIPALITY_CODE
       ? String(properties.parentDistrictId ?? "")
-      : "IBGE_DIST_" + String(properties.CD_DIST ?? "");
+      : String(properties.parentDistrictId ?? (properties.CD_DIST != null ? "IBGE_DIST_" + String(properties.CD_DIST) : ""));
   }).filter(Boolean))], [neighborhoodGeometryQuery.data?.features, selectedMunicipalityCode]);
   useEffect(() => {
     if (mapLevel !== "MUNICIPALITY_DISTRICTS" || !selectedMunicipalityCode || !districtQuery.isSuccess) return;

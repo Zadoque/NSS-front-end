@@ -237,7 +237,13 @@ export function GeographicMap({
                       : level === "CAMPOS_DISTRICTS" || level === "MUNICIPALITY_DISTRICTS"
                       ? { level: "district", code: String(p.territoryId), name: byCode.get(String(p.territoryId))?.name ?? String(p.name), municipalityCode: selected?.level === "municipality" ? selected.code : selected?.municipalityCode ?? CAMPOS_MUNICIPALITY_CODE }
                       : level === "MUNICIPALITY_NEIGHBORHOODS"
-                        ? { level: "neighborhood", code: `IBGE_BAIRRO_${String(p.CD_BAIRRO)}`, name: String(p.NM_BAIRRO), municipalityCode: selected?.level === "municipality" ? selected.code : selected?.municipalityCode, districtCode: `IBGE_DIST_${String(p.CD_DIST)}` }
+                        ? {
+                            level: "neighborhood",
+                            code: String(p.territoryId ?? (p.CD_BAIRRO != null ? `IBGE_BAIRRO_${String(p.CD_BAIRRO)}` : "")),
+                            name: String(p.name ?? p.NM_BAIRRO ?? p.territoryId ?? "Bairro/localidade"),
+                            municipalityCode: selected?.level === "municipality" ? selected.code : selected?.municipalityCode,
+                            districtCode: p.parentDistrictId ?? (p.CD_DIST != null ? `IBGE_DIST_${String(p.CD_DIST)}` : undefined),
+                          }
                         : { level: "neighborhood", code: String(p.territoryId), name: String(p.name), municipalityCode: CAMPOS_MUNICIPALITY_CODE, districtCode: String(p.parentDistrictId) };
               const navigable = ["NATIONAL_STATES", "NATIONAL_MUNICIPALITIES", "MUNICIPALITY_DISTRICTS", "MUNICIPALITY_NEIGHBORHOODS"].includes(level) || canDrillDown(geography);
               const territorial = geography.level === "district" || geography.level === "neighborhood";

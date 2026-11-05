@@ -1,1 +1,1 @@
-{"schemaVersion":1,"source":"IBGE Malhas Territoriais 2022","year":2022,"stateCount":27,"municipalityCount":5571,"neighborhoodCount":17575,"states":"states.geojson","municipalitiesIndex":"municipalities.index.json"}
+{"schemaVersion":1,"source":"IBGE Malhas Territoriais 2022","year":2022,"stateCount":27,"municipalityCount":5571,"neighborhoodCount":17575,"states":"states.geojson","municipalitiesIndex":"municipalities.index.json","fallbackSources":["OpenStreetMap"],"neighborhoodFallbackCount":20}
