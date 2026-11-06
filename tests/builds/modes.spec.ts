@@ -43,4 +43,16 @@ test("production mantém autenticação real mesmo com flags mock", async ({ pag
   await expect(page.getByLabel("Senha", { exact: true })).toHaveValue("");
   await expect(page.getByRole("link", { name: "Esqueci minha senha" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Entrar na demonstração" })).toHaveCount(0);
+  const loginPassword = page.getByLabel("Senha", { exact: true });
+  await expect(loginPassword).toHaveAttribute("type", "password");
+  await page.getByRole("button", { name: "Mostrar senha" }).click();
+  await expect(loginPassword).toHaveAttribute("type", "text");
+  await page.getByRole("button", { name: "Esconder senha" }).click();
+  await expect(loginPassword).toHaveAttribute("type", "password");
+
+  await page.goto("http://127.0.0.1:5184/primeiro-acesso?token=test-token");
+  const firstAccessPassword = page.getByLabel("Senha", { exact: true });
+  await expect(firstAccessPassword).toHaveAttribute("type", "password");
+  await page.getByRole("button", { name: "Mostrar senha" }).click();
+  await expect(firstAccessPassword).toHaveAttribute("type", "text");
 });

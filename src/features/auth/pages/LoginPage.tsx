@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import type { AuthClient } from "../model/realAuth";
 import { isProdMock } from "../../dashboard/api/sources/dataSource";
+import { PasswordField } from "../components/PasswordField";
 
 export function LoginPage({ auth, demo, onSuccess }: { auth: AuthClient; demo: boolean; onSuccess: () => void }) {
   const [email, setEmail] = useState(demo ? "demo@nss.local" : "");
@@ -34,7 +35,7 @@ export function LoginPage({ auth, demo, onSuccess }: { auth: AuthClient; demo: b
           <label htmlFor="email">E-mail</label>
           <input id="email" type="email" autoComplete="username" value={email} onChange={(event) => setEmail(event.target.value)} required />
           <label htmlFor="password">Senha</label>
-          <input id="password" type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required />
+          <PasswordField id="password" label="Senha" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required />
           </>}
           {error && <p className="form-error" role="alert">{error}</p>}
           <button className="primary" type="submit" disabled={loading}>{loading ? "Entrando…" : isProdMock ? "Entrar na demonstração" : "Entrar"}</button>

@@ -98,6 +98,11 @@
   .auth-card h1 { @apply mb-2; }
   .auth-card form { @apply mt-6 grid gap-2; }
   .auth-card input { @apply mb-2 min-h-[46px] rounded-[7px] border border-[#a8bcc8] p-2.5; }
+  .password-field { @apply relative mb-2; }
+  .password-field input { @apply mb-0 w-full pr-12; }
+  .password-toggle { @apply absolute right-1 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-md bg-transparent text-nss-blue; }
+  .password-toggle:hover { @apply bg-[#edf6f2]; }
+  .password-toggle svg { @apply h-5 w-5 fill-none stroke-current [stroke-linecap:round] [stroke-linejoin:round] [stroke-width:1.8]; }
   .form-error { @apply rounded-md bg-[#fff0ed] p-2.5 text-[#9c321f]; }
   .form-success { @apply rounded-md bg-[#edf9f1] p-2.5 text-[#17633a]; }
   .admin-form { @apply mt-3.5 flex flex-wrap gap-2.5; }
