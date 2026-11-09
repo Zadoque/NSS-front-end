@@ -72,12 +72,19 @@ export const realAuth = {
           headers: { Accept: "application/json" },
           signal: AbortSignal.timeout(15_000),
         });
+        if (response.status === 429 || response.status >= 500) {
+          throw new Error("Serviço de autenticação temporariamente indisponível.");
+        }
+        if (!response.ok && response.status !== 401 && response.status !== 403) {
+          throw new Error("Não foi possível renovar a sessão.");
+        }
+        if (response.status === 401 || response.status === 403) {
+          accessToken = null;
+          session = null;
+          notify();
+          return null;
+        }
         return setSession(await parseResponse(response));
-      } catch {
-        accessToken = null;
-        session = null;
-        notify();
-        return null;
       } finally {
         refreshPromise = null;
       }
@@ -86,12 +93,10 @@ export const realAuth = {
   },
   async restore() { return realAuth.refresh(); },
   async logout() {
-    try {
-      await fetch(endpoint("/logout"), { method: "POST", credentials: "include", headers: { Accept: "application/json" } });
-    } finally {
-      accessToken = null;
-      session = null;
-      notify();
-    }
+    const response = await fetch(endpoint("/logout"), { method: "POST", credentials: "include", headers: { Accept: "application/json" } });
+    if (!response.ok) throw new Error("Não foi possível encerrar a sessão. Tente novamente.");
+    accessToken = null;
+    session = null;
+    notify();
   },
 };
