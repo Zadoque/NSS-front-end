@@ -79,17 +79,19 @@ function receiveSessionChange(value: unknown) {
   }
 }
 authChannel?.addEventListener("message", (event) => receiveSessionChange(event.data));
-window.addEventListener("storage", (event) => {
-  if (event.key === authSignalKey) {
-    if (event.newValue) {
-      try { receiveSessionChange(JSON.parse(event.newValue)); } catch { /* ignore unrelated data */ }
-    } else if (pendingUserId != null) {
-      const expected = { userId: pendingUserId, signal: null };
-      pendingUserId = undefined;
-      if (currentSignal() === null) recoverExpectedSession(expected);
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (event) => {
+    if (event.key === authSignalKey) {
+      if (event.newValue) {
+        try { receiveSessionChange(JSON.parse(event.newValue)); } catch { /* ignore unrelated data */ }
+      } else if (pendingUserId != null) {
+        const expected = { userId: pendingUserId, signal: null };
+        pendingUserId = undefined;
+        if (currentSignal() === null) recoverExpectedSession(expected);
+      }
     }
-  }
-});
+  });
+}
 
 function announceSessionChange(type: "login" | "logout", userId?: number) {
   const event = { type, userId, nonce: `${Date.now()}-${Math.random()}`, persisted: true };
