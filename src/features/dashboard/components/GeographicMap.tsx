@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { FeatureCollection } from "geojson";
 import { useQuery } from "@tanstack/react-query";
 import { ComposableMap, Geographies, Geography } from "react-simple-maps";
@@ -12,22 +12,55 @@ import type {
 import { caseColor } from "./MapLegend";
 import { canDrillDown, isCoveredMunicipality, CAMPOS_MUNICIPALITY_CODE } from "../geography/geographyDomain";
 
-function geometryCenter(collection: FeatureCollection): [number, number] | null {
-  const points: number[][] = [];
+const MAP_WIDTH = 800;
+const MAP_HEIGHT = 540;
+const LOCAL_MAP_LEVELS: MapLevel[] = [
+  "CAMPOS_DISTRICTS", "CAMPOS_NEIGHBORHOODS", "MUNICIPALITY_DISTRICTS", "MUNICIPALITY_NEIGHBORHOODS",
+];
+
+function geometryBounds(collection: FeatureCollection) {
+  let west = Infinity, east = -Infinity, south = Infinity, north = -Infinity;
   const visit = (value: unknown) => {
     if (!Array.isArray(value)) return;
-    if (typeof value[0] === "number" && typeof value[1] === "number") points.push(value as number[]);
-    else value.forEach(visit);
+    if (typeof value[0] === "number" && typeof value[1] === "number") {
+      west = Math.min(west, value[0]);
+      east = Math.max(east, value[0]);
+      south = Math.min(south, value[1]);
+      north = Math.max(north, value[1]);
+    } else {
+      value.forEach(visit);
+    }
   };
-  collection.features.forEach((feature) => {
-    const geometry = feature.geometry;
+  collection.features.forEach(({ geometry }) => {
     if (geometry && "coordinates" in geometry) visit(geometry.coordinates);
     if (geometry?.type === "GeometryCollection") geometry.geometries.forEach((child) => {
       if ("coordinates" in child) visit(child.coordinates);
     });
   });
-  if (!points.length) return null;
-  return [points.reduce((sum, point) => sum + point[0], 0) / points.length, points.reduce((sum, point) => sum + point[1], 0) / points.length];
+  return Number.isFinite(west) ? { west, east, south, north } : null;
+}
+
+function fitMap(collection: FeatureCollection, level: MapLevel) {
+  const view = mapViews[level];
+  const bounds = geometryBounds(collection);
+  if (!bounds) return view;
+  const { west, east, south, north } = bounds;
+  const longitude = (west + east) / 2;
+  if (!LOCAL_MAP_LEVELS.includes(level)) {
+    return { center: [longitude, (south + north) / 2] as [number, number], scale: view.scale };
+  }
+
+  const radians = Math.PI / 180;
+  const mercatorY = (latitude: number) => Math.asinh(Math.tan(latitude * radians));
+  const lower = mercatorY(south);
+  const upper = mercatorY(north);
+  const latitude = Math.atan(Math.sinh((lower + upper) / 2)) / radians;
+  const scale = Math.min(
+    (MAP_WIDTH * 0.82) / ((east - west) * radians),
+    (MAP_HEIGHT * 0.82) / (upper - lower),
+    view.scale * 4,
+  );
+  return { center: [longitude, latitude] as [number, number], scale };
 }
 
 type Props = {
@@ -50,11 +83,12 @@ export function GeographicMap({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const initialZoom = level === "CAMPOS_NEIGHBORHOODS" || level === "MUNICIPALITY_NEIGHBORHOODS" ? 3.5 : level === "MUNICIPALITY_DISTRICTS" ? 2 : 1;
-  const [zoom, setZoom] = useState(initialZoom);
-  const [displayZoom, setDisplayZoom] = useState(initialZoom);
-  const [center, setCenter] = useState(mapViews[level].center);
-  const [centerKey, setCenterKey] = useState("");
+  const [viewport, setViewport] = useState<{
+    key: string;
+    center: [number, number];
+    zoom: number;
+    displayZoom: number;
+  }>();
   const map = useQuery({
     queryKey: ["map", level, selected?.municipalityCode ?? selected?.code],
     queryFn: () => loadMap(level, level === "NATIONAL_STATES" && selected?.level === "region"
@@ -83,12 +117,23 @@ export function GeographicMap({
       document.removeEventListener("keydown", escape);
     };
   }, [expanded]);
+  const district = selected?.level === "district" ? selected.code : selected?.districtCode;
+  const mapData = useMemo(() => {
+    if (level !== "MUNICIPALITY_NEIGHBORHOODS" || !district || !map.data) return map.data;
+    return { ...map.data, features: map.data.features.filter(({ properties }) =>
+      (properties?.parentDistrictId ?? (properties?.CD_DIST != null ? `IBGE_DIST_${properties.CD_DIST}` : undefined)) === district) };
+  }, [district, level, map.data]);
   const view = mapViews[level];
-  const mapCenter = ["NATIONAL_STATES", "NATIONAL_MUNICIPALITIES", "MUNICIPALITY_DISTRICTS", "MUNICIPALITY_NEIGHBORHOODS"].includes(level)
-    ? geometryCenter(map.data ?? { type: "FeatureCollection", features: [] }) ?? view.center
-    : view.center;
-  const mapKey = `${level}:${selected?.code ?? selected?.municipalityCode ?? ""}`;
-  const mapViewportCenter = centerKey === mapKey ? center : mapCenter;
+  const local = LOCAL_MAP_LEVELS.includes(level);
+  const dynamicBounds = local || level === "NATIONAL_STATES" || level === "NATIONAL_MUNICIPALITIES";
+  const { center: mapCenter, scale } = useMemo(
+    () => dynamicBounds && mapData ? fitMap(mapData, level) : mapViews[level],
+    [dynamicBounds, level, mapData],
+  );
+  const mapKey = `${level}:${selected?.municipalityCode ?? selected?.code ?? ""}:${level === "MUNICIPALITY_NEIGHBORHOODS" ? district ?? "" : ""}`;
+  const current = viewport?.key === mapKey
+    ? viewport
+    : { key: mapKey, center: mapCenter, zoom: 1, displayZoom: 1 };
   if (map.isPending)
     return (
       <div className={`geographic-map${expanded ? " map-expanded" : ""}`} ref={mapContainerRef}>
@@ -106,7 +151,7 @@ export function GeographicMap({
         </div>
       </div>
     );
-  if (!map.data?.features?.length)
+  if (!mapData?.features?.length)
     return (
       <div className={`geographic-map${expanded ? " map-expanded" : ""}`} ref={mapContainerRef}>
         <div className="map-placeholder" role="status">
@@ -118,21 +163,16 @@ export function GeographicMap({
     );
   const byCode = new Map(items.map((item) => [item.code, item]));
   const visibleMaximum = Math.max(1, ...items.map((item) => item.notificationsTotal));
-  const minZoom = initialZoom;
-  const maxZoom = initialZoom * 3;
-  const zoomStep = initialZoom * 0.5;
-  const changeZoom = (value: number) => {
-    const next = Math.max(minZoom, Math.min(maxZoom, value));
-    setZoom(next);
-    setDisplayZoom(next);
+  const minZoom = local ? 0.5 : 1;
+  const maxZoom = 3;
+  const clampZoom = (value: number) => Math.max(minZoom, Math.min(maxZoom, value));
+  const changeZoom = (value: number, center = current.center) => {
+    const zoom = clampZoom(value);
+    setViewport({ key: mapKey, center, zoom, displayZoom: zoom });
   };
-  const zoomIn = () => changeZoom(displayZoom + zoomStep);
-  const zoomOut = () => changeZoom(displayZoom - zoomStep);
-  const resetZoom = () => {
-    setCenterKey(mapKey);
-    setCenter(mapCenter);
-    changeZoom(initialZoom);
-  };
+  const zoomIn = () => changeZoom(current.displayZoom + 0.5);
+  const zoomOut = () => changeZoom(current.displayZoom - 0.5);
+  const resetZoom = () => changeZoom(1, mapCenter);
   const toggleFullscreen = async () => {
     const container = mapContainerRef.current;
     if (!container) return;
@@ -179,21 +219,21 @@ export function GeographicMap({
         >
           {isFullscreen || expanded ? "Sair da tela cheia" : "⛶ Tela cheia"}
         </button>
-        <span>Zoom {Math.round((displayZoom / initialZoom) * 100)}%</span>
+        <span>Zoom {Math.round(current.displayZoom * 100)}%</span>
       </div>
       <div
         className="map-viewport"
       >
         <ComposableMap
-          width={800}
-          height={540}
+          width={MAP_WIDTH}
+          height={MAP_HEIGHT}
           projection={["NATIONAL_STATES", "NATIONAL_MUNICIPALITIES"].includes(level) ? "geoEquirectangular" : "geoMercator"}
-          projectionConfig={{ center: mapCenter, scale: view.scale }}
+          projectionConfig={{ center: mapCenter, scale }}
           aria-label={`Mapa interativo: ${view.title}`}
         >
           <ZoomableGroup
-            center={mapViewportCenter}
-            zoom={zoom}
+            center={current.center}
+            zoom={current.zoom}
             minZoom={minZoom}
             maxZoom={maxZoom}
             // D3 handles wheel deltas, trackpad pinch (ctrl+wheel), and the
@@ -202,16 +242,13 @@ export function GeographicMap({
               const pointer = event as MouseEvent;
               return (!pointer.ctrlKey || event.type === "wheel") && !pointer.button;
             }}
-            onMove={({ zoom: nextZoom }) => setDisplayZoom(nextZoom ?? minZoom)}
-            onMoveEnd={({ coordinates, zoom: nextZoom }) => {
-              if (coordinates) {
-                setCenterKey(mapKey);
-                setCenter(coordinates);
-              }
-              changeZoom(nextZoom ?? minZoom);
-            }}
+            onMove={({ zoom }) => setViewport((previous) => ({
+              ...(previous?.key === mapKey ? previous : current),
+              displayZoom: zoom ?? current.zoom,
+            }))}
+            onMoveEnd={({ coordinates, zoom }) => changeZoom(zoom ?? current.zoom, coordinates ?? current.center)}
           >
-            <Geographies geography={map.data}>
+            <Geographies geography={mapData}>
             {({ geographies }) =>
               geographies.map((geo) => {
               const p = geo.properties ?? {};
