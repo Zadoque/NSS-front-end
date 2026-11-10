@@ -1,5 +1,5 @@
 import type { GeographySelection, MapLevel } from "../domain/epidemiologyTypes";
-import districtCoverage from "./territoryCoverage.json";
+import districtCoverage from "./territoryCoverage.json" with { type: "json" };
 
 export const CAMPOS_MUNICIPALITY_CODE = "3301009";
 export const CAMPOS_MUNICIPALITY_NAME = "Campos dos Goytacazes";
