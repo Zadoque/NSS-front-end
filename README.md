@@ -198,3 +198,9 @@ flowchart LR
 ```
 
 `src/features/` organiza autenticação, dashboard e geografia; `src/shared/` contém HTTP, componentes e utilitários; `public/maps/` contém GeoJSON e manifestos; `tests/` contém Playwright. O cache é por conta, filtros e dia operacional, expira às 02:00 de `America/Sao_Paulo` e coordena abas.
+# Ambiente e secrets
+
+O frontend não deve conter secrets. Valores de build não sensíveis, como a URL
+da API, podem estar em `.env.example`/argumentos de build. No servidor, o
+`NSS-deployment` lê `/etc/nss/deployment.env` (modo `0600`) e injeta somente a
+configuração necessária ao Compose; tokens nunca são embutidos no bundle.
