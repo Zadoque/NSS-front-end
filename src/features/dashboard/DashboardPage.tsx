@@ -13,7 +13,7 @@ import { MobileDashboardNav, type MobileDashboardTab } from "./components/Mobile
 import { DashboardViewSwitcher, type DashboardView } from "./components/DashboardViewSwitcher";
 import { DashboardAnalyticsViews } from "./components/DashboardAnalyticsViews";
 export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onAdmin?: () => void }) {
-  const { navigation, mapLevel, selectedGeography, select, navigate, goBack, metadata, filters, query, districtQuery, items, municipal, territorial, selectionInfo, panel } = useDashboardModel();
+  const { navigation, mapLevel, selectedGeography, select, navigate, goBack, skipDistricts, metadata, filters, query, districtQuery, items, municipal, territorial, selectionInfo, panel } = useDashboardModel();
   const [mobileTab, setMobileTab] = useState<MobileDashboardTab>("map");
   const [activeView, setActiveView] = useState<DashboardView>("map");
   const viewScrollY = useRef<Partial<Record<DashboardView, number>>>({});
@@ -82,7 +82,7 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
         <div className="dashboard-territory-selection">
           <MobileDashboardContext filters={filters} selectionName={selectedGeography?.name ?? mapViews[mapLevel].title} total={selectedTotal} pending={query.isPending} />
           <div className="dashboard-map-navigation">
-            <GeographyBreadcrumb level={mapLevel} navigate={navigate} selected={selectedGeography} />
+            <GeographyBreadcrumb level={mapLevel} navigate={navigate} selected={selectedGeography} goBack={goBack} skipDistricts={skipDistricts} />
             <GeographySelector key={mapLevel} navigation={navigation} districtItems={districtQuery.data?.items ?? []} />
           </div>
         </div>
@@ -96,8 +96,8 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
                   <button
                     className="map-back"
                     type="button"
-                    onClick={goBack}
-                    aria-label={`Voltar para ${mapLevel === "CAMPOS_NEIGHBORHOODS" || mapLevel === "MUNICIPALITY_NEIGHBORHOODS" ? "distritos" : mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "MUNICIPALITY_DISTRICTS" ? "municípios" : mapLevel === "RJ_MUNICIPALITIES" ? "estados" : "regiões"}`}
+                    onClick={() => goBack()}
+                    aria-label={`Voltar para ${mapLevel === "CAMPOS_NEIGHBORHOODS" || (mapLevel === "MUNICIPALITY_NEIGHBORHOODS" && !skipDistricts) ? "distritos" : skipDistricts || mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "MUNICIPALITY_DISTRICTS" ? "municípios" : mapLevel === "RJ_MUNICIPALITIES" ? "estados" : "regiões"}`}
                   >
                     ← Voltar
                   </button>
