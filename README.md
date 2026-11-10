@@ -185,3 +185,16 @@ A geometria completa não amplia a cobertura: somente Sudeste/RJ permitem drill-
 Os testes adicionais cobrem homepage, histórico, seletores → mapa, mapa/ranking → seletores, breadcrumb, pesquisa sem acentos, teclado, municípios sem cobertura e ausência de overflow no smartphone.
 
 Validação desta ampliação: `npm ci`, `npm run lint` e `npm run build` concluídos; suíte completa com **24 testes aprovados**. Os testes Playwright usam por padrão as portas altas `39173` (mock) e `39174` (API simulada), configuráveis por `PLAYWRIGHT_MOCK_PORT` e `PLAYWRIGHT_API_PORT`, para evitar conflito com outros projetos. Neste ambiente NixOS, `npm test` precisou de execução fora do sandbox e de `CHROMIUM_PATH` apontando para o Chromium 152 instalado em `/nix/store` (o navegador padrão do Playwright não estava instalado). Nenhum backend externo foi necessário: os testes da API interceptam HTTP com respostas controladas.
+
+## Arquitetura e estrutura
+
+```mermaid
+flowchart LR
+  UI[React pages] --> Q[React Query hooks]
+  Q --> C[Daily cache IndexedDB]
+  C --> HTTP[API data source]
+  HTTP --> API[Java API]
+  UI --> MAP[GeoJSON national assets]
+```
+
+`src/features/` organiza autenticação, dashboard e geografia; `src/shared/` contém HTTP, componentes e utilitários; `public/maps/` contém GeoJSON e manifestos; `tests/` contém Playwright. O cache é por conta, filtros e dia operacional, expira às 02:00 de `America/Sao_Paulo` e coordena abas.
