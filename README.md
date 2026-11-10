@@ -204,3 +204,6 @@ O frontend não deve conter secrets. Valores de build não sensíveis, como a UR
 da API, podem estar em `.env.example`/argumentos de build. No servidor, o
 `NSS-deployment` lê `/etc/nss/deployment.env` (modo `0600`) e injeta somente a
 configuração necessária ao Compose; tokens nunca são embutidos no bundle.
+
+Para teste local integrado: `cp .env.local.test .env`. Altere somente
+`VITE_API_BASE_URL` se a API não estiver sendo servida pela mesma origem.
