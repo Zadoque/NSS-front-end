@@ -10,7 +10,7 @@ import { loadMap } from "../geography/maps";
 
 export function useDashboardModel() {
   const navigation = useMapNavigation();
-  const { mapLevel, selectedGeography, select, navigate, goBack } = navigation;
+  const { mapLevel, selectedGeography, select, navigate } = navigation;
   const diseases = useDiseases();
   const metadata = useMetadata();
   const [filterInput, setFilters] = useState<EpidemiologyFilters>({ disease: "DENG", year: 2026, month: 1 });
@@ -25,7 +25,7 @@ export function useDashboardModel() {
     geography,
     ...scope,
     municipalityCode: ["MUNICIPALITY_NEIGHBORHOODS", "MUNICIPALITY_DISTRICTS"].includes(mapLevel) ? selectedGeography?.municipalityCode ?? (selectedGeography?.level === "municipality" ? selectedGeography.code : undefined) : scope.municipalityCode,
-    districtCode: mapLevel === "MUNICIPALITY_NEIGHBORHOODS" ? selectedGeography?.districtCode : scope.districtCode,
+    districtCode: scope.districtCode,
     ufCode: mapLevel === "NATIONAL_MUNICIPALITIES" && selectedGeography?.level === "state" ? selectedGeography.code : mapLevel === "RJ_MUNICIPALITIES" ? "33" : undefined,
     regionCode: selectedGeography?.level === "region" ? selectedGeography.code : mapLevel === "SOUTHEAST_STATES" ? "SE" : undefined,
   });
@@ -47,14 +47,18 @@ export function useDashboardModel() {
       : String(properties.parentDistrictId ?? (properties.CD_DIST != null ? "IBGE_DIST_" + String(properties.CD_DIST) : ""));
   }).filter(Boolean))], [neighborhoodGeometryQuery.data?.features, selectedMunicipalityCode]);
   useEffect(() => {
-    if (mapLevel !== "MUNICIPALITY_DISTRICTS" || !selectedMunicipalityCode || !districtQuery.isSuccess) return;
+    if (!selectedMunicipalityCode) {
+      autoExpandedMunicipality.current = "";
+      return;
+    }
+    if (mapLevel !== "MUNICIPALITY_DISTRICTS" || !districtQuery.isSuccess) return;
     if (autoExpandedMunicipality.current === selectedMunicipalityCode) return;
     const districtItems = districtQuery.data.items;
     // A municipality with a single territorial subdivision should open the
     // neighborhood view directly. The API may contain several district rows
     // for the same subdivision (or use a different source code), so the
     // cartographic catalog is the source of truth for this UX decision.
-    if (selectedMunicipalityCode !== CAMPOS_MUNICIPALITY_CODE && neighborhoodDistrictCodes.length === 1) {
+    if (selectedMunicipalityCode !== CAMPOS_MUNICIPALITY_CODE && districtItems.length <= 1 && neighborhoodDistrictCodes.length === 1) {
       autoExpandedMunicipality.current = selectedMunicipalityCode;
       select({
         level: "neighborhood",
@@ -79,6 +83,13 @@ export function useDashboardModel() {
       municipalityCode: selectedMunicipalityCode,
     });
   }, [districtQuery.data, districtQuery.isSuccess, mapLevel, neighborhoodDistrictCodes, select, selectedMunicipalityCode]);
+  const skipDistricts = mapLevel === "MUNICIPALITY_NEIGHBORHOODS" && Boolean(
+    selectedMunicipalityCode && (
+      districtQuery.data?.items.length === 1 ||
+      (districtQuery.data?.items.length === 0 && neighborhoodDistrictCodes.length === 1)
+    ),
+  );
+  const goBack = () => navigation.goBack(skipDistricts);
   const items = query.isSuccess ? query.data.items : [];
   const municipal = mapLevel === "RJ_MUNICIPALITIES" || mapLevel === "NATIONAL_MUNICIPALITIES";
   const territorial = municipal || mapLevel === "CAMPOS_DISTRICTS" || mapLevel === "CAMPOS_NEIGHBORHOODS" || mapLevel === "MUNICIPALITY_DISTRICTS" || mapLevel === "MUNICIPALITY_NEIGHBORHOODS";
@@ -112,5 +123,5 @@ export function useDashboardModel() {
     availableYears: metadata.data?.availableYears ?? [],
     availableMonths: filters.year === "ALL" ? Array.from({ length: 12 }, (_, index) => index + 1) : metadata.data?.availableMonthsByYear[String(filters.year)] ?? [],
   };
-  return { navigation, mapLevel, selectedGeography, select, navigate, goBack, diseases, metadata, filters, geography, query, districtQuery, items, municipal, territorial, selectionInfo, panel };
+  return { navigation, mapLevel, selectedGeography, select, navigate, goBack, skipDistricts, diseases, metadata, filters, geography, query, districtQuery, items, municipal, territorial, selectionInfo, panel };
 }

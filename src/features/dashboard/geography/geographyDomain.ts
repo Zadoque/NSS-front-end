@@ -1,23 +1,11 @@
 import type { GeographySelection, MapLevel } from "../domain/epidemiologyTypes";
+import districtCoverage from "./territoryCoverage.json" with { type: "json" };
 
 export const CAMPOS_MUNICIPALITY_CODE = "3301009";
 export const CAMPOS_MUNICIPALITY_NAME = "Campos dos Goytacazes";
 export const CAMPOS_SEAT_DISTRICT_CODE = "CG_DIST_SEDE";
 export const CAMPOS_SEAT_DISTRICT_NAME = "Distrito Sede";
-export const municipalitiesWithNeighborhoodGeometry = new Set([
-  "3300100", "3300308", "3300407", "3300456", "3300605", "3300803",
-  "3301009", "3301702", "3301876", "3301900", "3302270", "3302403",
-  "3302858", "3303203", "3303302", "3303401", "3303500", "3303955",
-  "3304128", "3304151", "3304201", "3304524", "3304557", "3304904",
-  "3305109", "3305208", "3305505", "3305752", "3305802", "3306107",
-  "3306305",
-  // OpenStreetMap fallback assets imported when the official IBGE file has
-  // no neighborhood polygon for the municipality.
-  "3300209", "3300233", "3300258", "3300704", "3300936", "3301306",
-  "3302007", "3302205", "3302502", "3302700", "3303856", "3304110",
-  "3304144", "3304300", "3304607", "3304755", "3304805", "3305000",
-  "3305554", "3306206",
-]);
+const districtsWithNeighborhoodGeometry = new Set(districtCoverage);
 
 export const stateRegion: Record<string, string> = {
   "11": "N", "12": "N", "13": "N", "14": "N", "15": "N", "16": "N", "17": "N",
@@ -45,7 +33,7 @@ export function isCoveredMunicipality(code: string) {
 export function canExpandToNeighborhoods(municipalityCode: string, districtCode: string) {
   return municipalityCode === CAMPOS_MUNICIPALITY_CODE
     ? districtCode === CAMPOS_SEAT_DISTRICT_CODE
-    : municipalitiesWithNeighborhoodGeometry.has(municipalityCode);
+    : districtsWithNeighborhoodGeometry.has(districtCode);
 }
 
 export function mapLevelForSelection(selection: GeographySelection): MapLevel {

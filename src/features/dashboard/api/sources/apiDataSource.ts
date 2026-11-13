@@ -1,6 +1,7 @@
 import { getJson } from "../../../../shared/api/http";
 import type { EpidemiologyDataSource, EpidemiologyRequest, EpidemiologyResponse } from "../../domain/epidemiologyTypes";
 import { diseasesResponseSchema, epidemiologyResponseSchema, metadataResponseSchema } from "../epidemiologySchemas";
+import { dailyCache } from "../../cache/dailyCache";
 
 export function parseCases(value: unknown, request: EpidemiologyRequest): EpidemiologyResponse {
   const parsed = epidemiologyResponseSchema.safeParse(value);
@@ -24,13 +25,15 @@ export function parseCases(value: unknown, request: EpidemiologyRequest): Epidem
 
 export const apiDataSource: EpidemiologyDataSource = {
   async listDiseases() {
-    const value = await getJson("/diseases");
+    const value = await dailyCache("/diseases", () => getJson("/diseases"),
+      (candidate): candidate is unknown => diseasesResponseSchema.safeParse(candidate).success);
     const parsed = diseasesResponseSchema.safeParse(value);
     if (!parsed.success) throw new Error("Lista de doenças inválida.");
     return parsed.data.items;
   },
   async getMetadata() {
-    const value = await getJson("/metadata");
+    const value = await dailyCache("/metadata", () => getJson("/metadata"),
+      (candidate): candidate is unknown => metadataResponseSchema.safeParse(candidate).success);
     const parsed = metadataResponseSchema.safeParse(value);
     if (!parsed.success) throw new Error("Metadata inválida.");
     return parsed.data;
@@ -52,7 +55,10 @@ export const apiDataSource: EpidemiologyDataSource = {
         : request.geography === "NEIGHBORHOOD"
           ? "neighborhoods"
           : request.geography.toLowerCase();
-    const value = await getJson(`/epidemiology/${endpoint}?${params}`);
+    const path = `/epidemiology/${endpoint}?${params}`;
+    const value = await dailyCache(path, () => getJson(path), (candidate): candidate is unknown => {
+      try { parseCases(candidate, request); return true; } catch { return false; }
+    });
     return parseCases(value, request);
   },
 };

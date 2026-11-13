@@ -81,7 +81,7 @@ export function GeographySelector({
     }))
     .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
   const neighborhoods = (neighborhoodMap.data?.features ?? [])
-    .filter(({ properties }) => String(properties?.CD_DIST ?? properties?.parentDistrictId) === district.replace(/^IBGE_DIST_/, ""))
+    .filter(({ properties }) => (properties?.parentDistrictId ?? (properties?.CD_DIST != null ? `IBGE_DIST_${String(properties.CD_DIST)}` : undefined)) === district)
     .map(({ properties }) => ({
       code: properties?.CD_BAIRRO ? `IBGE_BAIRRO_${String(properties.CD_BAIRRO)}` : String(properties?.territoryId),
       name: String(properties?.NM_BAIRRO ?? properties?.name),

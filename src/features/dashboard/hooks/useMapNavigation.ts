@@ -20,6 +20,19 @@ export function useMapNavigation() {
     selectedGeography: null,
   });
   function navigate(mapLevel: MapLevel) {
+    const current = navigation.selectedGeography;
+    const municipalityCode = current?.level === "municipality" ? current.code : current?.municipalityCode;
+    if (!isDemo && mapLevel === "NATIONAL_MUNICIPALITIES" && municipalityCode) {
+      const ufCode = municipalityCode.slice(0, 2);
+      setNavigation(ufCode === "33"
+        ? { mapLevel: "RJ_MUNICIPALITIES", selectedGeography: null }
+        : { mapLevel, selectedGeography: { level: "state", code: ufCode, name: "Estado selecionado" } });
+      return;
+    }
+    if (!isDemo && mapLevel === "MUNICIPALITY_DISTRICTS" && municipalityCode) {
+      setNavigation({ mapLevel, selectedGeography: { level: "municipality", code: municipalityCode, name: "Município selecionado" } });
+      return;
+    }
     setNavigation({ mapLevel, selectedGeography: null });
   }
   function select(selection: GeographySelection) {
@@ -63,23 +76,13 @@ export function useMapNavigation() {
           : selection,
     });
   }
-  function goBack() {
+  function goBack(skipDistricts = false) {
     const current = navigation.selectedGeography;
     if (!isDemo) {
       if (navigation.mapLevel === "MUNICIPALITY_NEIGHBORHOODS") {
-        const municipalityCode = current?.municipalityCode;
-        setNavigation({ mapLevel: "MUNICIPALITY_DISTRICTS", selectedGeography: municipalityCode ? { level: "municipality", code: municipalityCode, name: "Município selecionado" } : null });
+        navigate(skipDistricts ? "NATIONAL_MUNICIPALITIES" : "MUNICIPALITY_DISTRICTS");
       } else if (navigation.mapLevel === "MUNICIPALITY_DISTRICTS") {
-        const municipalityCode = current?.level === "municipality" ? current.code : current?.municipalityCode;
-        const ufCode = municipalityCode?.slice(0, 2);
-        setNavigation({
-          mapLevel: "NATIONAL_MUNICIPALITIES",
-          selectedGeography: current?.level === "state"
-            ? current
-            : ufCode
-              ? { level: "state", code: ufCode, name: "Estado selecionado" }
-              : null,
-        });
+        navigate("NATIONAL_MUNICIPALITIES");
       } else if (navigation.mapLevel === "NATIONAL_MUNICIPALITIES") {
         setNavigation({ mapLevel: "NATIONAL_STATES", selectedGeography: current?.level === "state" ? current : null });
       } else if (navigation.mapLevel === "NATIONAL_STATES") {
@@ -109,6 +112,13 @@ export function useMapNavigation() {
       // A seleção de Campos só dá contexto aos níveis territoriais internos.
       // Ao retornar ao mapa estadual, mantê-la ativa restringiria indevidamente
       // a consulta municipal ao código 3301009.
+      setNavigation({ mapLevel: "RJ_MUNICIPALITIES", selectedGeography: null });
+    } else if (navigation.mapLevel === "MUNICIPALITY_NEIGHBORHOODS") {
+      setNavigation({
+        mapLevel: skipDistricts ? "RJ_MUNICIPALITIES" : "MUNICIPALITY_DISTRICTS",
+        selectedGeography: skipDistricts ? null : municipality,
+      });
+    } else if (navigation.mapLevel === "MUNICIPALITY_DISTRICTS") {
       setNavigation({ mapLevel: "RJ_MUNICIPALITIES", selectedGeography: null });
     } else if (navigation.mapLevel === "RJ_MUNICIPALITIES") {
       setNavigation({ mapLevel: "SOUTHEAST_STATES", selectedGeography: null });

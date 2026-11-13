@@ -25,10 +25,14 @@ export function GeographyBreadcrumb({
   level,
   navigate,
   selected,
+  goBack,
+  skipDistricts,
 }: {
   level: MapLevel;
   navigate: (level: MapLevel) => void;
   selected?: GeographySelection | null;
+  goBack: () => void;
+  skipDistricts: boolean;
 }) {
   const index = levels.indexOf(level);
   const visible = level === "NATIONAL_STATES"
@@ -36,7 +40,8 @@ export function GeographyBreadcrumb({
     : level === "NATIONAL_MUNICIPALITIES"
       ? ["BRAZIL_REGIONS", "NATIONAL_STATES", "NATIONAL_MUNICIPALITIES"] as MapLevel[]
       : level === "MUNICIPALITY_NEIGHBORHOODS"
-        ? ["BRAZIL_REGIONS", "NATIONAL_STATES", "NATIONAL_MUNICIPALITIES", "MUNICIPALITY_DISTRICTS", "MUNICIPALITY_NEIGHBORHOODS"] as MapLevel[]
+        ? (["BRAZIL_REGIONS", "NATIONAL_STATES", "NATIONAL_MUNICIPALITIES", "MUNICIPALITY_DISTRICTS", "MUNICIPALITY_NEIGHBORHOODS"] as MapLevel[])
+          .filter((step) => !skipDistricts || step !== "MUNICIPALITY_DISTRICTS")
         : level === "MUNICIPALITY_DISTRICTS"
           ? ["BRAZIL_REGIONS", "NATIONAL_STATES", "NATIONAL_MUNICIPALITIES", "MUNICIPALITY_DISTRICTS"] as MapLevel[]
         : level === "CAMPOS_DISTRICTS" ? ["BRAZIL_REGIONS", "SOUTHEAST_STATES", "RJ_MUNICIPALITIES", "CAMPOS_DISTRICTS"] as MapLevel[]
@@ -57,7 +62,7 @@ export function GeographyBreadcrumb({
         ))}
       </ol>
       {index > 0 && (
-        <button onClick={() => navigate(visible[Math.max(0, visible.length - 2)])}>← Voltar</button>
+        <button onClick={goBack}>← Voltar</button>
       )}
     </nav>
   );
