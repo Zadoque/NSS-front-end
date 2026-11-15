@@ -148,7 +148,9 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
                 </p>
               )}
               {query.isSuccess && query.data.coverage.status === "PARTIAL" && (
-                <p role="status">Cobertura territorial parcial: {query.data.coverage.unmappedNotificationsTotal} notificações da unidade notificadora sem distrito/bairro oficial mapeado. Elas permanecem no total municipal.</p>
+                <p role="status">Cobertura territorial parcial: {query.data.coverage.unmappedNotificationsTotal} notificações da unidade notificadora não puderam ser localizadas no território oficial. Elas permanecem no total municipal.
+                  {query.data.coverage.unmappedNotificationsTotal === query.data.totalNotifications && " O SINAN entregou este recorte sem identificador de unidade suficiente para localizar o estabelecimento (por exemplo, sem nome, endereço ou coordenada utilizável)."}
+                </p>
               )}
               {query.isSuccess && query.data.coverage.status === "AVAILABLE" && (
                 <p role="status">Cobertura Nacional em tempo integral.</p>

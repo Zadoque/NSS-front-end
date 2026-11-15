@@ -87,6 +87,11 @@ export function GeographySelector({
       name: String(properties?.NM_BAIRRO ?? properties?.name),
     }))
     .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+  const selectedNeighborhood = selectedGeography?.level === "neighborhood"
+    && selectedGeography.geometryAvailable === false
+    && !neighborhoods.some((item) => item.code === selectedGeography.code)
+    ? { code: selectedGeography.code, name: `${selectedGeography.name} (sem polígono)` }
+    : null;
   const matches = municipalities.filter((item) =>
     normalize(item.name).includes(normalize(search)),
   );
@@ -246,6 +251,7 @@ export function GeographySelector({
               }}
             >
               <option value="">Todos os bairros da notificação</option>
+              {selectedNeighborhood && <option value={selectedNeighborhood.code}>{selectedNeighborhood.name}</option>}
               {neighborhoods.map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}
             </select>
             <p className="selector-help">

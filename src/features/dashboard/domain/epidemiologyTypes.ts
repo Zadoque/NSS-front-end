@@ -33,4 +33,6 @@ export type GeographySelection = {
   name: string;
   municipalityCode?: string;
   districtCode?: string;
+  /** False means the ranking item is descriptive only and has no map polygon. */
+  geometryAvailable?: boolean;
 };

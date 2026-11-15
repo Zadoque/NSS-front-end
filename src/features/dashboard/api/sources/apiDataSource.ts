@@ -7,7 +7,7 @@ export function parseCases(value: unknown, request: EpidemiologyRequest): Epidem
   const parsed = epidemiologyResponseSchema.safeParse(value);
   if (!parsed.success) throw new Error("Resposta epidemiológica inválida.");
   const items = parsed.data.items.map((item) => "code" in item
-    ? { code: item.code, name: item.name, notificationsTotal: item.notificationsTotal }
+    ? { code: item.code, name: item.name, notificationsTotal: item.notificationsTotal, parentDistrictId: item.parentDistrictId ?? undefined }
     : { code: item.cdMun, name: item.nmMun, notificationsTotal: item.casesTotal, cdMun: item.cdMun, nmMun: item.nmMun, casesTotal: item.casesTotal });
   if (new Set(items.map((item) => item.code)).size !== items.length) throw new Error("Territórios duplicados na resposta epidemiológica.");
   const responseFilters = parsed.data.filters ?? parsed.data;

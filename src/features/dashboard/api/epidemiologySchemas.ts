@@ -1,7 +1,12 @@
 import { z } from "zod";
 
 const itemSchema = z.union([
-  z.object({ code: z.string().min(1), name: z.string(), notificationsTotal: z.number().int().nonnegative() }),
+  z.object({
+    code: z.string().min(1),
+    name: z.string(),
+    notificationsTotal: z.number().int().nonnegative(),
+    parentDistrictId: z.string().nullable().optional(),
+  }),
   z.object({
     cdMun: z.string().min(1),
     nmMun: z.string(),

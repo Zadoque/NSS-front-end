@@ -103,6 +103,7 @@ export function useDashboardModel() {
   const periodDescription = filters.year === "ALL" && filters.month === "ALL" ? "no período selecionado" : filters.month === "ALL" ? "no ano selecionado" : filters.year === "ALL" ? "no mês selecionado em todos os anos" : "no mês selecionado";
   const selectionInfo = selectedGeography
     ? !covered ? "Sem registros neste recorte. Isso não equivale a zero casos."
+      : selectedGeography.geometryAvailable === false ? `${selectedTotal ?? 0} notificações da unidade notificadora ${periodDescription}. Este bairro foi informado pelo CNES, mas não possui polígono cartográfico; o ranking permanece disponível e o mapa não pode destacá-lo.`
       : query.isError ? "Não foi possível consultar os dados."
       : query.isPending ? "Carregando dados…"
       : selectedTotal !== undefined && selectedTotal !== null ? `${selectedTotal} notificações da unidade notificadora ${periodDescription}.`

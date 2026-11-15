@@ -147,12 +147,16 @@
   .ranking { @apply mt-5 p-[22px]; }
   .ranking h2 { @apply my-[7px]; }
   .ranking > p { @apply text-sm text-nss-muted; }
-  .ranking ol { @apply my-5 list-none p-0; }
+  .ranking ol { @apply my-5 max-h-[34rem] list-none overflow-y-auto p-0; }
   .ranking li + li { @apply border-t border-[#e7ecef]; }
   .ranking button { @apply grid w-full grid-cols-[22px_1fr_auto] items-center gap-3 px-1 py-[15px] text-left text-sm; }
   .ranking button:hover, .ranking button[aria-pressed="true"] { @apply bg-[#edf6f2]; }
   .rank-number { @apply text-[#7c8e99]; }
   .ranking strong { @apply text-sm text-[#1e725a]; }
+  .ranking-name { @apply min-w-0; }
+  .ranking-badge { @apply ml-2 inline-block rounded bg-[#fff3d5] px-1.5 py-0.5 align-middle text-[10px] font-semibold uppercase tracking-wide text-[#765b1f]; }
+  .ranking-search { @apply mb-3 grid gap-1 text-xs font-semibold text-nss-muted; }
+  .ranking-search input { @apply rounded border border-[#cbd8de] bg-white px-2.5 py-2 text-sm font-normal text-nss-ink outline-none focus:border-nss-blue focus:ring-2 focus:ring-[#0d6b8c33]; }
   footer { @apply flex flex-wrap justify-between gap-5 px-1 pb-3 pt-7 text-xs text-[#70818c]; }
   .back-home { @apply mb-3 inline-block py-3; }
   .home-hero { @apply max-w-[780px] py-6 pb-10; }

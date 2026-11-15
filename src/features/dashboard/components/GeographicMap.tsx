@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FeatureCollection } from "geojson";
 import { useQuery } from "@tanstack/react-query";
-import { ComposableMap, Geographies, Geography } from "react-simple-maps";
+import { ComposableMap, Geographies, Geography, Marker } from "react-simple-maps";
 import { ZoomableGroup } from "react-simple-maps/zoom";
-import { loadMap, mapViews } from "../geography/maps";
+import { loadHealthUnits, loadMap, loadMunicipalityMap, mapViews } from "../geography/maps";
+import type { HealthUnitPoint } from "../geography/maps";
 import type {
   GeographySelection,
   MapLevel,
@@ -17,6 +18,45 @@ const MAP_HEIGHT = 540;
 const LOCAL_MAP_LEVELS: MapLevel[] = [
   "CAMPOS_DISTRICTS", "CAMPOS_NEIGHBORHOODS", "MUNICIPALITY_DISTRICTS", "MUNICIPALITY_NEIGHBORHOODS",
 ];
+const MAX_INDIVIDUAL_HEALTH_UNITS = 5_000;
+
+type RenderedHealthUnit = {
+  key: string;
+  coordinates: [number, number];
+  units: HealthUnitPoint[];
+};
+
+function clusterHealthUnits(units: HealthUnitPoint[], zoom: number): RenderedHealthUnit[] {
+  if (units.length <= MAX_INDIVIDUAL_HEALTH_UNITS) {
+    return units.map((unit) => ({ key: unit.c, coordinates: [unit.x, unit.y], units: [unit] }));
+  }
+  const west = Math.min(...units.map(({ x }) => x));
+  const east = Math.max(...units.map(({ x }) => x));
+  const south = Math.min(...units.map(({ y }) => y));
+  const north = Math.max(...units.map(({ y }) => y));
+  const gridSize = Math.round(64 * Math.max(1, zoom));
+  const columns = gridSize;
+  const rows = gridSize;
+  const width = Math.max(east - west, 0.001);
+  const height = Math.max(north - south, 0.001);
+  const buckets = new Map<string, HealthUnitPoint[]>();
+  units.forEach((unit) => {
+    const column = Math.min(columns - 1, Math.floor(((unit.x - west) / width) * columns));
+    const row = Math.min(rows - 1, Math.floor(((unit.y - south) / height) * rows));
+    const key = `${column}:${row}`;
+    const bucket = buckets.get(key);
+    if (bucket) bucket.push(unit);
+    else buckets.set(key, [unit]);
+  });
+  return [...buckets.entries()].map(([key, grouped]) => ({
+    key: `cluster:${key}`,
+    coordinates: [
+      grouped.reduce((sum, unit) => sum + unit.x, 0) / grouped.length,
+      grouped.reduce((sum, unit) => sum + unit.y, 0) / grouped.length,
+    ],
+    units: grouped,
+  }));
+}
 
 function geometryBounds(collection: FeatureCollection) {
   let west = Infinity, east = -Infinity, south = Infinity, north = -Infinity;
@@ -80,6 +120,11 @@ export function GeographicMap({
   onBack,
 }: Props) {
   const [hint, setHint] = useState("");
+  const [selectedHealthUnits, setSelectedHealthUnits] = useState<{
+    mapKey: string;
+    units: HealthUnitPoint[];
+    visibleCount: number;
+  } | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -96,6 +141,20 @@ export function GeographicMap({
       : level === "NATIONAL_MUNICIPALITIES" && selected?.level === "state"
         ? selected.code
         : selected?.level === "municipality" ? selected.code : selected?.municipalityCode),
+    staleTime: Infinity,
+  });
+  const municipalityCode = selected?.level === "municipality" ? selected.code : selected?.municipalityCode;
+  const local = LOCAL_MAP_LEVELS.includes(level);
+  const healthUnits = useQuery({
+    queryKey: ["health-units", municipalityCode],
+    queryFn: () => loadHealthUnits(municipalityCode ?? ""),
+    enabled: LOCAL_MAP_LEVELS.includes(level) && Boolean(municipalityCode),
+    staleTime: Infinity,
+  });
+  const municipalityMap = useQuery({
+    queryKey: ["municipality-map", municipalityCode],
+    queryFn: () => loadMunicipalityMap(municipalityCode ?? ""),
+    enabled: local && Boolean(municipalityCode),
     staleTime: Infinity,
   });
   useEffect(() => {
@@ -124,17 +183,29 @@ export function GeographicMap({
       (properties?.parentDistrictId ?? (properties?.CD_DIST != null ? `IBGE_DIST_${properties.CD_DIST}` : undefined)) === district) };
   }, [district, level, map.data]);
   const view = mapViews[level];
-  const local = LOCAL_MAP_LEVELS.includes(level);
+  const localBaseMap = local ? municipalityMap.data : undefined;
   const dynamicBounds = local || level === "NATIONAL_STATES" || level === "NATIONAL_MUNICIPALITIES";
   const { center: mapCenter, scale } = useMemo(
-    () => dynamicBounds && mapData ? fitMap(mapData, level) : mapViews[level],
-    [dynamicBounds, level, mapData],
+    // Frame the selected district's neighborhood layer, not the whole municipality.
+    () => dynamicBounds && (level === "MUNICIPALITY_NEIGHBORHOODS" ? mapData : (localBaseMap ?? mapData))
+      ? fitMap((level === "MUNICIPALITY_NEIGHBORHOODS" ? mapData : (localBaseMap ?? mapData))!, level)
+      : mapViews[level],
+    [dynamicBounds, level, localBaseMap, mapData],
   );
   const mapKey = `${level}:${selected?.municipalityCode ?? selected?.code ?? ""}:${level === "MUNICIPALITY_NEIGHBORHOODS" ? district ?? "" : ""}`;
   const current = viewport?.key === mapKey
     ? viewport
     : { key: mapKey, center: mapCenter, zoom: 1, displayZoom: 1 };
-  if (map.isPending)
+  const visibleHealthUnits = useMemo(
+    () => district ? (healthUnits.data ?? []).filter((unit) => unit.d === district) : healthUnits.data ?? [],
+    [district, healthUnits.data],
+  );
+  const renderedHealthUnits = useMemo(
+    () => clusterHealthUnits(visibleHealthUnits, current.displayZoom),
+    [current.displayZoom, visibleHealthUnits],
+  );
+  const selectedClusterUnits = selectedHealthUnits?.mapKey === mapKey ? selectedHealthUnits.units : [];
+  if (map.isPending || (local && municipalityMap.isPending))
     return (
       <div className={`geographic-map${expanded ? " map-expanded" : ""}`} ref={mapContainerRef}>
         <div className="map-placeholder" role="status">
@@ -142,7 +213,7 @@ export function GeographicMap({
         </div>
       </div>
     );
-  if (map.isError)
+  if (map.isError || (local && municipalityMap.isError))
     return (
       <div className={`geographic-map${expanded ? " map-expanded" : ""}`} ref={mapContainerRef}>
         <div className="map-placeholder" role="alert">
@@ -248,6 +319,20 @@ export function GeographicMap({
             }))}
             onMoveEnd={({ coordinates, zoom }) => changeZoom(zoom ?? current.zoom, coordinates ?? current.center)}
           >
+            {localBaseMap && (
+              <Geographies geography={localBaseMap}>
+                {({ geographies }) => geographies.map((geo) => (
+                  <Geography
+                    key={`municipality-base:${geo.rsmKey}`}
+                    geography={geo}
+                    fill="none"
+                    stroke="#607d8b"
+                    strokeWidth={1.25}
+                    pointerEvents="none"
+                  />
+                ))}
+              </Geographies>
+            )}
             <Geographies geography={mapData}>
             {({ geographies }) =>
               geographies.map((geo) => {
@@ -324,8 +409,9 @@ export function GeographicMap({
                           ? "#b8d9d2"
                           : "#dce2e6"
                   }
-                  stroke="#fff"
-                  strokeWidth={1}
+                  fillOpacity={local ? 0.72 : 1}
+                  stroke={local ? "#638693" : "#fff"}
+                  strokeWidth={local ? 0.7 : 1}
                   onMouseEnter={() => setHint(label)}
                   onMouseLeave={() => setHint("")}
                   onFocus={() => setHint(label)}
@@ -344,15 +430,95 @@ export function GeographicMap({
               })
             }
             </Geographies>
+            {renderedHealthUnits.map((point) => {
+              const unit = point.units[0];
+              const clustered = point.units.length > 1;
+              const label = clustered
+                ? `${point.units.length} estabelecimentos CNES nesta área`
+                : `${unit.n} · CNES ${unit.c}${unit.b ? ` · Bairro informado: ${unit.b}` : ""}`;
+              const activateCluster = () => {
+                if (!clustered) return;
+                setSelectedHealthUnits({ mapKey, units: point.units, visibleCount: 100 });
+                changeZoom(current.displayZoom + 0.75, point.coordinates);
+              };
+              return (
+                <Marker
+                  key={point.key}
+                  coordinates={point.coordinates}
+                  data-cnes={clustered ? undefined : unit.c}
+                  role={clustered ? "button" : "img"}
+                  tabIndex={clustered ? 0 : undefined}
+                  aria-label={label}
+                  onMouseEnter={() => setHint(label)}
+                  onMouseLeave={() => setHint("")}
+                  onFocus={() => setHint(label)}
+                  onBlur={() => setHint("")}
+                  onClick={activateCluster}
+                  onKeyDown={(event) => {
+                    if (clustered && (event.key === "Enter" || event.key === " ")) {
+                      event.preventDefault();
+                      activateCluster();
+                    }
+                  }}
+                >
+                  <circle
+                    r={clustered ? 3.5 : local && level === "MUNICIPALITY_NEIGHBORHOODS" ? 1.25 : local ? 1.8 : 3}
+                    fill="#b42318"
+                    fillOpacity={local && level === "MUNICIPALITY_NEIGHBORHOODS" ? 0.64 : 0.8}
+                    stroke="#fff"
+                    strokeWidth={local && level === "MUNICIPALITY_NEIGHBORHOODS" ? 0.35 : 0.6}
+                  >
+                    <title>{label}</title>
+                  </circle>
+                  {clustered && <text textAnchor="middle" y={1.5} fontSize={3.5} fill="#fff">{point.units.length}</text>}
+                </Marker>
+              );
+            })}
           </ZoomableGroup>
         </ComposableMap>
       </div>
       <p className="map-hint" aria-live="polite">
         {hint ||
           (selected
-            ? selected.name
+            ? selected.geometryAvailable === false
+              ? `${selected.name}: sem polígono cartográfico; o ranking continua disponível.`
+              : selected.name
             : "Selecione uma área no mapa para explorar.")}
       </p>
+      {selected?.geometryAvailable === false && (
+        <p className="mx-5 mb-3 rounded border border-[#e4c98a] bg-[#fff8e6] px-3 py-2 text-sm text-[#765b1f]" role="status">
+          Este bairro aparece porque o nome veio na unidade notificadora, mas não há geometria oficial para desenhar. Nenhum ponto foi deslocado artificialmente para este polígono.
+        </p>
+      )}
+      {LOCAL_MAP_LEVELS.includes(level) && visibleHealthUnits.length > 0 && (
+        <p className="px-5 pb-2 text-center text-xs text-[#6b7f8c]">
+          Pontos vermelhos: {visibleHealthUnits.length.toLocaleString("pt-BR")} estabelecimentos CNES com coordenadas válidas.
+        </p>
+      )}
+      {selectedClusterUnits.length > 1 && (
+        <section className="mx-5 mb-3 rounded border border-[#b7c8d2] bg-white p-3" aria-label="Estabelecimentos no agrupamento selecionado">
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <strong>{selectedClusterUnits.length.toLocaleString("pt-BR")} estabelecimentos no agrupamento</strong>
+            <button type="button" onClick={() => setSelectedHealthUnits(null)}>Fechar</button>
+          </div>
+          <ul className="max-h-48 overflow-y-auto text-sm">
+            {selectedClusterUnits.slice(0, selectedHealthUnits?.visibleCount ?? 100).map((unit) => (
+              <li key={unit.c}>{unit.n} · CNES {unit.c}{unit.b ? ` · ${unit.b}` : ""}</li>
+            ))}
+          </ul>
+          {(selectedHealthUnits?.visibleCount ?? 0) < selectedClusterUnits.length && (
+            <button
+              type="button"
+              className="mt-2"
+              onClick={() => setSelectedHealthUnits((currentSelection) => currentSelection
+                ? { ...currentSelection, visibleCount: currentSelection.visibleCount + 100 }
+                : null)}
+            >
+              Mostrar mais 100
+            </button>
+          )}
+        </section>
+      )}
     </div>
   );
 }
