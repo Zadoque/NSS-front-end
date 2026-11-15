@@ -30,6 +30,15 @@ test.describe("homologação integrada real", () => {
     await expect(page.locator(".map-context")).toContainText("Cachoeiro", { timeout: 15_000 });
   }
 
+  async function chooseCampos(page: import("@playwright/test").Page) {
+    await page.locator("#region").selectOption("SE");
+    await page.waitForTimeout(300);
+    await page.locator("#state").selectOption("33");
+    await page.waitForTimeout(300);
+    await page.locator("#municipality").selectOption("3301009");
+    await expect(page.locator(".map-context")).toContainText("Campos dos Goytacazes", { timeout: 15_000 });
+  }
+
   test("SIFA Cachoeiro mostra a causa verificável das 353 não localizadas", async ({ page }) => {
     await page.locator('select[id$="-disease"]').first().selectOption("SIFA");
     await page.locator('select[id$="-year"]').first().selectOption("2025");
@@ -60,6 +69,52 @@ test.describe("homologação integrada real", () => {
       await expect(page.locator(".map-context")).toContainText("não possui polígono cartográfico");
     }
     await page.screenshot({ path: "/tmp/nss-cachoeiro-neighborhoods-real-after.png", fullPage: true });
+  });
+
+  test("Campos enquadra o Distrito Sede e limita o custo do arraste", async ({ page }) => {
+    await chooseCampos(page);
+    await page.locator("#district").selectOption("CG_DIST_SEDE");
+    await expect(page.locator(".map-context")).toContainText("Distrito Sede", { timeout: 20_000 });
+    await expect(page.getByRole("heading", { name: "Bairros/localidades da notificação", exact: true })).toBeVisible({ timeout: 20_000 });
+
+    const mapMetrics = await page.locator(".geographic-map svg").evaluate((svg) => {
+      const paths = [...svg.querySelectorAll("path")];
+      const boxes = paths.map((path) => {
+        try { return path.getBBox(); } catch { return null; }
+      }).filter((box): box is DOMRect => Boolean(box && box.width > 0 && box.height > 0));
+      const left = Math.min(...boxes.map((box) => box.x));
+      const right = Math.max(...boxes.map((box) => box.x + box.width));
+      const top = Math.min(...boxes.map((box) => box.y));
+      const bottom = Math.max(...boxes.map((box) => box.y + box.height));
+      return {
+        pathCount: paths.length,
+        widthRatio: (right - left) / svg.viewBox.baseVal.width,
+        heightRatio: (bottom - top) / svg.viewBox.baseVal.height,
+        markerCount: svg.querySelectorAll("circle").length,
+      };
+    });
+    expect(mapMetrics.pathCount).toBeGreaterThan(0);
+    expect(Math.max(mapMetrics.widthRatio, mapMetrics.heightRatio)).toBeGreaterThan(0.45);
+    expect(mapMetrics.markerCount).toBeLessThan(400);
+
+    await page.evaluate(() => {
+      (window as Window & { __nssLongTasks?: number[] }).__nssLongTasks = [];
+      new PerformanceObserver((list) => {
+        const target = window as Window & { __nssLongTasks?: number[] };
+        target.__nssLongTasks?.push(...list.getEntries().map((entry) => entry.duration));
+      }).observe({ type: "longtask", buffered: false });
+    });
+    const svgBox = await page.locator(".geographic-map svg").boundingBox();
+    expect(svgBox).not.toBeNull();
+    await page.mouse.move(svgBox!.x + svgBox!.width * 0.5, svgBox!.y + svgBox!.height * 0.5);
+    await page.mouse.down();
+    for (let step = 1; step <= 18; step += 1) {
+      await page.mouse.move(svgBox!.x + svgBox!.width * (0.5 + step * 0.01), svgBox!.y + svgBox!.height * (0.5 + step * 0.004));
+    }
+    await page.mouse.up();
+    const longTasks = await page.evaluate(() => (window as Window & { __nssLongTasks?: number[] }).__nssLongTasks ?? []);
+    expect(Math.max(0, ...longTasks)).toBeLessThan(300);
+    await page.screenshot({ path: "/tmp/nss-campos-sede-neighborhoods-real.png", fullPage: true });
   });
 
   test("não cria overflow horizontal nos quatro tamanhos críticos", async ({ page }) => {

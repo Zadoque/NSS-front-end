@@ -18,7 +18,7 @@ const MAP_HEIGHT = 540;
 const LOCAL_MAP_LEVELS: MapLevel[] = [
   "CAMPOS_DISTRICTS", "CAMPOS_NEIGHBORHOODS", "MUNICIPALITY_DISTRICTS", "MUNICIPALITY_NEIGHBORHOODS",
 ];
-const MAX_INDIVIDUAL_HEALTH_UNITS = 5_000;
+const MAX_INDIVIDUAL_HEALTH_UNITS = 120;
 
 type RenderedHealthUnit = {
   key: string;
@@ -34,7 +34,11 @@ function clusterHealthUnits(units: HealthUnitPoint[], zoom: number): RenderedHea
   const east = Math.max(...units.map(({ x }) => x));
   const south = Math.min(...units.map(({ y }) => y));
   const north = Math.max(...units.map(({ y }) => y));
-  const gridSize = Math.round(64 * Math.max(1, zoom));
+  // The map is an overview at zoom 1. Keep the number of SVG markers bounded
+  // even for municipalities with hundreds of CNES units, then progressively
+  // reveal detail as the user zooms in. A fixed 64x64 grid still produced
+  // hundreds of independent event targets and made dragging expensive.
+  const gridSize = Math.round(Math.min(48, 18 * Math.sqrt(Math.max(1, zoom))));
   const columns = gridSize;
   const rows = gridSize;
   const width = Math.max(east - west, 0.001);
@@ -128,6 +132,7 @@ export function GeographicMap({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
+  const isMovingRef = useRef(false);
   const [viewport, setViewport] = useState<{
     key: string;
     center: [number, number];
@@ -178,7 +183,7 @@ export function GeographicMap({
   }, [expanded]);
   const district = selected?.level === "district" ? selected.code : selected?.districtCode;
   const mapData = useMemo(() => {
-    if (level !== "MUNICIPALITY_NEIGHBORHOODS" || !district || !map.data) return map.data;
+    if (!district || !map.data || !["CAMPOS_NEIGHBORHOODS", "MUNICIPALITY_NEIGHBORHOODS"].includes(level)) return map.data;
     return { ...map.data, features: map.data.features.filter(({ properties }) =>
       (properties?.parentDistrictId ?? (properties?.CD_DIST != null ? `IBGE_DIST_${properties.CD_DIST}` : undefined)) === district) };
   }, [district, level, map.data]);
@@ -187,12 +192,14 @@ export function GeographicMap({
   const dynamicBounds = local || level === "NATIONAL_STATES" || level === "NATIONAL_MUNICIPALITIES";
   const { center: mapCenter, scale } = useMemo(
     // Frame the selected district's neighborhood layer, not the whole municipality.
-    () => dynamicBounds && (level === "MUNICIPALITY_NEIGHBORHOODS" ? mapData : (localBaseMap ?? mapData))
-      ? fitMap((level === "MUNICIPALITY_NEIGHBORHOODS" ? mapData : (localBaseMap ?? mapData))!, level)
+    // The filtered collection is the effective district footprint for both the
+    // Campos catalog and the national catalog.
+    () => dynamicBounds && mapData
+      ? fitMap((local && district && ["CAMPOS_NEIGHBORHOODS", "MUNICIPALITY_NEIGHBORHOODS"].includes(level)) ? mapData : (localBaseMap ?? mapData), level)
       : mapViews[level],
-    [dynamicBounds, level, localBaseMap, mapData],
+    [district, dynamicBounds, level, local, localBaseMap, mapData],
   );
-  const mapKey = `${level}:${selected?.municipalityCode ?? selected?.code ?? ""}:${level === "MUNICIPALITY_NEIGHBORHOODS" ? district ?? "" : ""}`;
+  const mapKey = `${level}:${selected?.municipalityCode ?? selected?.code ?? ""}:${["CAMPOS_NEIGHBORHOODS", "MUNICIPALITY_NEIGHBORHOODS"].includes(level) ? district ?? "" : ""}`;
   const current = viewport?.key === mapKey
     ? viewport
     : { key: mapKey, center: mapCenter, zoom: 1, displayZoom: 1 };
@@ -205,6 +212,9 @@ export function GeographicMap({
     [current.displayZoom, visibleHealthUnits],
   );
   const selectedClusterUnits = selectedHealthUnits?.mapKey === mapKey ? selectedHealthUnits.units : [];
+  const showHint = (value: string) => {
+    if (!isMovingRef.current) setHint(value);
+  };
   if (map.isPending || (local && municipalityMap.isPending))
     return (
       <div className={`geographic-map${expanded ? " map-expanded" : ""}`} ref={mapContainerRef}>
@@ -313,11 +323,14 @@ export function GeographicMap({
               const pointer = event as MouseEvent;
               return (!pointer.ctrlKey || event.type === "wheel") && !pointer.button;
             }}
-            onMove={({ zoom }) => setViewport((previous) => ({
-              ...(previous?.key === mapKey ? previous : current),
-              displayZoom: zoom ?? current.zoom,
-            }))}
-            onMoveEnd={({ coordinates, zoom }) => changeZoom(zoom ?? current.zoom, coordinates ?? current.center)}
+            onMoveStart={() => {
+              isMovingRef.current = true;
+              setHint("");
+            }}
+            onMoveEnd={({ coordinates, zoom }) => {
+              isMovingRef.current = false;
+              changeZoom(zoom ?? current.zoom, coordinates ?? current.center);
+            }}
           >
             {localBaseMap && (
               <Geographies geography={localBaseMap}>
@@ -412,10 +425,10 @@ export function GeographicMap({
                   fillOpacity={local ? 0.72 : 1}
                   stroke={local ? "#638693" : "#fff"}
                   strokeWidth={local ? 0.7 : 1}
-                  onMouseEnter={() => setHint(label)}
-                  onMouseLeave={() => setHint("")}
-                  onFocus={() => setHint(label)}
-                  onBlur={() => setHint("")}
+                  onMouseEnter={() => showHint(label)}
+                  onMouseLeave={() => showHint("")}
+                  onFocus={() => showHint(label)}
+                  onBlur={() => showHint("")}
                   onClick={() => onSelect(geography)}
                   onKeyDown={(event) => {
                     if (event.key === "Enter" || event.key === " ") {
@@ -449,10 +462,10 @@ export function GeographicMap({
                   role={clustered ? "button" : "img"}
                   tabIndex={clustered ? 0 : undefined}
                   aria-label={label}
-                  onMouseEnter={() => setHint(label)}
-                  onMouseLeave={() => setHint("")}
-                  onFocus={() => setHint(label)}
-                  onBlur={() => setHint("")}
+                  onMouseEnter={() => showHint(label)}
+                  onMouseLeave={() => showHint("")}
+                  onFocus={() => showHint(label)}
+                  onBlur={() => showHint("")}
                   onClick={activateCluster}
                   onKeyDown={(event) => {
                     if (clustered && (event.key === "Enter" || event.key === " ")) {
@@ -462,11 +475,11 @@ export function GeographicMap({
                   }}
                 >
                   <circle
-                    r={clustered ? 3.5 : local && level === "MUNICIPALITY_NEIGHBORHOODS" ? 1.25 : local ? 1.8 : 3}
+                    r={clustered ? 3.25 : local && ["CAMPOS_NEIGHBORHOODS", "MUNICIPALITY_NEIGHBORHOODS"].includes(level) ? 1.15 : local ? 1.55 : 3}
                     fill="#b42318"
-                    fillOpacity={local && level === "MUNICIPALITY_NEIGHBORHOODS" ? 0.64 : 0.8}
+                    fillOpacity={local && ["CAMPOS_NEIGHBORHOODS", "MUNICIPALITY_NEIGHBORHOODS"].includes(level) ? 0.58 : 0.8}
                     stroke="#fff"
-                    strokeWidth={local && level === "MUNICIPALITY_NEIGHBORHOODS" ? 0.35 : 0.6}
+                    strokeWidth={local && ["CAMPOS_NEIGHBORHOODS", "MUNICIPALITY_NEIGHBORHOODS"].includes(level) ? 0.3 : 0.6}
                   >
                     <title>{label}</title>
                   </circle>
