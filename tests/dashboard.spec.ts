@@ -8,6 +8,7 @@ const apiTestBaseUrl = process.env.PLAYWRIGHT_API_BASE_URL || "http://127.0.0.1:
 
 for (const width of [375, 768, 1024, 1440]) {
   test(`navigation, coverage and drawer at ${width}px`, async ({ page }) => {
+    test.skip(externalBuild, "Homologação externa usa tests/live-acceptance.spec.ts com token real.");
     await page.setViewportSize({ width, height: 1000 });
     await login(page);
     const areas = page.locator(".geo");
