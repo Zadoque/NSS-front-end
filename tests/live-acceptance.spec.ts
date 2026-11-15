@@ -7,10 +7,6 @@ test.describe("homologação integrada real", () => {
   test.skip(!baseUrl || !token, "Requer PLAYWRIGHT_BASE_URL e PLAYWRIGHT_ACCESS_TOKEN");
 
   test.beforeEach(async ({ page }) => {
-    page.on("response", async (response) => {
-      if (response.url().includes("/api/v1/epidemiology/")) console.log(`LIVE_API ${response.status()} ${response.url()} ${(await response.text().catch(() => "")).slice(0, 220)}`);
-      else if (response.status() >= 400 && response.url().includes("/api/")) console.log(`LIVE_API_ERROR ${response.status()} ${response.url()}`);
-    });
     await page.route("**/api/v1/auth/refresh", (route) =>
       route.fulfill({ status: 401, json: { code: "UNAUTHORIZED", message: "Sessão ausente" } }),
     );
@@ -62,5 +58,30 @@ test.describe("homologação integrada real", () => {
       await expect(page.locator(".map-context")).toContainText("sem polígono cartográfico");
     }
     await page.screenshot({ path: "/tmp/nss-cachoeiro-neighborhoods-real-after.png", fullPage: true });
+  });
+});
+
+test.describe("renovação real da sessão", () => {
+  test.skip(!baseUrl || !process.env.LIVE_AUTH_EMAIL || !process.env.LIVE_AUTH_PASSWORD, "Requer credenciais de homologação");
+
+  test("renova o access token quando uma consulta recebe 401", async ({ page }) => {
+    let forced401 = false;
+    let refreshResponses = 0;
+    await page.route("**/api/v1/epidemiology/**", async (route) => {
+      if (!forced401) {
+        forced401 = true;
+        await route.fulfill({ status: 401, json: { code: "UNAUTHORIZED" } });
+      } else await route.continue();
+    });
+    page.on("response", (response) => {
+      if (response.url().endsWith("/api/v1/auth/refresh") && response.status() === 200) refreshResponses += 1;
+    });
+    await page.goto(`${baseUrl}/login`);
+    await page.getByLabel("E-mail", { exact: true }).fill(process.env.LIVE_AUTH_EMAIL!);
+    await page.getByLabel("Senha", { exact: true }).fill(process.env.LIVE_AUTH_PASSWORD!);
+    await page.getByRole("button", { name: "Entrar" }).click();
+    await expect(page).toHaveURL(/\/mapa$/);
+    await expect.poll(() => refreshResponses).toBeGreaterThan(0);
+    await expect(page.locator(".geo")).toHaveCount(5, { timeout: 15_000 });
   });
 });
