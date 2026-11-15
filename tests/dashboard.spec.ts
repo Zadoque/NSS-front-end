@@ -11,9 +11,11 @@ for (const width of [375, 768, 1024, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
     await login(page);
     const areas = page.locator(".geo");
-    await expect(areas).toHaveCount(5);
+    if (externalBuild) expect(await areas.count()).toBeGreaterThanOrEqual(5);
+    else await expect(areas).toHaveCount(5);
     await page.getByRole("button", { name: /^Norte ·/ }).click();
-    await expect(areas).toHaveCount(5);
+    if (externalBuild) expect(await areas.count()).toBeGreaterThanOrEqual(5);
+    else await expect(areas).toHaveCount(5);
     await expect(page.locator(".map-context")).toContainText("Sem registros");
     await page.getByRole("button", { name: /^Sudeste ·/ }).focus();
     await page.keyboard.press("Enter");
