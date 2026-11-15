@@ -42,6 +42,20 @@ for (const municipality of municipalities) {
     expect(neighborhoods.filters.municipalityCode).toBe(municipality.code);
     expect(Array.isArray(districts.items), municipality.name).toBeTruthy();
     expect(Array.isArray(neighborhoods.items), municipality.name).toBeTruthy();
+    for (const response of [districts, neighborhoods]) {
+      const mapped = response.coverage?.mappedNotificationsTotal;
+      const unmapped = response.coverage?.unmappedNotificationsTotal;
+      if (typeof response.totalNotifications === "number" && typeof mapped === "number" && typeof unmapped === "number") {
+        expect(response.totalNotifications, `${municipality.name}: total não reconcilia`).toBe(mapped + unmapped);
+      }
+      if (typeof mapped === "number") {
+        const itemTotal = response.items.reduce(
+          (sum: number, item: { notificationsTotal?: number }) => sum + (item.notificationsTotal ?? 0),
+          0,
+        );
+        expect(itemTotal, `${municipality.name}: itens excedem total mapeado`).toBeLessThanOrEqual(mapped);
+      }
+    }
     testInfo.annotations.push({
       type: "coverage",
       description: JSON.stringify({
