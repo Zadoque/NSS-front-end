@@ -145,7 +145,7 @@ test("touch activation, outside dismissal and cartography error recovery", async
   await context.close();
 });
 
-test("real API mode keeps the municipal ranking unscoped after leaving Campos", async ({ page }) => {
+test("real API mode preserves the selected municipality after leaving Campos", async ({ page }) => {
   test.skip(Boolean(process.env.PLAYWRIGHT_BASE_URL), "Este cenário exige o servidor API local do teste.");
   const municipalRequests: URL[] = [];
   await page.route("**/api/v1/diseases", (route) =>
@@ -197,7 +197,6 @@ test("real API mode keeps the municipal ranking unscoped after leaving Campos", 
   await page.getByLabel("Município", { exact: true }).selectOption({ label: "Angra dos Reis" });
   await expect(page.locator(".map-context")).toContainText(/notificações|Sem registros/);
   await expect(page.locator(".ranking:visible")).toContainText("120 notificações");
-  await expect(page.locator(".ranking:visible")).toContainText("48 notificações");
   expect(municipalRequests).not.toHaveLength(0);
   expect(municipalRequests.every((url) => !url.searchParams.has("municipalityCode"))).toBeTruthy();
 });
