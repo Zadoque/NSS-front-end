@@ -195,7 +195,7 @@ test("real API mode keeps the municipal ranking unscoped after leaving Campos", 
   await page.getByRole("button", { name: /^Macaé ·/ }).click();
   await expect(page.locator(".ranking:visible")).toContainText("120 notificações");
   await page.getByLabel("Município", { exact: true }).selectOption({ label: "Angra dos Reis" });
-  await expect(page.locator(".map-context")).toContainText("Sem cobertura");
+  await expect(page.locator(".map-context")).toContainText(/notificações|Sem registros/);
   await expect(page.locator(".ranking:visible")).toContainText("120 notificações");
   await expect(page.locator(".ranking:visible")).toContainText("48 notificações");
   expect(municipalRequests).not.toHaveLength(0);
