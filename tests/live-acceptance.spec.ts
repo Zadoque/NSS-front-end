@@ -23,7 +23,9 @@ test.describe("homologação integrada real", () => {
   async function chooseCachoeiro(page: import("@playwright/test").Page) {
     await page.locator("#region").selectOption("SE");
     await expect(page.locator('#state option[value="32"]')).toHaveText("Espírito Santo");
+    await page.waitForTimeout(400);
     await page.locator("#state").selectOption("32");
+    await page.waitForTimeout(400);
     await page.locator("#municipality").selectOption("3201209");
     await expect(page.locator(".map-context")).toContainText("Cachoeiro", { timeout: 15_000 });
   }
@@ -52,12 +54,21 @@ test.describe("homologação integrada real", () => {
     const radii = await page.locator('.geographic-map circle').evaluateAll((items) => items.map((item) => Number(item.getAttribute("r"))));
     expect(radii.filter((value) => Number.isFinite(value)).every((value) => value <= 3.5)).toBeTruthy();
     expect(await page.locator('.geographic-map path').count()).toBeGreaterThan(0);
-    const tijuca = page.getByRole("button", { name: /Tijuca/ }).filter({ hasText: "notificações" }).first();
+    const tijuca = page.getByRole("button", { name: /Tijuca/i }).filter({ hasText: "notificações" }).first();
     if (await tijuca.count()) {
       await tijuca.click();
-      await expect(page.locator(".map-context")).toContainText("sem polígono cartográfico");
+      await expect(page.locator(".map-context")).toContainText("não possui polígono cartográfico");
     }
     await page.screenshot({ path: "/tmp/nss-cachoeiro-neighborhoods-real-after.png", fullPage: true });
+  });
+
+  test("não cria overflow horizontal nos quatro tamanhos críticos", async ({ page }) => {
+    for (const width of [390, 768, 1024, 1440]) {
+      await page.setViewportSize({ width, height: 1000 });
+      await chooseCachoeiro(page);
+      await page.screenshot({ path: `/tmp/nss-cachoeiro-${width}.png`, fullPage: false });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
+    }
   });
 });
 
