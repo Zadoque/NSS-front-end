@@ -151,6 +151,7 @@
   .demo-note strong { @apply mr-[5px]; }
   .mobile-controls { @apply mt-4; }
   .primary { @apply flex w-full justify-between bg-nss-blue px-5 py-[15px] text-sm font-semibold text-white; }
+  .auth-actions .primary { @apply text-white; }
   dialog { @apply fixed inset-y-0 right-0 left-auto m-0 h-[100dvh] max-h-[100dvh] max-w-screen w-[min(90vw,420px)] border-0 bg-white p-0 text-nss-ink; }
   dialog::backdrop { @apply bg-[#102b43a6]; }
   .drawer-body { @apply min-h-full; }
