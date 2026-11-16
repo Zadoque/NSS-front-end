@@ -20,7 +20,8 @@ test("pede confirmação antes de substituir a sessão ativa", async ({ page }) 
     });
   });
 
-  await page.goto("http://127.0.0.1:39174/login");
+  const base = process.env.PLAYWRIGHT_BASE_URL || "http://127.0.0.1:39174";
+  await page.goto(`${base}/login`);
   await page.getByLabel("E-mail", { exact: true }).fill("user@nss.test");
   await page.getByLabel("Senha", { exact: true }).fill("senha-certa");
   await page.getByRole("button", { name: "Entrar", exact: true }).click();
