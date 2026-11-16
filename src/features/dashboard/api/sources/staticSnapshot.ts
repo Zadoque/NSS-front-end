@@ -10,6 +10,7 @@ export type SnapshotManifest = {
   availableYears: number[];
   availableMonthsByYear: Record<string, number[]>;
   catalog: { code: string; name: string; type: string; municipalityCode: string; parentDistrictId: string | null }[];
+  municipalityOnlyScopes?: { disease: string; year: number }[];
 };
 
 export function aggregateSnapshot(manifest: SnapshotManifest, rows: SnapshotRow[], request: EpidemiologyRequest): EpidemiologyResponse {

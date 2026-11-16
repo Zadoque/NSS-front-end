@@ -25,15 +25,13 @@ export function parseCases(value: unknown, request: EpidemiologyRequest): Epidem
 
 export const apiDataSource: EpidemiologyDataSource = {
   async listDiseases() {
-    const value = await dailyCache("/diseases", () => getJson("/diseases"),
-      (candidate): candidate is unknown => diseasesResponseSchema.safeParse(candidate).success);
+    const value = await getJson("/diseases");
     const parsed = diseasesResponseSchema.safeParse(value);
     if (!parsed.success) throw new Error("Lista de doenças inválida.");
     return parsed.data.items;
   },
   async getMetadata() {
-    const value = await dailyCache("/metadata", () => getJson("/metadata"),
-      (candidate): candidate is unknown => metadataResponseSchema.safeParse(candidate).success);
+    const value = await getJson("/metadata");
     const parsed = metadataResponseSchema.safeParse(value);
     if (!parsed.success) throw new Error("Metadata inválida.");
     return parsed.data;

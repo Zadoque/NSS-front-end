@@ -6,7 +6,7 @@ export type AgeBand = "LT1" | "01_04" | "05_09" | "10_14" | "15_19" | "20_39" | 
 export type PeriodFilter = number | "ALL";
 export type EpidemiologyFilters = { disease: string; year: PeriodFilter; month: PeriodFilter; sex?: "M" | "F"; ageBand?: AgeBand };
 export type EpidemiologyRequest = EpidemiologyFilters & { geography: GeographyLevel; municipalityCode?: string; districtCode?: string; ufCode?: string; regionCode?: string };
-export type Coverage = { status: CoverageStatus; mappedNotificationsTotal: number; unmappedNotificationsTotal: number };
+export type Coverage = { status: CoverageStatus; mappedNotificationsTotal: number; unmappedNotificationsTotal: number; territorialLevel?: "MUNICIPALITY_ONLY"; reason?: "NOTIFICATION_UNIT_NOT_PROVIDED_BY_SOURCE" };
 export type EpidemiologyItem = {
   code: string;
   name: string;
@@ -22,7 +22,7 @@ export type MunicipalityCases = EpidemiologyItem & { cdUf: string; nmUf: string;
 export type MunicipalityCasesResponse = EpidemiologyResponse & { items: MunicipalityCases[] };
 export interface EpidemiologyDataSource {
   listDiseases(): Promise<string[]>;
-  getMetadata(): Promise<{ availableYears: number[]; availableMonthsByYear: Record<string, number[]> }>;
+  getMetadata(): Promise<{ availableYears: number[]; availableMonthsByYear: Record<string, number[]>; municipalityOnlyScopes: { disease: string; year: number }[] }>;
   getEpidemiology(request: EpidemiologyRequest): Promise<EpidemiologyResponse>;
 }
 export type MapLevel =

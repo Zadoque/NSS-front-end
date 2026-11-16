@@ -14,6 +14,7 @@ type Navigation = {
   mapLevel: MapLevel;
   selectedGeography: GeographySelection | null;
 };
+type SelectOptions = { municipalityOnly?: boolean };
 export function useMapNavigation() {
   const [navigation, setNavigation] = useState<Navigation>({
     mapLevel: "BRAZIL_REGIONS",
@@ -35,9 +36,13 @@ export function useMapNavigation() {
     }
     setNavigation({ mapLevel, selectedGeography: null });
   }
-  function select(selection: GeographySelection) {
+  function select(selection: GeographySelection, options: SelectOptions = {}) {
     if (isDemo && selection.level === "region" && selection.code !== "SE") {
       setNavigation({ mapLevel: "BRAZIL_REGIONS", selectedGeography: selection });
+      return;
+    }
+    if (!isDemo && options.municipalityOnly && selection.level === "municipality") {
+      setNavigation({ mapLevel: navigation.mapLevel, selectedGeography: selection });
       return;
     }
     if (!isDemo && selection.level === "region") {
