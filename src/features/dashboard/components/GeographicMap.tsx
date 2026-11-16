@@ -26,6 +26,38 @@ type RenderedHealthUnit = {
   units: HealthUnitPoint[];
 };
 
+type TerritoryFeature = FeatureCollection["features"][number];
+
+function pointInRing([longitude, latitude]: [number, number], ring: number[][]) {
+  let inside = false;
+  for (let index = 0, previous = ring.length - 1; index < ring.length; previous = index++) {
+    const [x, y] = ring[index];
+    const [previousX, previousY] = ring[previous];
+    const intersects = ((y > latitude) !== (previousY > latitude))
+      && longitude < (previousX - x) * (latitude - y) / ((previousY - y) || Number.EPSILON) + x;
+    if (intersects) inside = !inside;
+  }
+  return inside;
+}
+
+function geometryContainsPoint(feature: TerritoryFeature, point: [number, number]) {
+  const geometry = feature.geometry;
+  if (!geometry) return false;
+  const polygonContainsPoint = (polygon: number[][][]) =>
+    pointInRing(point, polygon[0]) && !polygon.slice(1).some((ring) => pointInRing(point, ring));
+  if (geometry.type === "Polygon") return polygonContainsPoint(geometry.coordinates);
+  if (geometry.type === "MultiPolygon") return geometry.coordinates.some(polygonContainsPoint);
+  return false;
+}
+
+function territoryLevel(level: MapLevel) {
+  if (level.includes("NEIGHBORHOODS")) return "Bairro";
+  if (level.includes("DISTRICTS")) return "Distrito";
+  if (level.includes("MUNICIPALITIES")) return "Município";
+  if (level.includes("STATES")) return "Estado";
+  return "Região";
+}
+
 function clusterHealthUnits(units: HealthUnitPoint[], zoom: number): RenderedHealthUnit[] {
   if (units.length <= MAX_INDIVIDUAL_HEALTH_UNITS) {
     return units.map((unit) => ({ key: unit.c, coordinates: [unit.x, unit.y], units: [unit] }));
@@ -212,6 +244,17 @@ export function GeographicMap({
     [current.displayZoom, visibleHealthUnits],
   );
   const selectedClusterUnits = selectedHealthUnits?.mapKey === mapKey ? selectedHealthUnits.units : [];
+  const centerTerritory = useMemo(
+    () => mapData?.features.find((feature) => geometryContainsPoint(feature, current.center)),
+    [current.center, mapData],
+  );
+  const centerTerritoryName = String(centerTerritory?.properties?.name
+    ?? centerTerritory?.properties?.NM_BAIRRO
+    ?? centerTerritory?.properties?.name_muni
+    ?? centerTerritory?.properties?.name_state
+    ?? selected?.name
+    ?? view.title);
+  const centerTerritoryLabel = `${territoryLevel(level)}: ${centerTerritoryName}`;
   const showHint = (value: string) => {
     if (!isMovingRef.current) setHint(value);
   };
@@ -305,6 +348,12 @@ export function GeographicMap({
       <div
         className="map-viewport"
       >
+        <div className="map-crosshair" aria-hidden="true">
+          <span className="map-crosshair-label">{centerTerritoryLabel}</span>
+          <span className="map-crosshair-horizontal" />
+          <span className="map-crosshair-vertical" />
+          <span className="map-crosshair-center" />
+        </div>
         <ComposableMap
           width={MAP_WIDTH}
           height={MAP_HEIGHT}
@@ -449,10 +498,9 @@ export function GeographicMap({
               const label = clustered
                 ? `${point.units.length} estabelecimentos CNES nesta área`
                 : `${unit.n} · CNES ${unit.c}${unit.b ? ` · Bairro informado: ${unit.b}` : ""}`;
-              const activateCluster = () => {
-                if (!clustered) return;
-                setSelectedHealthUnits({ mapKey, units: point.units, visibleCount: 100 });
-                changeZoom(current.displayZoom + 0.75, point.coordinates);
+              const activatePoint = () => {
+                setSelectedHealthUnits({ mapKey, units: point.units, visibleCount: Math.min(100, point.units.length) });
+                if (clustered) changeZoom(current.displayZoom + 0.75, point.coordinates);
               };
               return (
                 <Marker
@@ -466,11 +514,11 @@ export function GeographicMap({
                   onMouseLeave={() => showHint("")}
                   onFocus={() => showHint(label)}
                   onBlur={() => showHint("")}
-                  onClick={activateCluster}
+                  onClick={activatePoint}
                   onKeyDown={(event) => {
                     if (clustered && (event.key === "Enter" || event.key === " ")) {
                       event.preventDefault();
-                      activateCluster();
+                      activatePoint();
                     }
                   }}
                 >
@@ -508,10 +556,10 @@ export function GeographicMap({
           Pontos vermelhos: {visibleHealthUnits.length.toLocaleString("pt-BR")} estabelecimentos CNES com coordenadas válidas.
         </p>
       )}
-      {selectedClusterUnits.length > 1 && (
+      {selectedClusterUnits.length > 0 && (
         <section className="mx-5 mb-3 rounded border border-[#b7c8d2] bg-white p-3" aria-label="Estabelecimentos no agrupamento selecionado">
           <div className="mb-2 flex items-center justify-between gap-3">
-            <strong>{selectedClusterUnits.length.toLocaleString("pt-BR")} estabelecimentos no agrupamento</strong>
+            <strong>{selectedClusterUnits.length === 1 ? "1 estabelecimento selecionado" : `${selectedClusterUnits.length.toLocaleString("pt-BR")} estabelecimentos no agrupamento`}</strong>
             <button type="button" onClick={() => setSelectedHealthUnits(null)}>Fechar</button>
           </div>
           <ul className="max-h-48 overflow-y-auto text-sm">

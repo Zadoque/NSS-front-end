@@ -117,6 +117,26 @@ test.describe("homologação integrada real", () => {
     await page.screenshot({ path: "/tmp/nss-campos-sede-neighborhoods-real.png", fullPage: true });
   });
 
+  test("celular mostra a mira e troca a seleção CNES com exclusividade", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await chooseCampos(page);
+    await page.locator("#district").selectOption("CG_DIST_SEDE");
+    await expect(page.locator(".map-crosshair")).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator(".map-crosshair-label")).toContainText("Bairro:");
+    const fontSize = await page.locator(".map-crosshair-label").evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
+    expect(fontSize).toBeGreaterThanOrEqual(18);
+
+    const groups = page.locator('.geographic-map [aria-label*="estabelecimentos CNES nesta área"]');
+    await expect(groups.first()).toBeVisible({ timeout: 20_000 });
+    await groups.first().click();
+    await expect(page.getByRole("region", { name: "Estabelecimentos no agrupamento selecionado" })).toContainText("estabelecimentos no agrupamento");
+    if (await groups.count() > 1) {
+      await groups.nth(1).click();
+      await expect(page.getByRole("region", { name: "Estabelecimentos no agrupamento selecionado" })).toHaveCount(1);
+    }
+    await page.screenshot({ path: "/tmp/nss-campos-mobile-crosshair-real.png", fullPage: true });
+  });
+
   test("não cria overflow horizontal nos quatro tamanhos críticos", async ({ page }) => {
     for (const width of [390, 768, 1024, 1440]) {
       await page.setViewportSize({ width, height: 1000 });

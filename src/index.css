@@ -47,7 +47,13 @@
   .map-back:hover { @apply underline; }
   .map-step { @apply text-xs tracking-[0.1em] text-[#70818c]; }
   .map-card svg { @apply block h-auto w-full bg-[radial-gradient(ellipse,#f5f9fb,white_72%)]; }
-  .map-viewport { @apply select-none overflow-hidden overscroll-contain touch-none; }
+  .map-viewport { @apply relative select-none overflow-hidden overscroll-contain touch-none; }
+  .map-crosshair { @apply pointer-events-none absolute inset-0 z-10 hidden; }
+  .map-crosshair-label { @apply absolute top-3 left-1/2 max-w-[calc(100%-32px)] -translate-x-1/2 rounded-full border border-[#174a7e55] bg-white/95 px-4 py-2 text-center text-base font-bold text-nss-blue shadow-[0_3px_12px_#173f5a2b]; }
+  .map-crosshair-horizontal, .map-crosshair-vertical { @apply absolute bg-[#174a7e99]; }
+  .map-crosshair-horizontal { @apply top-1/2 right-0 left-0 h-px; }
+  .map-crosshair-vertical { @apply top-0 bottom-0 left-1/2 w-px; }
+  .map-crosshair-center { @apply absolute top-1/2 left-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-nss-blue bg-white/40 shadow-[0_0_0_2px_#ffffffaa]; }
   .geographic-map:fullscreen, .geographic-map.map-expanded { @apply flex h-[100dvh] w-screen flex-col bg-[#f7fafb] p-4; }
   .map-expanded { @apply fixed inset-0 z-[1000]; }
   .geographic-map:fullscreen .map-viewport, .map-expanded .map-viewport { @apply grid min-h-0 flex-1 place-items-center; }
@@ -182,6 +188,12 @@
   .geography-selector .selector-help { @apply mt-1.5 text-[13px] text-nss-muted; }
   .mobile-dashboard-context, .mobile-dashboard-nav, .mobile-dashboard-panels { @apply hidden; }
   .dashboard-workspace { @apply contents; }
+}
+
+@media (max-width: 767px) {
+  .map-crosshair { @apply block; }
+  .map-crosshair-label { @apply text-lg; }
+  .map-hint { @apply min-h-[62px] px-3 text-sm; }
 }
 
 @media (min-width: 768px) {
