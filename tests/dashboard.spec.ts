@@ -94,6 +94,30 @@ test("zero, missing and invalid API records remain distinct", () => {
   ).toThrow();
 });
 
+test("aceita cobertura disponível com campos opcionais nulos", () => {
+  const request = { disease: "DENG", year: 2024, month: 1 };
+  const response = parseCases({
+    metric: "notifications",
+    geography: "REGION",
+    filters: { ...request, sex: null, ageBand: null, municipalityCode: null, districtCode: null, ufCode: null, regionCode: null },
+    totalNotifications: 29103,
+    coverage: {
+      status: "AVAILABLE",
+      mappedNotificationsTotal: 29103,
+      unmappedNotificationsTotal: 0,
+      territorialLevel: null,
+      reason: null,
+    },
+    items: [{ code: "SE", name: "Sudeste", notificationsTotal: 11636, parentDistrictId: null }],
+    sourceExtractedAt: "2026-11-15T04:23:07.210862Z",
+    addedAt: "2026-11-15T04:26:33.869425Z",
+  }, request);
+
+  expect(response.totalNotifications).toBe(29103);
+  expect(response.items[0].name).toBe("Sudeste");
+  expect(response.coverage.territorialLevel).toBeNull();
+});
+
 test("escala de cor dinâmica preserva a ordem de intensidade no recorte", () => {
   const values = [770, 2763, 3133, 5147, 6953];
   const colors = values.map((value) => caseColor(value, 6953));
