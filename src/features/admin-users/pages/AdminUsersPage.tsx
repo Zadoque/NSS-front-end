@@ -64,12 +64,12 @@ export function AdminUsersPage({ onBack }: { onBack: () => void }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasNext, loadingUsers, page]);
 
-  async function action(path: string, method = "POST", body?: object) {
+  async function action(path: string, method = "POST", body?: object, successMessage = "Operação concluída.") {
     setError("");
     setSuccess("");
     try {
       await requestJson(path, { method, ...(body ? { body: JSON.stringify(body) } : {}) });
-      setSuccess("Operação concluída.");
+      setSuccess(successMessage);
       await reload();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Não foi possível concluir.");
@@ -111,13 +111,13 @@ export function AdminUsersPage({ onBack }: { onBack: () => void }) {
     <section className="card admin-section">
       <h2>Convites pendentes</h2>
       {loadingInvites && <p role="status">Carregando convites…</p>}
-      {!loadingInvites && invites.map(i => <div className="admin-row" key={i.id}><span>{i.email}<small> expira em {new Date(i.expiresAt).toLocaleString()}</small></span><button onClick={() => void action(`/admin/users/invitations/${i.id}/renew`)}>Renovar</button><button onClick={() => void action(`/admin/users/invitations/${i.id}/cancel`)}>Cancelar</button></div>)}
+      {!loadingInvites && invites.map(i => <div className="admin-row" key={i.id}><span>{i.email}<small> expira em {new Date(i.expiresAt).toLocaleString()}</small></span><button onClick={() => void action(`/admin/users/invitations/${i.id}/renew`, "POST", undefined, "Convite renovado e e-mail enviado.")}>Renovar</button><button onClick={() => void action(`/admin/users/invitations/${i.id}/cancel`, "POST", undefined, "Convite cancelado.")}>Cancelar</button></div>)}
       {!loadingInvites && !invites.length && <p>Nenhum convite pendente.</p>}
     </section>
     <section className="card admin-section">
       <h2>Usuários</h2>
       <div className="admin-form"><input placeholder="Pesquisar nome ou e-mail" value={search} onChange={e => setSearch(e.target.value)} /><button onClick={() => void loadUsers(0)}>Pesquisar</button></div>
-      {users.map(u => <div className="admin-row" key={u.id}><span>{u.name || "Primeiro acesso pendente"} — {u.email}</span><button onClick={() => void action(`/admin/users/${u.id}/password-reset`)}>Resetar senha</button><button onClick={() => void action(`/admin/users/${u.id}/activation`, "PATCH", { active: !u.active })}>{u.active ? "Desativar" : "Ativar"}</button></div>)}
+      {users.map(u => <div className="admin-row" key={u.id}><span>{u.name || "Primeiro acesso pendente"} — {u.email}</span><button onClick={() => void action(`/admin/users/${u.id}/password-reset`, "POST", undefined, "E-mail de redefinição enviado.")}>Resetar senha</button><button onClick={() => void action(`/admin/users/${u.id}/activation`, "PATCH", { active: !u.active }, u.active ? "Usuário desativado." : "Usuário ativado.")}>{u.active ? "Desativar" : "Ativar"}</button></div>)}
       <div ref={sentinel} aria-hidden="true" />{loadingUsers && <p role="status">Carregando usuários…</p>}{!loadingUsers && !hasNext && users.length > 0 && <p>Todos os {users.length} usuários foram carregados.</p>}
     </section>
   </main>;
