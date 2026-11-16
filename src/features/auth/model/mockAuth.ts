@@ -19,7 +19,7 @@ export const mockAuth = {
       listeners.delete(listener);
     };
   },
-  async login(email: string, password: string) {
+  async login(email: string, password: string, _options?: { replaceExistingSession?: boolean }) {
     await new Promise((resolve) => setTimeout(resolve, 250));
     if (email.trim().toLowerCase() !== DEMO_EMAIL || password !== DEMO_PASSWORD) {
       throw new Error("Credenciais DEMO inválidas.");

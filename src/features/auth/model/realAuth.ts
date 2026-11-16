@@ -2,7 +2,7 @@ export type Session = { id?: number; email: string; displayName: string; permiss
 export type AuthClient = {
   getSession(): Session | null;
   subscribe(listener: () => void): () => void;
-  login(email: string, password: string): Promise<Session>;
+  login(email: string, password: string, options?: { replaceExistingSession?: boolean }): Promise<Session>;
   restore(): Promise<Session | null>;
   logout(): Promise<void> | void;
 };
@@ -13,6 +13,13 @@ type LoginResponse = {
   user?: { id?: number; email?: string; name?: string; nome?: string };
   permissions?: string[];
 };
+
+export class AuthLoginError extends Error {
+  constructor(public readonly code: string, message: string) {
+    super(message);
+    this.name = "AuthLoginError";
+  }
+}
 
 const runtimeEnv = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env ?? {};
 const base = (runtimeEnv.VITE_API_BASE_URL || "").replace(/\/$/, "");
@@ -160,7 +167,10 @@ async function parseResponse(response: Response): Promise<LoginResponse> {
     const message = body && typeof body === "object" && typeof (body as { message?: unknown }).message === "string"
       ? (body as { message: string }).message
       : "Não foi possível autenticar.";
-    throw new Error(message);
+    const code = body && typeof body === "object" && typeof (body as { code?: unknown }).code === "string"
+      ? (body as { code: string }).code
+      : "AUTHENTICATION_ERROR";
+    throw new AuthLoginError(code, message);
   }
   return body as LoginResponse;
 }
@@ -170,6 +180,7 @@ async function cookieUnchanged(response: Response, operation: "login" | "logout"
     const body = await response.clone().json() as { code?: string };
     if (operation === "logout") return response.status === 503 && body.code === "AUTH_UNAVAILABLE";
     return (response.status === 401 && body.code === "UNAUTHORIZED")
+      || (response.status === 409 && body.code === "ACTIVE_SESSION")
       || (response.status === 429 && body.code === "RATE_LIMITED")
       || (response.status === 503 && body.code === "AUTH_UNAVAILABLE")
       || (response.status === 400 && body.code === "INVALID_REQUEST");
@@ -184,7 +195,7 @@ export const realAuth = {
   getRevision: () => JSON.stringify([authEpoch, currentSignal()]),
   isCurrentSession: () => !session || (sessionSignal === currentSignal() && !isPendingSignal(sessionSignal)),
   subscribe(listener: () => void) { listeners.add(listener); return () => listeners.delete(listener); },
-  async login(email: string, password: string) {
+  async login(email: string, password: string, options: { replaceExistingSession?: boolean } = {}) {
     return withAuthLock(async () => {
       const previous = currentSignal();
       const pending = reserveCookieChange();
@@ -194,7 +205,7 @@ export const realAuth = {
       method: "POST",
       credentials: "include",
       headers: { Accept: "application/json", "Content-Type": "application/json" },
-      body: JSON.stringify({ email: email.trim(), password }),
+      body: JSON.stringify({ email: email.trim(), password, replaceExistingSession: options.replaceExistingSession === true }),
       signal: AbortSignal.timeout(15_000),
     });
       if (await cookieUnchanged(response, "login")) safelyRolledBack = rollbackCookieChange(pending, previous);
