@@ -111,9 +111,17 @@
   .password-toggle svg { @apply h-5 w-5 fill-none stroke-current [stroke-linecap:round] [stroke-linejoin:round] [stroke-width:1.8]; }
   .form-error { @apply rounded-md bg-[#fff0ed] p-2.5 text-[#9c321f]; }
   .form-success { @apply rounded-md bg-[#edf9f1] p-2.5 text-[#17633a]; }
+  .form-progress { @apply flex items-center gap-2 rounded-md bg-[#fff0ed] p-2.5 text-[#9c321f]; }
+  .loading-spinner { @apply inline-block h-4 w-4 animate-spin rounded-full border-2 border-[#9c321f55] border-t-[#9c321f]; }
   .admin-form { @apply mt-3.5 flex flex-wrap gap-2.5; }
   .admin-form input, .admin-form select { @apply min-h-[42px] rounded-[7px] border border-[#a8bcc8] p-2; }
-  .admin-row { @apply flex items-center justify-between gap-3 border-b border-[#e4ebef] py-3; }
+  .admin-row { @apply flex flex-wrap items-center justify-between gap-3 border-b border-[#e4ebef] py-3; }
+  .admin-row > span:first-child { @apply min-w-0 flex-1; }
+  .admin-actions { @apply flex flex-wrap gap-2; }
+  .admin-action { @apply rounded-md border border-nss-blue bg-white px-3 py-2 text-sm font-semibold text-nss-blue transition-colors; }
+  .admin-action:hover:not(:disabled) { @apply bg-[#edf6f3]; }
+  .admin-action:disabled { @apply cursor-not-allowed opacity-50; }
+  .admin-action-state { @apply basis-full text-sm text-[#71828c]; }
   .admin-row small { @apply text-[#71828c]; }
   .admin-section { @apply mt-5 p-5; }
   .geo { @apply cursor-pointer outline-none [vector-effect:non-scaling-stroke]; }
