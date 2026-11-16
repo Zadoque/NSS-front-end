@@ -1,12 +1,13 @@
 import { getJson } from "../../../../shared/api/http";
 import type { EpidemiologyDataSource, EpidemiologyRequest, EpidemiologyResponse } from "../../domain/epidemiologyTypes";
 import { diseasesResponseSchema, epidemiologyResponseSchema, metadataResponseSchema } from "../epidemiologySchemas";
+import { dailyCache } from "../../cache/dailyCache";
 
 export function parseCases(value: unknown, request: EpidemiologyRequest): EpidemiologyResponse {
   const parsed = epidemiologyResponseSchema.safeParse(value);
   if (!parsed.success) throw new Error("Resposta epidemiológica inválida.");
   const items = parsed.data.items.map((item) => "code" in item
-    ? { code: item.code, name: item.name, notificationsTotal: item.notificationsTotal }
+    ? { code: item.code, name: item.name, notificationsTotal: item.notificationsTotal, parentDistrictId: item.parentDistrictId ?? undefined }
     : { code: item.cdMun, name: item.nmMun, notificationsTotal: item.casesTotal, cdMun: item.cdMun, nmMun: item.nmMun, casesTotal: item.casesTotal });
   if (new Set(items.map((item) => item.code)).size !== items.length) throw new Error("Territórios duplicados na resposta epidemiológica.");
   const responseFilters = parsed.data.filters ?? parsed.data;
@@ -52,7 +53,10 @@ export const apiDataSource: EpidemiologyDataSource = {
         : request.geography === "NEIGHBORHOOD"
           ? "neighborhoods"
           : request.geography.toLowerCase();
-    const value = await getJson(`/epidemiology/${endpoint}?${params}`);
+    const path = `/epidemiology/${endpoint}?${params}`;
+    const value = await dailyCache(path, () => getJson(path), (candidate): candidate is unknown => {
+      try { parseCases(candidate, request); return true; } catch { return false; }
+    });
     return parseCases(value, request);
   },
 };

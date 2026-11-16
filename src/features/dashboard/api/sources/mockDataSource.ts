@@ -15,7 +15,7 @@ function response(request: EpidemiologyRequest, items: EpidemiologyItem[], total
 
 export const mockDataSource: EpidemiologyDataSource = {
   async listDiseases() { return ["DENG", "FMAC", "TOXC"]; },
-  async getMetadata() { return { availableYears: [2023, 2024, 2025, 2026], availableMonthsByYear: { "2023": Array.from({ length: 12 }, (_, i) => i + 1), "2024": Array.from({ length: 12 }, (_, i) => i + 1), "2025": Array.from({ length: 12 }, (_, i) => i + 1), "2026": Array.from({ length: 10 }, (_, i) => i + 1) } }; },
+  async getMetadata() { return { availableYears: [2023, 2024, 2025, 2026], availableMonthsByYear: { "2023": Array.from({ length: 12 }, (_, i) => i + 1), "2024": Array.from({ length: 12 }, (_, i) => i + 1), "2025": Array.from({ length: 12 }, (_, i) => i + 1), "2026": Array.from({ length: 10 }, (_, i) => i + 1) }, municipalityOnlyScopes: [{ disease: "SIFA", year: 2025 }] }; },
   async getEpidemiology(request) {
     await new Promise((resolve) => setTimeout(resolve, 180));
     if (request.disease !== "DENG" || request.year !== 2026 || request.month !== 1) {

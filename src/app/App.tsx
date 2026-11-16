@@ -50,10 +50,14 @@ export function App() {
     setPath(url.pathname);
     window.scrollTo(0, 0);
   }
-  function logout() {
-    void logoutSession();
-    window.history.pushState(null, "", "/");
-    setPath("/");
+  async function logout() {
+    try {
+      await logoutSession();
+      window.history.pushState(null, "", "/");
+      setPath("/");
+    } catch {
+      window.alert("Não foi possível encerrar a sessão. Tente novamente.");
+    }
   }
   if (!authReady && path !== "/") return <main><p role="status">Verificando sessão…</p></main>;
   const go = (nextPath: string) => {

@@ -1,7 +1,12 @@
 import { z } from "zod";
 
 const itemSchema = z.union([
-  z.object({ code: z.string().min(1), name: z.string(), notificationsTotal: z.number().int().nonnegative() }),
+  z.object({
+    code: z.string().min(1),
+    name: z.string(),
+    notificationsTotal: z.number().int().nonnegative(),
+    parentDistrictId: z.string().nullable().optional(),
+  }),
   z.object({
     cdMun: z.string().min(1),
     nmMun: z.string(),
@@ -18,6 +23,8 @@ export const epidemiologyResponseSchema = z.object({
     status: z.enum(["AVAILABLE", "UNAVAILABLE", "PARTIAL"]),
     mappedNotificationsTotal: z.number().int().nonnegative(),
     unmappedNotificationsTotal: z.number().int().nonnegative(),
+    territorialLevel: z.literal("MUNICIPALITY_ONLY").nullable().optional(),
+    reason: z.literal("NOTIFICATION_UNIT_NOT_PROVIDED_BY_SOURCE").nullable().optional(),
   }).optional(),
   filters: z.object({ year: z.union([z.number().int(), z.literal("ALL")]).nullable().optional(), month: z.union([z.number().int(), z.literal("ALL")]).nullable().optional() }).optional(),
   sourceExtractedAt: z.string().datetime({ offset: true }).nullable().optional(),
@@ -29,4 +36,5 @@ export const diseasesResponseSchema = z.object({ items: z.array(z.string().min(1
 export const metadataResponseSchema = z.object({
   availableYears: z.array(z.number().int()),
   availableMonthsByYear: z.record(z.string(), z.array(z.number().int().min(1).max(12))),
+  municipalityOnlyScopes: z.array(z.object({ disease: z.string().min(1), year: z.number().int() })).default([]),
 });

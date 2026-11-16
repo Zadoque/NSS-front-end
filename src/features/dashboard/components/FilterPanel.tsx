@@ -31,6 +31,7 @@ const months = [
   "Dezembro",
 ];
 const diseaseNames: Record<string, string> = {
+  TST: "Teste sintético de cobertura",
   DENG: "Dengue",
   CHIK: "Chikungunya",
   ZIKA: "Zika",

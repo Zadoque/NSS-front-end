@@ -21,6 +21,21 @@ test("catálogo cartográfico mantém município e asset intramunicipal para os 
   }
 });
 
+test("catálogo CNES estático inclui o estabelecimento de Tijuca em Cachoeiro", () => {
+  const catalog = JSON.parse(readFileSync(resolve(process.cwd(), "public/maps/national/health-units/3201209.json"), "utf8")) as {
+    items: Array<{ c: string; n: string; b: string; d: string; x: number; y: number }>;
+  };
+  const unit = catalog.items.find((item) => item.c === "2548127");
+  expect(unit).toEqual({
+    c: "2548127",
+    n: "UNIMED SUL CAPIXABA COOPERATIVA DE TRABALHO MEDICO",
+    b: "TIJUCA",
+    d: "IBGE_DIST_320120905",
+    x: -41.083905,
+    y: -20.914335,
+  });
+});
+
 test("API exibe regiões, estados e municípios nacionais em sequência", async ({ page }) => {
   const apiBaseUrl = process.env.PLAYWRIGHT_API_BASE_URL || "http://127.0.0.1:39174";
   await login(page, apiBaseUrl);

@@ -18,6 +18,8 @@ export function AdminUsersPage({ onBack }: { onBack: () => void }) {
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [loadingInvites, setLoadingInvites] = useState(false);
   const [sendingInvite, setSendingInvite] = useState(false);
+  const [activeAction, setActiveAction] = useState("");
+  const [deliveryEmail, setDeliveryEmail] = useState("");
   const sentinel = useRef<HTMLDivElement>(null);
 
   async function loadUsers(nextPage = 0, append = false) {
@@ -64,15 +66,21 @@ export function AdminUsersPage({ onBack }: { onBack: () => void }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasNext, loadingUsers, page]);
 
-  async function action(path: string, method = "POST", body?: object) {
+  async function action(path: string, method = "POST", body?: object, successMessage = "Operação concluída.", recipient?: string) {
     setError("");
     setSuccess("");
+    const actionKey = `${method}:${path}`;
+    setActiveAction(actionKey);
+    setDeliveryEmail(recipient || "");
     try {
       await requestJson(path, { method, ...(body ? { body: JSON.stringify(body) } : {}) });
-      setSuccess("Operação concluída.");
+      setSuccess(successMessage);
       await reload();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Não foi possível concluir.");
+    } finally {
+      setActiveAction("");
+      setDeliveryEmail("");
     }
   }
 
@@ -80,6 +88,7 @@ export function AdminUsersPage({ onBack }: { onBack: () => void }) {
     setError("");
     setSuccess("");
     setSendingInvite(true);
+    setDeliveryEmail(email.trim());
     try {
       await requestJson("/admin/users", { method: "POST", body: JSON.stringify({ email: email.trim(), accountType }) });
       setEmail("");
@@ -89,14 +98,19 @@ export function AdminUsersPage({ onBack }: { onBack: () => void }) {
       setError(e instanceof Error ? e.message : "Não foi possível convidar.");
     } finally {
       setSendingInvite(false);
+      setDeliveryEmail("");
     }
   }
+
+  const actionInProgress = sendingInvite || Boolean(activeAction);
+  const progressEmail = deliveryEmail;
 
   return <main>
     <button onClick={onBack}>← Voltar</button>
     <h1>Gerenciar usuários</h1>
     {error && <p className="form-error" role="alert">{error}</p>}
     {success && <p className="form-success" role="status">{success}</p>}
+    {progressEmail && <p className="form-progress" role="status">Enviando seu convite ou link de renovação para {progressEmail} <span className="loading-spinner" aria-label="Enviando" /></p>}
     <section className="card admin-section">
       <h2>Novo convite</h2>
       <div className="admin-form">
@@ -111,13 +125,13 @@ export function AdminUsersPage({ onBack }: { onBack: () => void }) {
     <section className="card admin-section">
       <h2>Convites pendentes</h2>
       {loadingInvites && <p role="status">Carregando convites…</p>}
-      {!loadingInvites && invites.map(i => <div className="admin-row" key={i.id}><span>{i.email}<small> expira em {new Date(i.expiresAt).toLocaleString()}</small></span><button onClick={() => void action(`/admin/users/invitations/${i.id}/renew`)}>Renovar</button><button onClick={() => void action(`/admin/users/invitations/${i.id}/cancel`)}>Cancelar</button></div>)}
+      {!loadingInvites && invites.map(i => { const renewKey = `POST:/admin/users/invitations/${i.id}/renew`; const cancelKey = `POST:/admin/users/invitations/${i.id}/cancel`; return <div className="admin-row" key={i.id}><span>{i.email}<small> expira em {new Date(i.expiresAt).toLocaleString()}</small></span><div className="admin-actions"><button className="admin-action" disabled={actionInProgress} onClick={() => void action(`/admin/users/invitations/${i.id}/renew`, "POST", undefined, "Convite renovado e e-mail enviado.", i.email)}>Renovar</button><button className="admin-action" disabled={actionInProgress} onClick={() => void action(`/admin/users/invitations/${i.id}/cancel`, "POST", undefined, "Convite cancelado.")}>Cancelar</button></div>{activeAction === renewKey || activeAction === cancelKey ? <span className="admin-action-state" role="status">Processando…</span> : null}</div>; })}
       {!loadingInvites && !invites.length && <p>Nenhum convite pendente.</p>}
     </section>
     <section className="card admin-section">
       <h2>Usuários</h2>
       <div className="admin-form"><input placeholder="Pesquisar nome ou e-mail" value={search} onChange={e => setSearch(e.target.value)} /><button onClick={() => void loadUsers(0)}>Pesquisar</button></div>
-      {users.map(u => <div className="admin-row" key={u.id}><span>{u.name || "Primeiro acesso pendente"} — {u.email}</span><button onClick={() => void action(`/admin/users/${u.id}/password-reset`)}>Resetar senha</button><button onClick={() => void action(`/admin/users/${u.id}/activation`, "PATCH", { active: !u.active })}>{u.active ? "Desativar" : "Ativar"}</button></div>)}
+      {users.map(u => { const resetKey = `POST:/admin/users/${u.id}/password-reset`; const activationKey = `PATCH:/admin/users/${u.id}/activation`; return <div className="admin-row" key={u.id}><span>{u.name || "Primeiro acesso pendente"} — {u.email}</span><div className="admin-actions"><button className="admin-action" disabled={actionInProgress} onClick={() => void action(`/admin/users/${u.id}/password-reset`, "POST", undefined, "E-mail de redefinição enviado.", u.email)}>Resetar senha</button><button className="admin-action" disabled={actionInProgress} onClick={() => void action(`/admin/users/${u.id}/activation`, "PATCH", { active: !u.active }, u.active ? "Usuário desativado." : "Usuário ativado.")}>{u.active ? "Desativar" : "Ativar"}</button></div>{activeAction === resetKey || activeAction === activationKey ? <span className="admin-action-state" role="status">Processando…</span> : null}</div>; })}
       <div ref={sentinel} aria-hidden="true" />{loadingUsers && <p role="status">Carregando usuários…</p>}{!loadingUsers && !hasNext && users.length > 0 && <p>Todos os {users.length} usuários foram carregados.</p>}
     </section>
   </main>;

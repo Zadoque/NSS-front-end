@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import type { AuthClient } from "../model/realAuth";
+import { AuthLoginError } from "../model/realAuth";
 import { isProdMock } from "../../dashboard/api/sources/dataSource";
 import { PasswordField } from "../components/PasswordField";
 
@@ -8,16 +9,22 @@ export function LoginPage({ auth, demo, onSuccess }: { auth: AuthClient; demo: b
   const [password, setPassword] = useState(demo ? "NSS-DEMO-2026" : "");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [sessionConflict, setSessionConflict] = useState(false);
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function submit(event: FormEvent<HTMLFormElement> | undefined, replaceExistingSession = false) {
+    event?.preventDefault();
     setError("");
+    setSessionConflict(false);
     setLoading(true);
     try {
-      await auth.login(email, password);
+      await auth.login(email, password, { replaceExistingSession });
       onSuccess();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Não foi possível entrar.");
+      if (reason instanceof AuthLoginError && reason.code === "ACTIVE_SESSION") {
+        setSessionConflict(true);
+      } else {
+        setError(reason instanceof Error ? reason.message : "Não foi possível entrar.");
+      }
     } finally {
       setLoading(false);
     }
@@ -38,6 +45,13 @@ export function LoginPage({ auth, demo, onSuccess }: { auth: AuthClient; demo: b
           <PasswordField id="password" label="Senha" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required />
           </>}
           {error && <p className="form-error" role="alert">{error}</p>}
+          {sessionConflict && <div className="form-error" role="alert">
+            <p>Este usuário já está conectado em outra sessão. Deseja deslogar a outra sessão para entrar aqui?</p>
+            <div className="auth-actions">
+              <button className="primary" type="button" disabled={loading} onClick={() => void submit(undefined, true)}>Deslogar a outra sessão e entrar</button>
+              <button type="button" disabled={loading} onClick={() => setSessionConflict(false)}>Voltar</button>
+            </div>
+          </div>}
           <button className="primary" type="submit" disabled={loading}>{loading ? "Entrando…" : isProdMock ? "Entrar na demonstração" : "Entrar"}</button>
           {loading && <p role="status">{isProdMock ? "Abrindo demonstração…" : "Validando suas credenciais…"}</p>}
         </form>

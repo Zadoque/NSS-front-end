@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { requestJson } from "../../../shared/api/http";
 import { PasswordField } from "../components/PasswordField";
 
@@ -7,11 +7,30 @@ export function FirstAccessPage({ onDone }: { onDone: () => void }) {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmation, setConfirmation] = useState("");
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!token) {
+      setError("Convite inválido ou expirado.");
+      setLoading(false);
+      return;
+    }
+    void requestJson(`/auth/first-access?token=${encodeURIComponent(token)}`)
+      .then((details) => setEmail((details as { email: string }).email))
+      .catch((x) => setError(x instanceof Error ? x.message : "Convite inválido ou expirado."))
+      .finally(() => setLoading(false));
+  }, [token]);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
+    setError("");
+    if (password !== confirmation) {
+      setError("As senhas não coincidem.");
+      return;
+    }
     try {
       await requestJson("/auth/first-access", { method: "POST", body: JSON.stringify({ token, email, name, password }) });
       setDone(true);
@@ -29,14 +48,15 @@ export function FirstAccessPage({ onDone }: { onDone: () => void }) {
             <p>Cadastro concluído. Agora você pode entrar.</p>
             <button className="primary" onClick={onDone}>Ir para o login</button>
           </>
-        ) : (
+        ) : loading ? <p role="status">Validando convite…</p> : !email ? <p className="form-error">{error || "Convite inválido ou expirado."}</p> : (
           <form onSubmit={submit}>
-            <label>E-mail</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <p>Olá, <strong>{email}</strong>. Preencha os campos abaixo:</p>
             <label>Nome</label>
             <input value={name} onChange={(e) => setName(e.target.value)} required />
             <label htmlFor="first-access-password">Senha</label>
             <PasswordField id="first-access-password" label="Senha" minLength={12} value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <label htmlFor="first-access-confirmation">Confirme a senha</label>
+            <PasswordField id="first-access-confirmation" label="Confirme a senha" minLength={12} value={confirmation} onChange={(e) => setConfirmation(e.target.value)} required />
             {error && <p className="form-error">{error}</p>}
             <button className="primary">Criar acesso</button>
           </form>
