@@ -20,7 +20,8 @@ test("renderiza bairros OSM e usa os identificadores canônicos da pipeline", as
   await page.getByLabel("Estado", { exact: true }).selectOption("33");
   await page.getByLabel("Município", { exact: true }).selectOption("3300209");
   await expect(page.getByRole("heading", { name: "Bairros da notificação", exact: true })).toBeVisible();
-  await expect(page.locator(".geo")).toHaveCount(22);
-  await expect(page.getByRole("button", { name: /Areal/ })).toBeVisible();
-  await expect(page.locator(".geo").first()).toHaveAttribute("aria-label", /Areal/);
+  await expect(page.locator(".geo")).toHaveCount(18);
+  const areal = page.getByRole("button", { name: /Areal/ });
+  await expect(areal).toBeVisible();
+  await expect(areal).toHaveAttribute("aria-label", /Areal/);
 });

@@ -1,4 +1,5 @@
 import type { GeographySelection, MapLevel } from "../domain/epidemiologyTypes";
+import { isDemo } from "../api/sources/dataSource";
 const levels: MapLevel[] = [
   "BRAZIL_REGIONS",
   "SOUTHEAST_STATES",
@@ -43,7 +44,9 @@ export function GeographyBreadcrumb({
         ? (["BRAZIL_REGIONS", "NATIONAL_STATES", "NATIONAL_MUNICIPALITIES", "MUNICIPALITY_DISTRICTS", "MUNICIPALITY_NEIGHBORHOODS"] as MapLevel[])
           .filter((step) => !skipDistricts || step !== "MUNICIPALITY_DISTRICTS")
         : level === "MUNICIPALITY_DISTRICTS"
-          ? ["BRAZIL_REGIONS", "NATIONAL_STATES", "NATIONAL_MUNICIPALITIES", "MUNICIPALITY_DISTRICTS"] as MapLevel[]
+          ? (isDemo
+            ? ["BRAZIL_REGIONS", "SOUTHEAST_STATES", "RJ_MUNICIPALITIES", "MUNICIPALITY_DISTRICTS"]
+            : ["BRAZIL_REGIONS", "NATIONAL_STATES", "NATIONAL_MUNICIPALITIES", "MUNICIPALITY_DISTRICTS"]) as MapLevel[]
         : level === "CAMPOS_DISTRICTS" ? ["BRAZIL_REGIONS", "SOUTHEAST_STATES", "RJ_MUNICIPALITIES", "CAMPOS_DISTRICTS"] as MapLevel[]
           : level === "CAMPOS_NEIGHBORHOODS" ? ["BRAZIL_REGIONS", "SOUTHEAST_STATES", "RJ_MUNICIPALITIES", "CAMPOS_DISTRICTS", "CAMPOS_NEIGHBORHOODS"] as MapLevel[]
             : levels.slice(0, index + 1);

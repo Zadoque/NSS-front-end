@@ -1,16 +1,15 @@
 import { isDemo, isProdMock } from "../../dashboard/api/sources/dataSource";
+import { BrandMark } from "../../../shared/brand/BrandMark";
 export function HomePage() {
   return (
     <>
       <header className="header">
-        <div className="brand-mark" aria-hidden="true">
-          NSS
-        </div>
+        <BrandMark />
         <div>
           <strong>Núcleo de Situação de Saúde</strong>
           <p>UENF · Saúde e território</p>
         </div>
-        <a className="header-login" href="/login">Entrar</a>
+        <nav className="home-nav" aria-label="Navegação pública"><a href="/buscar">Buscar</a><a href="/noticias">Notícias</a><a href="/boletins">Boletins</a><a href="/sobre">Sobre</a><a className="header-login" href="/login">Entrar</a></nav>
       </header>
       <main className="home">
         <section className="home-hero">
@@ -92,7 +91,7 @@ export function HomePage() {
           </a>
         </section>
         <footer>
-          NSS / UENF <span>Plataforma de situação de saúde · V1</span>
+          NSS / UENF <span><a href="/privacidade">Privacidade</a> · <a href="/termos">Termos de uso</a> · Plataforma de situação de saúde · V1</span>
         </footer>
       </main>
     </>

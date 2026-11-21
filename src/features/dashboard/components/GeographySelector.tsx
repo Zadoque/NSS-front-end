@@ -32,11 +32,14 @@ const normalize = (text: string) =>
 export function GeographySelector({
   navigation,
   districtItems = [],
+  municipalityOnly = false,
 }: {
   navigation: ReturnType<typeof useMapNavigation>;
   districtItems?: { code: string; name: string }[];
+  municipalityOnly?: boolean;
 }) {
   const { region, state, mapLevel, selectedGeography, navigate, select } = navigation;
+  const stateSelectValue = !isDemo && state === "RJ" ? "33" : state;
   const [search, setSearch] = useState("");
   const map = useQuery({
     queryKey: ["map", "RJ_MUNICIPALITIES"],
@@ -144,7 +147,7 @@ export function GeographySelector({
           <select
             id="state"
             disabled={!region}
-            value={state}
+            value={stateSelectValue}
             onChange={(event) => {
               setSearch("");
               if (!event.target.value) navigate(region === "SE" ? "SOUTHEAST_STATES" : "NATIONAL_STATES");
@@ -210,7 +213,7 @@ export function GeographySelector({
             ))}
           </select>
         </div>
-        {municipality && (
+        {municipality && !municipalityOnly && (
           <div>
             <label htmlFor="district">Distrito</label>
             <select
@@ -234,7 +237,7 @@ export function GeographySelector({
             </p>
           </div>
         )}
-        {district && neighborhoodMap.data?.features?.length ? (
+        {district && !municipalityOnly && neighborhoodMap.data?.features?.length ? (
           <div>
             <label htmlFor="neighborhood">Bairro da notificação</label>
             <select

@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { isDemo, isProdMock } from "./api/sources/dataSource";
+import { BrandMark } from "../../shared/brand/BrandMark";
 import { mapViews } from "./geography/maps";
 import { useDashboardModel } from "./hooks/useDashboardModel";
 import { GeographicMap } from "./components/GeographicMap";
@@ -12,8 +13,8 @@ import { MobileDashboardContext } from "./components/MobileDashboardContext";
 import { MobileDashboardNav, type MobileDashboardTab } from "./components/MobileDashboardNav";
 import { DashboardViewSwitcher, type DashboardView } from "./components/DashboardViewSwitcher";
 import { DashboardAnalyticsViews } from "./components/DashboardAnalyticsViews";
-export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onAdmin?: () => void }) {
-  const { navigation, mapLevel, selectedGeography, select, navigate, goBack, skipDistricts, metadata, filters, query, districtQuery, items, municipal, territorial, selectionInfo, panel } = useDashboardModel();
+export function DashboardPage({ onLogout, onAdmin, onVeterinary, onMunicipal }: { onLogout: () => void; onAdmin?: () => void; onVeterinary?: () => void; onMunicipal?: () => void }) {
+  const { navigation, mapLevel, selectedGeography, select, navigate, goBack, skipDistricts, metadata, filters, query, districtQuery, items, municipal, territorial, selectionInfo, panel, municipalityOnly } = useDashboardModel();
   const [mobileTab, setMobileTab] = useState<MobileDashboardTab>("map");
   const [activeView, setActiveView] = useState<DashboardView>("map");
   const viewScrollY = useRef<Partial<Record<DashboardView, number>>>({});
@@ -59,15 +60,15 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
   return (
     <>
       <header className="header">
-        <div className="brand-mark" aria-hidden="true">
-          NSS
-        </div>
+        <BrandMark />
         <div>
           <strong>Núcleo de Situação de Saúde</strong>
           <p>UENF · Vigilância epidemiológica</p>
         </div>
         {isDemo && <span className="badge">{isProdMock ? 'SNAPSHOT REAL' : 'DEMO'}</span>}
         {onAdmin && <button className="header-action" type="button" onClick={onAdmin}>Usuários</button>}
+        {onVeterinary && <button className="header-action" type="button" onClick={onVeterinary}>Notificação animal</button>}
+        {onMunicipal && <button className="header-action" type="button" onClick={onMunicipal}>Envios municipais</button>}
         <button className="header-action" type="button" onClick={onLogout}>Sair</button>
       </header>
       <main>
@@ -83,7 +84,7 @@ export function DashboardPage({ onLogout, onAdmin }: { onLogout: () => void; onA
           <MobileDashboardContext filters={filters} selectionName={selectedGeography?.name ?? mapViews[mapLevel].title} total={selectedTotal} pending={query.isPending} />
           <div className="dashboard-map-navigation">
             <GeographyBreadcrumb level={mapLevel} navigate={navigate} selected={selectedGeography} goBack={goBack} skipDistricts={skipDistricts} />
-            <GeographySelector key={mapLevel} navigation={navigation} districtItems={districtQuery.data?.items ?? []} />
+            <GeographySelector key={mapLevel} navigation={navigation} districtItems={districtQuery.data?.items ?? []} municipalityOnly={municipalityOnly} />
           </div>
         </div>
         <DashboardViewSwitcher activeView={activeView} onChange={changeView} />

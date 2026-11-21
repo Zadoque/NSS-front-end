@@ -3,6 +3,27 @@ import type { EpidemiologyDataSource, EpidemiologyRequest, EpidemiologyResponse 
 import { diseasesResponseSchema, epidemiologyResponseSchema, metadataResponseSchema } from "../epidemiologySchemas";
 import { dailyCache } from "../../cache/dailyCache";
 
+let metadataCache: Awaited<ReturnType<typeof readMetadata>> | null = null;
+let metadataLoadedAt = 0;
+let metadataRequest: Promise<Awaited<ReturnType<typeof readMetadata>>> | null = null;
+async function readMetadata() {
+  const value = await getJson("/metadata");
+  const parsed = metadataResponseSchema.safeParse(value);
+  if (!parsed.success) throw new Error("Metadata inválida.");
+  return parsed.data;
+}
+async function currentMetadata() {
+  if (metadataCache && Date.now() - metadataLoadedAt < 30_000) return metadataCache;
+  if (!metadataRequest) {
+    metadataRequest = readMetadata().then((value) => {
+      metadataCache = value;
+      metadataLoadedAt = Date.now();
+      return value;
+    }).finally(() => { metadataRequest = null; });
+  }
+  return metadataRequest;
+}
+
 export function parseCases(value: unknown, request: EpidemiologyRequest): EpidemiologyResponse {
   const parsed = epidemiologyResponseSchema.safeParse(value);
   if (!parsed.success) throw new Error("Resposta epidemiológica inválida.");
@@ -31,12 +52,10 @@ export const apiDataSource: EpidemiologyDataSource = {
     return parsed.data.items;
   },
   async getMetadata() {
-    const value = await getJson("/metadata");
-    const parsed = metadataResponseSchema.safeParse(value);
-    if (!parsed.success) throw new Error("Metadata inválida.");
-    return parsed.data;
+    return currentMetadata();
   },
   async getEpidemiology(request: EpidemiologyRequest): Promise<EpidemiologyResponse> {
+    const metadata = await currentMetadata();
     const params = new URLSearchParams({ geography: request.geography, disease: request.disease });
     if (request.year !== "ALL") params.set("year", String(request.year));
     if (request.month !== "ALL") params.set("month", String(request.month));
@@ -54,7 +73,8 @@ export const apiDataSource: EpidemiologyDataSource = {
           ? "neighborhoods"
           : request.geography.toLowerCase();
     const path = `/epidemiology/${endpoint}?${params}`;
-    const value = await dailyCache(path, () => getJson(path), (candidate): candidate is unknown => {
+    const cachePath = `${path}&publicationFingerprint=${encodeURIComponent(metadata.publicationFingerprint)}`;
+    const value = await dailyCache(cachePath, () => getJson(path), (candidate): candidate is unknown => {
       try { parseCases(candidate, request); return true; } catch { return false; }
     });
     return parseCases(value, request);

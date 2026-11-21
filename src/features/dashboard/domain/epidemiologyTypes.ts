@@ -22,7 +22,7 @@ export type MunicipalityCases = EpidemiologyItem & { cdUf: string; nmUf: string;
 export type MunicipalityCasesResponse = EpidemiologyResponse & { items: MunicipalityCases[] };
 export interface EpidemiologyDataSource {
   listDiseases(): Promise<string[]>;
-  getMetadata(): Promise<{ availableYears: number[]; availableMonthsByYear: Record<string, number[]>; municipalityOnlyScopes: { disease: string; year: number }[] }>;
+  getMetadata(): Promise<{ availableYears: number[]; availableMonthsByYear: Record<string, number[]>; municipalityOnlyScopes: { disease: string; year: number }[]; publicationFingerprint: string }>;
   getEpidemiology(request: EpidemiologyRequest): Promise<EpidemiologyResponse>;
 }
 export type MapLevel =

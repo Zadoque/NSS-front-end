@@ -43,6 +43,36 @@ test("cache reutiliza resposta e invalida a conta ao encerrar sessão", async ({
   expect(result).toEqual([1, 1, 2, 2]);
 });
 
+test("fingerprint de publicação separa snapshots epidemiológicos no IndexedDB", async ({ page }) => {
+  const base = process.env.PLAYWRIGHT_API_BASE_URL || "http://127.0.0.1:39174";
+  let fingerprint = "v1";
+  let calls = 0;
+  await page.route("**/api/v1/auth/refresh", route => route.fulfill({ status: 401 }));
+  await page.route("**/api/v1/auth/login", route => route.fulfill({ json: { accessToken: "test", user: { id: 707, email: "fingerprint@nss.test" } } }));
+  await page.route("**/api/v1/metadata", route => route.fulfill({ json: { availableYears: [2026], availableMonthsByYear: { "2026": [1] }, municipalityOnlyScopes: [], publicationFingerprint: fingerprint } }));
+  await page.route("**/api/v1/epidemiology/municipalities*", route => route.fulfill({ json: { items: [{ code: "3301009", name: "Campos", notificationsTotal: ++calls }], totalNotifications: calls, coverage: { status: "AVAILABLE", mappedNotificationsTotal: calls, unmappedNotificationsTotal: 0 }, filters: { year: 2026, month: 1 } } }));
+  await page.goto(`${base}/login`);
+  const first = await page.evaluate(async () => {
+    const auth = await import(/* @vite-ignore */ "/src/features/auth/model/realAuth.ts");
+    const source = await import(/* @vite-ignore */ "/src/features/dashboard/api/sources/apiDataSource.ts");
+    await auth.realAuth.login("fingerprint@nss.test", "test");
+    const request = { geography: "MUNICIPALITY", disease: "DENG", year: 2026, month: 1 } as const;
+    return [(await source.apiDataSource.getEpidemiology(request)).totalNotifications, (await source.apiDataSource.getEpidemiology(request)).totalNotifications];
+  });
+  expect(first).toEqual([1, 1]);
+  expect(calls).toBe(1);
+  fingerprint = "v2";
+  await page.reload();
+  const second = await page.evaluate(async () => {
+    const auth = await import(/* @vite-ignore */ "/src/features/auth/model/realAuth.ts");
+    const source = await import(/* @vite-ignore */ "/src/features/dashboard/api/sources/apiDataSource.ts");
+    await auth.realAuth.login("fingerprint@nss.test", "test");
+    return (await source.apiDataSource.getEpidemiology({ geography: "MUNICIPALITY", disease: "DENG", year: 2026, month: 1 })).totalNotifications;
+  });
+  expect(second).toBe(2);
+  expect(calls).toBe(2);
+});
+
 test("logout em outra aba impede gravação iniciada antes da invalidação", async ({ browser }) => {
   const context = await browser.newContext();
   await context.addInitScript(() => { Object.defineProperty(window, "BroadcastChannel", { value: undefined }); });
@@ -177,6 +207,7 @@ test("fonte da API reutiliza apenas respostas válidas por filtro e conta", asyn
   await page.route("**/api/v1/auth/refresh", route => route.fulfill({ status: 401 }));
   await page.route("**/api/v1/auth/login", route => route.fulfill({ json: { accessToken: "test", user: { id: 144, email: "source@nss.test" } } }));
   await page.route("**/api/v1/auth/logout", route => route.fulfill({ status: 204 }));
+  await page.route("**/api/v1/metadata", route => route.fulfill({ json: { availableYears: [2024, 2025], availableMonthsByYear: { "2024": [1], "2025": [1] }, municipalityOnlyScopes: [], publicationFingerprint: "cache-window" } }));
   await page.route("**/api/v1/epidemiology/region?**", route => {
     calls += 1;
     return route.fulfill({ json: { items: [{ code: "1", name: "Norte", notificationsTotal: calls }], totalNotifications: calls } });
@@ -441,7 +472,7 @@ test("painel aberto atualiza dados ao chegar às 02h de São Paulo", async ({ pa
   await page.route("**/api/v1/diseases", route => route.fulfill({ json: { items: ["DENG"] } }));
   await page.route("**/api/v1/metadata", route => {
     metadataCalls += 1;
-    return route.fulfill({ json: { availableYears: [2026], availableMonthsByYear: { "2026": [1] } } });
+    return route.fulfill({ json: { availableYears: [2026], availableMonthsByYear: { "2026": [1] }, municipalityOnlyScopes: [], publicationFingerprint: "clock" } });
   });
   await page.route("**/api/v1/epidemiology/**", route => route.fulfill({ json: { items: [], totalNotifications: 0 } }));
   const base = process.env.PLAYWRIGHT_API_BASE_URL || "http://127.0.0.1:39174";

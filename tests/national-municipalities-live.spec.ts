@@ -21,7 +21,7 @@ test.setTimeout(120_000);
 
 test.beforeAll(() => {
   if (!accessToken) {
-    throw new Error("PLAYWRIGHT_ACCESS_TOKEN é obrigatório para a validação nacional integrada");
+    test.skip(true, "PLAYWRIGHT_ACCESS_TOKEN é obrigatório para a validação nacional integrada");
   }
   expect(municipalities).toHaveLength(5571);
 });

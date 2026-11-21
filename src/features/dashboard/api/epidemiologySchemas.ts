@@ -37,4 +37,5 @@ export const metadataResponseSchema = z.object({
   availableYears: z.array(z.number().int()),
   availableMonthsByYear: z.record(z.string(), z.array(z.number().int().min(1).max(12))),
   municipalityOnlyScopes: z.array(z.object({ disease: z.string().min(1), year: z.number().int() })).default([]),
+  publicationFingerprint: z.string().min(1).default("UNAVAILABLE"),
 });

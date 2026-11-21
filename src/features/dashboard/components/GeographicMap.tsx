@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ComposableMap, Geographies, Geography, Marker } from "react-simple-maps";
 import { ZoomableGroup } from "react-simple-maps/zoom";
 import { loadHealthUnits, loadMap, loadMunicipalityMap, mapViews } from "../geography/maps";
+import { isDemo } from "../api/sources/dataSource";
 import type { HealthUnitPoint } from "../geography/maps";
 import type {
   GeographySelection,
@@ -409,7 +410,7 @@ export function GeographicMap({
                   : level === "SOUTHEAST_STATES" || level === "NATIONAL_STATES"
                     ? {
                         level: "state",
-                        code: String(p.code_state),
+                        code: level === "SOUTHEAST_STATES" && isDemo ? String(p.abbrev_state) : String(p.code_state),
                         name: String(p.name_state),
                       }
                     : level === "RJ_MUNICIPALITIES" || level === "NATIONAL_MUNICIPALITIES"

@@ -25,6 +25,39 @@ test("institutional home, links and browser history", async ({ page }) => {
   ).toBeVisible();
 });
 
+test("public About page renders the institutional fallback in demo", async ({ page }) => {
+  await page.goto("/sobre");
+  await expect(page.getByRole("heading", { name: "Sobre o NSS" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Instituições" })).toBeVisible();
+  await expect(page.getByText("UENF", { exact: true })).toBeVisible();
+});
+
+for (const [path, heading] of [["/noticias", "Notícias"], ["/boletins", "Boletins epidemiológicos"]] as const) {
+  test(`public ${path} route exposes an explicit demo empty state`, async ({ page }) => {
+    await page.goto(path);
+    await expect(page.getByRole("heading", { name: heading })).toBeVisible();
+    await expect(page.getByRole("status")).toContainText("modo demonstração");
+  });
+}
+
+test("public legal routes do not claim a document in demo", async ({ page }) => {
+  await page.goto("/privacidade");
+  await expect(page.getByRole("heading", { name: "Política de privacidade" })).toBeVisible();
+  await expect(page.getByRole("status")).toContainText("modo demonstração");
+});
+
+test("public search validates the minimum term in demo", async ({ page }) => {
+  await page.goto("/buscar");
+  await page.getByLabel("Termo de busca").fill("a");
+  await page.getByRole("button", { name: "Pesquisar" }).click();
+  await expect(page.getByRole("alert")).toContainText("ao menos 2 caracteres");
+});
+
+test("public news detail route has an explicit demo state", async ({ page }) => {
+  await page.goto("/noticias/exemplo");
+  await expect(page.getByRole("status")).toContainText("modo demonstração");
+});
+
 for (const width of [375, 1440]) {
   test(`selectors, search and breadcrumb synchronize at ${width}px`, async ({
     page,

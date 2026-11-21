@@ -14,6 +14,8 @@ export function FirstAccessPage({ onDone }: { onDone: () => void }) {
 
   useEffect(() => {
     if (!token) {
+      // The token is read once from the URL; this is the terminal invalid-link state.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setError("Convite inválido ou expirado.");
       setLoading(false);
       return;

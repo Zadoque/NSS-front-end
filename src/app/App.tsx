@@ -22,6 +22,22 @@ export function App() {
           ? "Login | NSS — UENF"
         : path === "/admin/usuarios"
           ? "Usuários | NSS — UENF"
+        : path === "/uploads-municipais"
+          ? "Envios municipais | NSS — UENF"
+        : path === "/notificacoes-animais"
+          ? "Notificação animal | NSS — UENF"
+        : path === "/sobre"
+          ? "Sobre o NSS | NSS — UENF"
+        : path === "/noticias"
+          ? "Notícias | NSS — UENF"
+        : path === "/boletins"
+          ? "Boletins | NSS — UENF"
+        : path === "/privacidade"
+          ? "Privacidade | NSS — UENF"
+        : path === "/termos"
+          ? "Termos de uso | NSS — UENF"
+        : path === "/buscar"
+          ? "Buscar | NSS — UENF"
         : "NSS — Núcleo de Situação de Saúde";
     document.querySelector("h1")?.setAttribute("tabindex", "-1");
     document.querySelector("h1")?.focus();
@@ -42,7 +58,7 @@ export function App() {
     const url = new URL(link.href);
     if (
       url.origin !== window.location.origin ||
-      !["/", "/mapa", "/login", "/admin/usuarios", "/primeiro-acesso", "/esqueci-senha", "/redefinir-senha"].includes(url.pathname)
+      !(url.pathname.startsWith("/noticias/") || ["/", "/mapa", "/login", "/sobre", "/noticias", "/boletins", "/privacidade", "/termos", "/buscar", "/admin/usuarios", "/uploads-municipais", "/notificacoes-animais", "/primeiro-acesso", "/esqueci-senha", "/redefinir-senha", "/solicitar-acesso", "/confirmar-acesso"].includes(url.pathname))
     )
       return;
     event.preventDefault();

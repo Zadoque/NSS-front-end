@@ -56,7 +56,9 @@ export async function requestJson(path: string, init: RequestInit = {}, allowRef
     && !path.startsWith("/auth/password-reset/");
   const csrf = csrfProtected ? await csrfToken() : null;
   if (token && realAuth.getRevision() !== revision) throw new DOMException("A sessão mudou durante a operação", "AbortError");
-  const response = await fetch(`${base}/api/v1${path}`, { ...init, credentials: "include", headers: { Accept: "application/json", "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(csrf ? { "X-XSRF-TOKEN": csrf } : {}), ...(init.headers || {}) }, signal: AbortSignal.timeout(15_000) });
+  const apiPath = path.startsWith("/public/") ? `/api${path}` : `/api/v1${path}`;
+  const formBody = typeof FormData !== "undefined" && init.body instanceof FormData;
+  const response = await fetch(`${base}${apiPath}`, { ...init, credentials: "include", headers: { Accept: "application/json", ...(formBody ? {} : { "Content-Type": "application/json" }), ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(csrf ? { "X-XSRF-TOKEN": csrf } : {}), ...(init.headers || {}) }, signal: AbortSignal.timeout(15_000) });
   if (token && realAuth.getRevision() !== revision) throw new DOMException("A sessão mudou durante a operação", "AbortError");
   if (response.status === 401 && token && userId != null && allowRefresh && realAuth.getRevision() === revision) { const refreshed = await realAuth.refresh(); if (refreshed?.id === userId && realAuth.getRevision() === revision) return requestJson(path, init, false); }
   if (!response.ok) { let message = `Falha na operação (${response.status}).`; try { const body = await response.json(); if (body.message) message = body.message; } catch { /* empty */ } throw new Error(message); }
