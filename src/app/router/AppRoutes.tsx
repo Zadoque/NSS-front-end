@@ -8,6 +8,7 @@ import { ResetPasswordPage } from "../../features/auth/pages/ResetPasswordPage";
 import { AccessRequestPage } from "../../features/access/pages/AccessRequestPage";
 import { AccessVerificationPage } from "../../features/access/pages/AccessVerificationPage";
 import { VeterinaryNotificationPage } from "../../features/veterinary/pages/VeterinaryNotificationPage";
+import { ClinicInvitationPage } from "../../features/veterinary/pages/ClinicInvitationPage";
 import { HomePage } from "../../features/home/pages/HomePage";
 import { AboutPage } from "../../features/home/pages/AboutPage";
 import { PublicContentPage } from "../../features/home/pages/PublicContentPage";
@@ -29,7 +30,7 @@ type Props = {
 
 export function AppRoutes({ path, session, auth, demo, prodMock, go, logout }: Props) {
   const done = (next: string) => () => go(next);
-  if (prodMock && ["/primeiro-acesso", "/redefinir-senha", "/esqueci-senha", "/admin/usuarios", "/uploads-municipais"].includes(path.replace(/\/+$/, ""))) {
+  if (prodMock && ["/primeiro-acesso", "/redefinir-senha", "/esqueci-senha", "/aceitar-convite", "/admin/usuarios", "/uploads-municipais"].includes(path.replace(/\/+$/, ""))) {
     return <main><h1>Recurso indisponível na demonstração</h1><p>Esta versão publica um snapshot de dados agregados e não cadastra usuários nem recebe senhas pessoais.</p><a href="/">Voltar à página inicial</a></main>;
   }
   if (path === "/primeiro-acesso") return <FirstAccessPage onDone={done("/login")} />;
@@ -37,6 +38,7 @@ export function AppRoutes({ path, session, auth, demo, prodMock, go, logout }: P
   if (path === "/esqueci-senha") return <ForgotPasswordPage onBack={done("/login")} />;
   if (path === "/solicitar-acesso") return <AccessRequestPage />;
   if (path === "/confirmar-acesso") return <AccessVerificationPage />;
+  if (path === "/aceitar-convite") return <RequireSession session={session} fallback={<LoginPage auth={auth} demo={demo} onSuccess={done(`/aceitar-convite${window.location.hash}`)} />}><ClinicInvitationPage onDone={done("/notificacoes-animais")} /></RequireSession>;
   if (path === "/sobre") return <AboutPage />;
   if (path === "/noticias") return <PublicContentPage kind="posts" />;
   if (path === "/boletins") return <PublicContentPage kind="bulletins" />;

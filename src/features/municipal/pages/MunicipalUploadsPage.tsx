@@ -50,7 +50,7 @@ export function MunicipalUploadsPage({ onBack }: { onBack: () => void }) {
     body.append("sourceDeclaration", String(declared));
     body.append("file", file);
     try {
-      await requestJson("/municipal/uploads", { method: "POST", body });
+      await requestJson("/municipal/uploads", { method: "POST", body, headers: { "Idempotency-Key": crypto.randomUUID() } });
       setFile(null);
       setDeclared(false);
       setSuccess("Arquivo recebido para validação. O recebimento não publica os dados automaticamente.");

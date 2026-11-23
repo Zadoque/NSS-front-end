@@ -11,10 +11,14 @@ test("representante municipal envia arquivo somente após declarar a origem", as
   } }));
   await page.route("**/api/v1/auth/logout", route => route.fulfill({ status: 204, body: "" }));
   await page.route("**/api/v1/municipal/uploads?**", route => route.fulfill({ json: { items: [], page: 0, size: 20, totalElements: 0 } }));
-  await page.route("**/api/v1/auth/csrf", route => route.fulfill({ body: "csrf-test" }));
+  await page.route("**/api/v1/metadata", route => route.fulfill({ json: { availableYears: [2026], availableMonthsByYear: { "2026": [1] }, municipalityOnlyScopes: [], publicationFingerprint: "municipal-upload-test" } }));
+  await page.route("**/api/v1/diseases", route => route.fulfill({ json: { items: ["DENG"] } }));
+  await page.route("**/api/v1/epidemiology/**", route => route.fulfill({ json: { items: [], year: 2026, month: 1, totalNotifications: 0 } }));
+  await page.route("**/api/v1/auth/csrf", route => route.fulfill({ body: "masked-csrf", headers: { "Set-Cookie": "XSRF-TOKEN=csrf-test; Path=/; SameSite=Strict" } }));
   await page.route("**/api/v1/municipal/uploads", async route => {
     expect(route.request().method()).toBe("POST");
     expect(route.request().headers()["content-type"]).toContain("multipart/form-data");
+    expect(route.request().headers()["x-xsrf-token"]).toBe("csrf-test");
     await route.fulfill({ status: 201, json: { id: "upload-1", status: "VALIDATING" } });
   });
 
@@ -32,5 +36,5 @@ test("representante municipal envia arquivo somente após declarar a origem", as
   await expect(page.getByRole("button", { name: "Enviar para validação" })).toBeDisabled();
   await page.getByLabel(/Declaro a origem municipal/).check();
   await page.getByRole("button", { name: "Enviar para validação" }).click();
-  await expect(page.getByRole("status")).toContainText("Arquivo recebido para validação");
+  await expect(page.getByRole("status").filter({ hasText: "Arquivo recebido para validação" })).toBeVisible();
 });

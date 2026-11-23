@@ -13,14 +13,14 @@ test("SIFA/2025 permanece restrita ao município e não consulta distritos", asy
     municipalityOnlyScopes: [{ disease: "SIFA", year: 2025 }],
   } }));
   await page.route("**/api/v1/epidemiology/region?**", route => route.fulfill({ json: {
-    items: [{ code: "SE", name: "Sudeste", notificationsTotal: 7305 }],
-    totalNotifications: 7305,
-    coverage: { status: "AVAILABLE", mappedNotificationsTotal: 7305, unmappedNotificationsTotal: 0 },
+    items: [{ code: "SE", name: "Sudeste", notificationsTotal: 9000 }],
+    totalNotifications: 9000,
+    coverage: { status: "AVAILABLE", mappedNotificationsTotal: 9000, unmappedNotificationsTotal: 0 },
   } }));
   await page.route("**/api/v1/epidemiology/state?**", route => route.fulfill({ json: {
-    items: [{ code: "33", name: "Rio de Janeiro", notificationsTotal: 7305 }],
-    totalNotifications: 7305,
-    coverage: { status: "AVAILABLE", mappedNotificationsTotal: 7305, unmappedNotificationsTotal: 0 },
+    items: [{ code: "33", name: "Rio de Janeiro", notificationsTotal: 8000 }],
+    totalNotifications: 8000,
+    coverage: { status: "AVAILABLE", mappedNotificationsTotal: 8000, unmappedNotificationsTotal: 0 },
   } }));
   await page.route("**/api/v1/epidemiology/municipalities?**", route => route.fulfill({ json: {
     items: [{ code: "3304557", name: "Rio de Janeiro", notificationsTotal: 7305 }],
@@ -42,8 +42,9 @@ test("SIFA/2025 permanece restrita ao município e não consulta distritos", asy
   await page.getByRole("button", { name: /^Rio de Janeiro ·/ }).click();
   await page.getByRole("button", { name: /^Rio de Janeiro ·/ }).last().click();
 
-  await expect(page.locator(".map-context")).toContainText("O SINAN não disponibiliza em qual Unidade");
-  await expect(page.locator(".map-context")).toContainText("para a SIFA, apenas o município");
+  await expect(page.locator(".map-context")).toContainText("7305 notificações no município");
+  await expect(page.locator(".map-context")).toContainText("sem identificador de unidade suficiente");
+  await expect(page.locator(".map-context")).toContainText("O SINAN disponibiliza apenas o município");
   await expect(page.getByRole("heading", { name: /Distritos/ })).toHaveCount(0);
   expect(districtRequests).toBe(0);
 });

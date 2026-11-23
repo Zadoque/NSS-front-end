@@ -118,7 +118,9 @@ export function useDashboardModel() {
   const periodDescription = filters.year === "ALL" && filters.month === "ALL" ? "no período selecionado" : filters.month === "ALL" ? "no ano selecionado" : filters.year === "ALL" ? "no mês selecionado em todos os anos" : "no mês selecionado";
   const selectionInfo = selectedGeography
     ? municipalityOnly ? filters.disease === "SIFA"
-      ? "O SINAN não disponibiliza em qual Unidade notificadora ocorreu a notificação para a SIFA, apenas o município está disponível."
+      ? selectedGeography.level === "municipality" && selectedTotal != null
+        ? `${selectedTotal} notificações no município no período selecionado, sem identificador de unidade suficiente para localizar a unidade notificadora. O SINAN disponibiliza apenas o município.`
+        : "O SINAN não disponibiliza em qual Unidade notificadora ocorreu a notificação para a SIFA, apenas o município está disponível."
       : `${filters.disease === "ESPORO" ? "A Gold histórica de esporotricose" : "O SINAN"} disponibiliza somente a granularidade municipal para esta fonte. Por isso, bairros e distritos ficam indisponíveis.`
       : !covered ? "Sem registros neste recorte. Isso não equivale a zero casos."
       : selectedGeography.geometryAvailable === false ? `${selectedTotal ?? 0} notificações da unidade notificadora ${periodDescription}. Este bairro foi informado pelo CNES, mas não possui polígono cartográfico; o ranking permanece disponível e o mapa não pode destacá-lo.`

@@ -33,9 +33,11 @@ async function csrfToken(): Promise<string> {
       signal: AbortSignal.timeout(15_000),
     }).then(async (response) => {
       if (!response.ok) throw new Error(`Falha ao preparar a operação (${response.status}).`);
-      const token = (await response.text()).trim();
+      const token = document.cookie.split(";").map(cookie => cookie.trim())
+        .find(cookie => cookie.startsWith("XSRF-TOKEN="))
+        ?.slice("XSRF-TOKEN=".length);
       if (!token) throw new Error("Token de proteção ausente.");
-      return token;
+      return decodeURIComponent(token);
     }).finally(() => { csrfPromise = null; });
   }
   return csrfPromise;

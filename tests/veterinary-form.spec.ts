@@ -29,6 +29,9 @@ test("descarta o formulário quando outra aba troca a identidade da sessão", as
   const base = process.env.PLAYWRIGHT_API_BASE_URL || "http://127.0.0.1:39174";
   await page.route("**/api/v1/auth/refresh", (route) => route.fulfill({ status: 401, json: { code: "UNAUTHORIZED" } }));
   await page.route("**/api/v1/auth/login", (route) => route.fulfill({ json: { accessToken: "session-one", user: { id: 1, email: "one@nss.test", name: "One" }, permissions: [] } }));
+  await page.route("**/api/v1/diseases", (route) => route.fulfill({ json: { items: ["DENG"] } }));
+  await page.route("**/api/v1/metadata", (route) => route.fulfill({ json: { availableYears: [2026], availableMonthsByYear: { "2026": [1] } } }));
+  await page.route("**/api/v1/epidemiology/**", (route) => route.fulfill({ json: { items: [], totalNotifications: 0, coverage: { status: "AVAILABLE", mappedNotificationsTotal: 0, unmappedNotificationsTotal: 0 } } }));
   await page.route("**/api/v1/clinics*", (route) => route.fulfill({ json: { items: [{ id: "clinic-1", name: "Clínica NSS" }] } }));
   await page.goto(`${base}/login`);
   await page.getByLabel("E-mail", { exact: true }).fill("one@nss.test");

@@ -9,6 +9,7 @@ export function App() {
   const auth: AuthClient = isDemo ? mockAuth : realAuth;
   const [path, setPath] = useState(window.location.pathname);
   const { session, ready: authReady, logout: logoutSession } = useSession(auth, isDemo);
+  const headingReady = path === "/" || authReady;
   useEffect(() => {
     const update = () => setPath(window.location.pathname);
     window.addEventListener("popstate", update);
@@ -36,12 +37,16 @@ export function App() {
           ? "Privacidade | NSS — UENF"
         : path === "/termos"
           ? "Termos de uso | NSS — UENF"
+        : path === "/aceitar-convite"
+          ? "Aceitar convite | NSS — UENF"
         : path === "/buscar"
           ? "Buscar | NSS — UENF"
         : "NSS — Núcleo de Situação de Saúde";
-    document.querySelector("h1")?.setAttribute("tabindex", "-1");
-    document.querySelector("h1")?.focus();
-  }, [path]);
+    if (headingReady) {
+      document.querySelector("h1")?.setAttribute("tabindex", "-1");
+      document.querySelector("h1")?.focus();
+    }
+  }, [path, headingReady, session]);
   function followLink(event: MouseEvent<HTMLDivElement>) {
     const link = (event.target as Element).closest("a");
     if (
@@ -58,7 +63,7 @@ export function App() {
     const url = new URL(link.href);
     if (
       url.origin !== window.location.origin ||
-      !(url.pathname.startsWith("/noticias/") || ["/", "/mapa", "/login", "/sobre", "/noticias", "/boletins", "/privacidade", "/termos", "/buscar", "/admin/usuarios", "/uploads-municipais", "/notificacoes-animais", "/primeiro-acesso", "/esqueci-senha", "/redefinir-senha", "/solicitar-acesso", "/confirmar-acesso"].includes(url.pathname))
+      !(url.pathname.startsWith("/noticias/") || ["/", "/mapa", "/login", "/sobre", "/noticias", "/boletins", "/privacidade", "/termos", "/buscar", "/admin/usuarios", "/uploads-municipais", "/notificacoes-animais", "/primeiro-acesso", "/esqueci-senha", "/redefinir-senha", "/solicitar-acesso", "/confirmar-acesso", "/aceitar-convite"].includes(url.pathname))
     )
       return;
     event.preventDefault();
@@ -78,7 +83,7 @@ export function App() {
   if (!authReady && path !== "/") return <main><p role="status">Verificando sessão…</p></main>;
   const go = (nextPath: string) => {
     window.history.pushState(null, "", nextPath);
-    setPath(nextPath);
+    setPath(window.location.pathname);
     window.scrollTo(0, 0);
   };
   return (

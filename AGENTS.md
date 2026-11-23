@@ -10,3 +10,13 @@
 ## Frontend
 
 Preserve a navegação e os IDs do catálogo territorial. O cache de consultas fica separado por conta e filtros e expira às 02h em America/Sao_Paulo. Use npm run build, npm run lint e os cenários Playwright relevantes.
+
+## Ferramentas no NixOS
+
+Para Chromium, Playwright e demais ferramentas de verificação, procure primeiro um `flake.nix` aplicável. Se não houver pacote declarado, use `nix-shell -p <pacote> --run '<comando>'` (ou `nix shell nixpkgs#<pacote> --command <comando>`) em vez de instalar globalmente. Registre o comando e a versão efetiva nos resultados; não altere o sistema ativo.
+
+## Escopo aprovado desta fase
+
+- Todos os testes E2E usam o stack descartável `nss-v1`.
+- Não é necessário garantir compatibilidade com cada commit anterior; não há primeira versão publicada com backend. O aceite é o snapshot atual funcionar de forma coerente e segura, preservando autenticação, permissões, contratos e limites de confiança.
+- DT-10, DT-11 e DT-13 ficam por último.
