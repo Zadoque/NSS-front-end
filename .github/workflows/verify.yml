@@ -18,3 +18,4 @@ jobs:
       - run: npm run build
       - run: npx playwright install --with-deps chromium
       - run: npm run test:builds
+      - run: npx playwright test tests/auth-resilience.spec.ts --workers=1

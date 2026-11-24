@@ -67,6 +67,15 @@ const stateUf: Record<string, string> = {
 };
 export type MunicipalityMapIndexItem = { code: string; name: string; uf: string; path: string; geometryStatus?: string; neighborhoodsPath?: string; neighborhoodCount?: number; neighborhoodGeometryStatus?: string };
 
+export type HealthUnitPoint = {
+  c: string;
+  n: string;
+  b: string;
+  d: string;
+  x: number;
+  y: number;
+};
+
 export async function loadMap(level: MapLevel, code?: string): Promise<FeatureCollection> {
   const file = level === "MUNICIPALITY_DISTRICTS"
     ? `national/districts/${code ?? ""}`
@@ -88,10 +97,31 @@ export async function loadMap(level: MapLevel, code?: string): Promise<FeatureCo
   return data;
 }
 
+export async function loadMunicipalityMap(municipalityCode: string): Promise<FeatureCollection> {
+  const response = await fetch(
+    `${import.meta.env.BASE_URL}maps/national/municipalities/${municipalityCode}.geojson`,
+  );
+  if (!response.ok) throw new Error("Não foi possível carregar o limite municipal.");
+  const data = (await response.json()) as FeatureCollection;
+  if (data.type !== "FeatureCollection" || !data.features?.length) {
+    throw new Error("Cartografia municipal inválida.");
+  }
+  return data;
+}
+
 export async function loadMunicipalityIndex(): Promise<MunicipalityMapIndexItem[]> {
   const response = await fetch(`${import.meta.env.BASE_URL}maps/national/municipalities.index.json`);
   if (!response.ok) throw new Error("Não foi possível carregar o catálogo municipal.");
   const data = (await response.json()) as { items?: MunicipalityMapIndexItem[] };
   if (!Array.isArray(data.items) || data.items.length < 5570) throw new Error("Catálogo municipal inválido.");
+  return data.items;
+}
+
+export async function loadHealthUnits(municipalityCode: string): Promise<HealthUnitPoint[]> {
+  const response = await fetch(`${import.meta.env.BASE_URL}maps/national/health-units/${municipalityCode}.json`);
+  if (response.status === 404) return [];
+  if (!response.ok) throw new Error("Não foi possível carregar os estabelecimentos CNES.");
+  const data = (await response.json()) as { items?: HealthUnitPoint[] };
+  if (!Array.isArray(data.items)) throw new Error("Catálogo CNES inválido.");
   return data.items;
 }

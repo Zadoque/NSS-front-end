@@ -9,6 +9,7 @@ export function App() {
   const auth: AuthClient = isDemo ? mockAuth : realAuth;
   const [path, setPath] = useState(window.location.pathname);
   const { session, ready: authReady, logout: logoutSession } = useSession(auth, isDemo);
+  const headingReady = path === "/" || authReady;
   useEffect(() => {
     const update = () => setPath(window.location.pathname);
     window.addEventListener("popstate", update);
@@ -22,10 +23,30 @@ export function App() {
           ? "Login | NSS — UENF"
         : path === "/admin/usuarios"
           ? "Usuários | NSS — UENF"
+        : path === "/uploads-municipais"
+          ? "Envios municipais | NSS — UENF"
+        : path === "/notificacoes-animais"
+          ? "Notificação animal | NSS — UENF"
+        : path === "/sobre"
+          ? "Sobre o NSS | NSS — UENF"
+        : path === "/noticias"
+          ? "Notícias | NSS — UENF"
+        : path === "/boletins"
+          ? "Boletins | NSS — UENF"
+        : path === "/privacidade"
+          ? "Privacidade | NSS — UENF"
+        : path === "/termos"
+          ? "Termos de uso | NSS — UENF"
+        : path === "/aceitar-convite"
+          ? "Aceitar convite | NSS — UENF"
+        : path === "/buscar"
+          ? "Buscar | NSS — UENF"
         : "NSS — Núcleo de Situação de Saúde";
-    document.querySelector("h1")?.setAttribute("tabindex", "-1");
-    document.querySelector("h1")?.focus();
-  }, [path]);
+    if (headingReady) {
+      document.querySelector("h1")?.setAttribute("tabindex", "-1");
+      document.querySelector("h1")?.focus();
+    }
+  }, [path, headingReady, session]);
   function followLink(event: MouseEvent<HTMLDivElement>) {
     const link = (event.target as Element).closest("a");
     if (
@@ -42,7 +63,7 @@ export function App() {
     const url = new URL(link.href);
     if (
       url.origin !== window.location.origin ||
-      !["/", "/mapa", "/login", "/admin/usuarios", "/primeiro-acesso", "/esqueci-senha", "/redefinir-senha"].includes(url.pathname)
+      !(url.pathname.startsWith("/noticias/") || ["/", "/mapa", "/login", "/sobre", "/noticias", "/boletins", "/privacidade", "/termos", "/buscar", "/admin/usuarios", "/uploads-municipais", "/notificacoes-animais", "/primeiro-acesso", "/esqueci-senha", "/redefinir-senha", "/solicitar-acesso", "/confirmar-acesso", "/aceitar-convite"].includes(url.pathname))
     )
       return;
     event.preventDefault();
@@ -50,15 +71,19 @@ export function App() {
     setPath(url.pathname);
     window.scrollTo(0, 0);
   }
-  function logout() {
-    void logoutSession();
-    window.history.pushState(null, "", "/");
-    setPath("/");
+  async function logout() {
+    try {
+      await logoutSession();
+      window.history.pushState(null, "", "/");
+      setPath("/");
+    } catch {
+      window.alert("Não foi possível encerrar a sessão. Tente novamente.");
+    }
   }
   if (!authReady && path !== "/") return <main><p role="status">Verificando sessão…</p></main>;
   const go = (nextPath: string) => {
     window.history.pushState(null, "", nextPath);
-    setPath(nextPath);
+    setPath(window.location.pathname);
     window.scrollTo(0, 0);
   };
   return (

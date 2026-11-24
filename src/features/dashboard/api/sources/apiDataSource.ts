@@ -1,12 +1,34 @@
 import { getJson } from "../../../../shared/api/http";
 import type { EpidemiologyDataSource, EpidemiologyRequest, EpidemiologyResponse } from "../../domain/epidemiologyTypes";
 import { diseasesResponseSchema, epidemiologyResponseSchema, metadataResponseSchema } from "../epidemiologySchemas";
+import { dailyCache } from "../../cache/dailyCache";
+
+let metadataCache: Awaited<ReturnType<typeof readMetadata>> | null = null;
+let metadataLoadedAt = 0;
+let metadataRequest: Promise<Awaited<ReturnType<typeof readMetadata>>> | null = null;
+async function readMetadata() {
+  const value = await getJson("/metadata");
+  const parsed = metadataResponseSchema.safeParse(value);
+  if (!parsed.success) throw new Error("Metadata inválida.");
+  return parsed.data;
+}
+async function currentMetadata() {
+  if (metadataCache && Date.now() - metadataLoadedAt < 30_000) return metadataCache;
+  if (!metadataRequest) {
+    metadataRequest = readMetadata().then((value) => {
+      metadataCache = value;
+      metadataLoadedAt = Date.now();
+      return value;
+    }).finally(() => { metadataRequest = null; });
+  }
+  return metadataRequest;
+}
 
 export function parseCases(value: unknown, request: EpidemiologyRequest): EpidemiologyResponse {
   const parsed = epidemiologyResponseSchema.safeParse(value);
   if (!parsed.success) throw new Error("Resposta epidemiológica inválida.");
   const items = parsed.data.items.map((item) => "code" in item
-    ? { code: item.code, name: item.name, notificationsTotal: item.notificationsTotal }
+    ? { code: item.code, name: item.name, notificationsTotal: item.notificationsTotal, parentDistrictId: item.parentDistrictId ?? undefined }
     : { code: item.cdMun, name: item.nmMun, notificationsTotal: item.casesTotal, cdMun: item.cdMun, nmMun: item.nmMun, casesTotal: item.casesTotal });
   if (new Set(items.map((item) => item.code)).size !== items.length) throw new Error("Territórios duplicados na resposta epidemiológica.");
   const responseFilters = parsed.data.filters ?? parsed.data;
@@ -30,12 +52,10 @@ export const apiDataSource: EpidemiologyDataSource = {
     return parsed.data.items;
   },
   async getMetadata() {
-    const value = await getJson("/metadata");
-    const parsed = metadataResponseSchema.safeParse(value);
-    if (!parsed.success) throw new Error("Metadata inválida.");
-    return parsed.data;
+    return currentMetadata();
   },
   async getEpidemiology(request: EpidemiologyRequest): Promise<EpidemiologyResponse> {
+    const metadata = await currentMetadata();
     const params = new URLSearchParams({ geography: request.geography, disease: request.disease });
     if (request.year !== "ALL") params.set("year", String(request.year));
     if (request.month !== "ALL") params.set("month", String(request.month));
@@ -52,7 +72,11 @@ export const apiDataSource: EpidemiologyDataSource = {
         : request.geography === "NEIGHBORHOOD"
           ? "neighborhoods"
           : request.geography.toLowerCase();
-    const value = await getJson(`/epidemiology/${endpoint}?${params}`);
+    const path = `/epidemiology/${endpoint}?${params}`;
+    const cachePath = `${path}&publicationFingerprint=${encodeURIComponent(metadata.publicationFingerprint)}`;
+    const value = await dailyCache(cachePath, () => getJson(path), (candidate): candidate is unknown => {
+      try { parseCases(candidate, request); return true; } catch { return false; }
+    });
     return parseCases(value, request);
   },
 };

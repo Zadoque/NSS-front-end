@@ -32,11 +32,14 @@ const normalize = (text: string) =>
 export function GeographySelector({
   navigation,
   districtItems = [],
+  municipalityOnly = false,
 }: {
   navigation: ReturnType<typeof useMapNavigation>;
   districtItems?: { code: string; name: string }[];
+  municipalityOnly?: boolean;
 }) {
   const { region, state, mapLevel, selectedGeography, navigate, select } = navigation;
+  const stateSelectValue = !isDemo && state === "RJ" ? "33" : state;
   const [search, setSearch] = useState("");
   const map = useQuery({
     queryKey: ["map", "RJ_MUNICIPALITIES"],
@@ -81,12 +84,17 @@ export function GeographySelector({
     }))
     .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
   const neighborhoods = (neighborhoodMap.data?.features ?? [])
-    .filter(({ properties }) => String(properties?.CD_DIST ?? properties?.parentDistrictId) === district.replace(/^IBGE_DIST_/, ""))
+    .filter(({ properties }) => (properties?.parentDistrictId ?? (properties?.CD_DIST != null ? `IBGE_DIST_${String(properties.CD_DIST)}` : undefined)) === district)
     .map(({ properties }) => ({
       code: properties?.CD_BAIRRO ? `IBGE_BAIRRO_${String(properties.CD_BAIRRO)}` : String(properties?.territoryId),
       name: String(properties?.NM_BAIRRO ?? properties?.name),
     }))
     .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+  const selectedNeighborhood = selectedGeography?.level === "neighborhood"
+    && selectedGeography.geometryAvailable === false
+    && !neighborhoods.some((item) => item.code === selectedGeography.code)
+    ? { code: selectedGeography.code, name: `${selectedGeography.name} (sem polígono)` }
+    : null;
   const matches = municipalities.filter((item) =>
     normalize(item.name).includes(normalize(search)),
   );
@@ -139,7 +147,7 @@ export function GeographySelector({
           <select
             id="state"
             disabled={!region}
-            value={state}
+            value={stateSelectValue}
             onChange={(event) => {
               setSearch("");
               if (!event.target.value) navigate(region === "SE" ? "SOUTHEAST_STATES" : "NATIONAL_STATES");
@@ -205,7 +213,7 @@ export function GeographySelector({
             ))}
           </select>
         </div>
-        {municipality && (
+        {municipality && !municipalityOnly && (
           <div>
             <label htmlFor="district">Distrito</label>
             <select
@@ -229,7 +237,7 @@ export function GeographySelector({
             </p>
           </div>
         )}
-        {district && neighborhoodMap.data?.features?.length ? (
+        {district && !municipalityOnly && neighborhoodMap.data?.features?.length ? (
           <div>
             <label htmlFor="neighborhood">Bairro da notificação</label>
             <select
@@ -246,6 +254,7 @@ export function GeographySelector({
               }}
             >
               <option value="">Todos os bairros da notificação</option>
+              {selectedNeighborhood && <option value={selectedNeighborhood.code}>{selectedNeighborhood.name}</option>}
               {neighborhoods.map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}
             </select>
             <p className="selector-help">

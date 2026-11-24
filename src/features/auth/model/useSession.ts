@@ -6,7 +6,7 @@ export function useSession(auth: AuthClient, initiallyReady: boolean) {
   const [ready, setReady] = useState(initiallyReady);
   useEffect(() => {
     const unsubscribe = auth.subscribe(() => setSession(auth.getSession()));
-    void auth.restore().finally(() => setReady(true));
+    void auth.restore().catch(() => null).finally(() => setReady(true));
     return unsubscribe;
   }, [auth]);
   return { session, ready, logout: () => auth.logout() };

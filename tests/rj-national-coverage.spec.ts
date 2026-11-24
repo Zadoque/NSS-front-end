@@ -42,10 +42,12 @@ test("RJ: 92 municípios, distritos e bairros permanecem navegáveis", async ({ 
   await expect(page.locator(".ranking:visible")).toContainText("92 MUNICÍPIOS");
   await expect(page.locator(".ranking:visible li")).toHaveCount(92);
 
-  for (const item of municipalities) {
-    const asset = await page.request.get(`/maps/national/neighborhoods/${item.code}.geojson`);
-    expect(asset.ok(), `GeoJSON ausente para ${item.code}`).toBeTruthy();
-  }
+  const neighborhoodAssets = await Promise.all(
+    municipalities.map((item) => page.request.get(`/maps/national/neighborhoods/${item.code}.geojson`)),
+  );
+  neighborhoodAssets.forEach((asset, index) => {
+    expect(asset.ok(), `GeoJSON ausente para ${municipalities[index].code}`).toBeTruthy();
+  });
 
   await page.getByLabel("Município", { exact: true }).selectOption({ label: municipalities[0].name });
   await expect(page.getByLabel("Distrito", { exact: true })).toBeVisible();
@@ -65,6 +67,9 @@ test("RJ: 92 municípios, distritos e bairros permanecem navegáveis", async ({ 
   await page.getByLabel("Município", { exact: true }).selectOption("3304557");
   await expect(page.getByRole("heading", { name: "Bairros da notificação", exact: true })).toBeVisible();
   await expect(page.locator("section.ranking:visible")).toContainText("Notificações por bairro da notificação");
+  await page.getByRole("button", { name: "Voltar para municípios" }).click();
+  await expect(page.locator(".map-card").getByRole("heading", { name: "Rio de Janeiro", exact: true })).toBeVisible();
+  await expect(page.getByLabel("Distrito", { exact: true })).toHaveCount(0);
 });
 
 test.setTimeout(180_000);
@@ -95,11 +100,14 @@ test("RJ: o seletor abre distritos e bairros para cada um dos 92 municípios", a
     const district = page.getByLabel("Distrito", { exact: true });
     await expect(district, municipality.name).toBeVisible();
     await expect(district.locator("option"), municipality.name).toHaveCount(3);
-    await district.selectOption({ index: 1 });
-    const neighborhood = page.getByLabel("Bairro da notificação", { exact: true });
     const neighborhoodAsset = await page.request.get("/maps/national/neighborhoods/" + municipality.code + ".geojson");
-    const neighborhoodGeometry = ((await neighborhoodAsset.json()) as { features: unknown[] }).features.length > 0;
-    if (neighborhoodGeometry) {
+    const neighborhoodFeatures = ((await neighborhoodAsset.json()) as { features: { properties?: { parentDistrictId?: string } }[] }).features;
+    const districtValue = ["05", "08"]
+      .map((suffix) => `IBGE_DIST_${municipality.code}${suffix}`)
+      .find((code) => neighborhoodFeatures.some((feature) => feature.properties?.parentDistrictId === code));
+    await district.selectOption(districtValue ? { value: districtValue } : { index: 1 });
+    const neighborhood = page.getByLabel("Bairro da notificação", { exact: true });
+    if (districtValue) {
       await expect(neighborhood, municipality.name).toBeVisible();
       expect(await neighborhood.locator("option").count(), municipality.name).toBeGreaterThanOrEqual(1);
     } else {

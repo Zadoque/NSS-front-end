@@ -27,7 +27,7 @@ function manifest() {
 }
 export const staticDataSource: EpidemiologyDataSource = {
   async listDiseases() { return Object.keys((await manifest()).files).sort(); },
-  async getMetadata() { return manifest(); },
+  async getMetadata() { return { ...(await manifest()), municipalityOnlyScopes: [], publicationFingerprint: "STATIC_SNAPSHOT" }; },
   async getEpidemiology(request) {
     const m = await manifest();
     const file = m.files[request.disease];

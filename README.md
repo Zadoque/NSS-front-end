@@ -156,7 +156,7 @@ npm run lint
 npm test
 ```
 
-Os testes usam Playwright. Instale seu Chromium com `npx playwright install chromium`, ou aponte `CHROMIUM_PATH` para um Chromium local compatível. A suíte cobre navegação, cobertura, filtros, Drawer, retorno e ausência de overflow em 375, 768, 1024 e 1440 px, além da validação do contrato e zero explícito.
+Os testes usam Playwright. Em NixOS, execute-os com `nix shell nixpkgs#chromium -c npm test`; a configuração detecta `chromium` no `PATH`. Alternativamente, aponte `CHROMIUM_PATH` ou `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` para um Chromium compatível. A suíte cobre navegação, cobertura, filtros, Drawer, retorno e ausência de overflow em 375, 768, 1024 e 1440 px, além da validação do contrato e zero explícito.
 
 Para servir o build: `npm run preview`. Para publicar, sirva `dist/` como aplicação estática.
 
@@ -184,4 +184,26 @@ A geometria completa não amplia a cobertura: somente Sudeste/RJ permitem drill-
 
 Os testes adicionais cobrem homepage, histórico, seletores → mapa, mapa/ranking → seletores, breadcrumb, pesquisa sem acentos, teclado, municípios sem cobertura e ausência de overflow no smartphone.
 
-Validação desta ampliação: `npm ci`, `npm run lint` e `npm run build` concluídos; suíte completa com **24 testes aprovados**. Os testes Playwright usam por padrão as portas altas `39173` (mock) e `39174` (API simulada), configuráveis por `PLAYWRIGHT_MOCK_PORT` e `PLAYWRIGHT_API_PORT`, para evitar conflito com outros projetos. Neste ambiente NixOS, `npm test` precisou de execução fora do sandbox e de `CHROMIUM_PATH` apontando para o Chromium 152 instalado em `/nix/store` (o navegador padrão do Playwright não estava instalado). Nenhum backend externo foi necessário: os testes da API interceptam HTTP com respostas controladas.
+Validação desta ampliação: `npm ci`, `npm run lint` e `npm run build` concluídos; os testes Playwright usam por padrão as portas altas `39173` (mock) e `39174` (API simulada), configuráveis por `PLAYWRIGHT_MOCK_PORT` e `PLAYWRIGHT_API_PORT`, para evitar conflito com outros projetos. Em NixOS, `nix shell nixpkgs#chromium -c npm test` fornece o navegador temporariamente; nenhum browser é instalado globalmente e os testes da API interceptam HTTP com respostas controladas.
+
+## Arquitetura e estrutura
+
+```mermaid
+flowchart LR
+  UI[React pages] --> Q[React Query hooks]
+  Q --> C[Daily cache IndexedDB]
+  C --> HTTP[API data source]
+  HTTP --> API[Java API]
+  UI --> MAP[GeoJSON national assets]
+```
+
+`src/features/` organiza autenticação, dashboard e geografia; `src/shared/` contém HTTP, componentes e utilitários; `public/maps/` contém GeoJSON e manifestos; `tests/` contém Playwright. O cache é por conta, filtros e dia operacional, expira às 02:00 de `America/Sao_Paulo` e coordena abas.
+# Ambiente e secrets
+
+O frontend não deve conter secrets. Valores de build não sensíveis, como a URL
+da API, podem estar em `.env.example`/argumentos de build. No servidor, o
+`NSS-deployment` lê `/etc/nss/deployment.env` (modo `0600`) e injeta somente a
+configuração necessária ao Compose; tokens nunca são embutidos no bundle.
+
+Para teste local integrado: `cp .env.local.test .env`. Altere somente
+`VITE_API_BASE_URL` se a API não estiver sendo servida pela mesma origem.

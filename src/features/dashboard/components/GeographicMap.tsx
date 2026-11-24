@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { FeatureCollection } from "geojson";
 import { useQuery } from "@tanstack/react-query";
-import { ComposableMap, Geographies, Geography } from "react-simple-maps";
+import { ComposableMap, Geographies, Geography, Marker } from "react-simple-maps";
 import { ZoomableGroup } from "react-simple-maps/zoom";
-import { loadMap, mapViews } from "../geography/maps";
+import { loadHealthUnits, loadMap, loadMunicipalityMap, mapViews } from "../geography/maps";
+import { isDemo } from "../api/sources/dataSource";
+import type { HealthUnitPoint } from "../geography/maps";
 import type {
   GeographySelection,
   MapLevel,
@@ -12,22 +14,130 @@ import type {
 import { caseColor } from "./MapLegend";
 import { canDrillDown, isCoveredMunicipality, CAMPOS_MUNICIPALITY_CODE } from "../geography/geographyDomain";
 
-function geometryCenter(collection: FeatureCollection): [number, number] | null {
-  const points: number[][] = [];
+const MAP_WIDTH = 800;
+const MAP_HEIGHT = 540;
+const LOCAL_MAP_LEVELS: MapLevel[] = [
+  "CAMPOS_DISTRICTS", "CAMPOS_NEIGHBORHOODS", "MUNICIPALITY_DISTRICTS", "MUNICIPALITY_NEIGHBORHOODS",
+];
+const MAX_INDIVIDUAL_HEALTH_UNITS = 120;
+
+type RenderedHealthUnit = {
+  key: string;
+  coordinates: [number, number];
+  units: HealthUnitPoint[];
+};
+
+type TerritoryFeature = FeatureCollection["features"][number];
+
+function pointInRing([longitude, latitude]: [number, number], ring: number[][]) {
+  let inside = false;
+  for (let index = 0, previous = ring.length - 1; index < ring.length; previous = index++) {
+    const [x, y] = ring[index];
+    const [previousX, previousY] = ring[previous];
+    const intersects = ((y > latitude) !== (previousY > latitude))
+      && longitude < (previousX - x) * (latitude - y) / ((previousY - y) || Number.EPSILON) + x;
+    if (intersects) inside = !inside;
+  }
+  return inside;
+}
+
+function geometryContainsPoint(feature: TerritoryFeature, point: [number, number]) {
+  const geometry = feature.geometry;
+  if (!geometry) return false;
+  const polygonContainsPoint = (polygon: number[][][]) =>
+    pointInRing(point, polygon[0]) && !polygon.slice(1).some((ring) => pointInRing(point, ring));
+  if (geometry.type === "Polygon") return polygonContainsPoint(geometry.coordinates);
+  if (geometry.type === "MultiPolygon") return geometry.coordinates.some(polygonContainsPoint);
+  return false;
+}
+
+function territoryLevel(level: MapLevel) {
+  if (level.includes("NEIGHBORHOODS")) return "Bairro";
+  if (level.includes("DISTRICTS")) return "Distrito";
+  if (level.includes("MUNICIPALITIES")) return "Município";
+  if (level.includes("STATES")) return "Estado";
+  return "Região";
+}
+
+function clusterHealthUnits(units: HealthUnitPoint[], zoom: number): RenderedHealthUnit[] {
+  if (units.length <= MAX_INDIVIDUAL_HEALTH_UNITS) {
+    return units.map((unit) => ({ key: unit.c, coordinates: [unit.x, unit.y], units: [unit] }));
+  }
+  const west = Math.min(...units.map(({ x }) => x));
+  const east = Math.max(...units.map(({ x }) => x));
+  const south = Math.min(...units.map(({ y }) => y));
+  const north = Math.max(...units.map(({ y }) => y));
+  // The map is an overview at zoom 1. Keep the number of SVG markers bounded
+  // even for municipalities with hundreds of CNES units, then progressively
+  // reveal detail as the user zooms in. A fixed 64x64 grid still produced
+  // hundreds of independent event targets and made dragging expensive.
+  const gridSize = Math.round(Math.min(48, 18 * Math.sqrt(Math.max(1, zoom))));
+  const columns = gridSize;
+  const rows = gridSize;
+  const width = Math.max(east - west, 0.001);
+  const height = Math.max(north - south, 0.001);
+  const buckets = new Map<string, HealthUnitPoint[]>();
+  units.forEach((unit) => {
+    const column = Math.min(columns - 1, Math.floor(((unit.x - west) / width) * columns));
+    const row = Math.min(rows - 1, Math.floor(((unit.y - south) / height) * rows));
+    const key = `${column}:${row}`;
+    const bucket = buckets.get(key);
+    if (bucket) bucket.push(unit);
+    else buckets.set(key, [unit]);
+  });
+  return [...buckets.entries()].map(([key, grouped]) => ({
+    key: `cluster:${key}`,
+    coordinates: [
+      grouped.reduce((sum, unit) => sum + unit.x, 0) / grouped.length,
+      grouped.reduce((sum, unit) => sum + unit.y, 0) / grouped.length,
+    ],
+    units: grouped,
+  }));
+}
+
+function geometryBounds(collection: FeatureCollection) {
+  let west = Infinity, east = -Infinity, south = Infinity, north = -Infinity;
   const visit = (value: unknown) => {
     if (!Array.isArray(value)) return;
-    if (typeof value[0] === "number" && typeof value[1] === "number") points.push(value as number[]);
-    else value.forEach(visit);
+    if (typeof value[0] === "number" && typeof value[1] === "number") {
+      west = Math.min(west, value[0]);
+      east = Math.max(east, value[0]);
+      south = Math.min(south, value[1]);
+      north = Math.max(north, value[1]);
+    } else {
+      value.forEach(visit);
+    }
   };
-  collection.features.forEach((feature) => {
-    const geometry = feature.geometry;
+  collection.features.forEach(({ geometry }) => {
     if (geometry && "coordinates" in geometry) visit(geometry.coordinates);
     if (geometry?.type === "GeometryCollection") geometry.geometries.forEach((child) => {
       if ("coordinates" in child) visit(child.coordinates);
     });
   });
-  if (!points.length) return null;
-  return [points.reduce((sum, point) => sum + point[0], 0) / points.length, points.reduce((sum, point) => sum + point[1], 0) / points.length];
+  return Number.isFinite(west) ? { west, east, south, north } : null;
+}
+
+function fitMap(collection: FeatureCollection, level: MapLevel) {
+  const view = mapViews[level];
+  const bounds = geometryBounds(collection);
+  if (!bounds) return view;
+  const { west, east, south, north } = bounds;
+  const longitude = (west + east) / 2;
+  if (!LOCAL_MAP_LEVELS.includes(level)) {
+    return { center: [longitude, (south + north) / 2] as [number, number], scale: view.scale };
+  }
+
+  const radians = Math.PI / 180;
+  const mercatorY = (latitude: number) => Math.asinh(Math.tan(latitude * radians));
+  const lower = mercatorY(south);
+  const upper = mercatorY(north);
+  const latitude = Math.atan(Math.sinh((lower + upper) / 2)) / radians;
+  const scale = Math.min(
+    (MAP_WIDTH * 0.82) / ((east - west) * radians),
+    (MAP_HEIGHT * 0.82) / (upper - lower),
+    view.scale * 4,
+  );
+  return { center: [longitude, latitude] as [number, number], scale };
 }
 
 type Props = {
@@ -47,14 +157,21 @@ export function GeographicMap({
   onBack,
 }: Props) {
   const [hint, setHint] = useState("");
+  const [selectedHealthUnits, setSelectedHealthUnits] = useState<{
+    mapKey: string;
+    units: HealthUnitPoint[];
+    visibleCount: number;
+  } | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const initialZoom = level === "CAMPOS_NEIGHBORHOODS" || level === "MUNICIPALITY_NEIGHBORHOODS" ? 3.5 : level === "MUNICIPALITY_DISTRICTS" ? 2 : 1;
-  const [zoom, setZoom] = useState(initialZoom);
-  const [displayZoom, setDisplayZoom] = useState(initialZoom);
-  const [center, setCenter] = useState(mapViews[level].center);
-  const [centerKey, setCenterKey] = useState("");
+  const isMovingRef = useRef(false);
+  const [viewport, setViewport] = useState<{
+    key: string;
+    center: [number, number];
+    zoom: number;
+    displayZoom: number;
+  }>();
   const map = useQuery({
     queryKey: ["map", level, selected?.municipalityCode ?? selected?.code],
     queryFn: () => loadMap(level, level === "NATIONAL_STATES" && selected?.level === "region"
@@ -62,6 +179,20 @@ export function GeographicMap({
       : level === "NATIONAL_MUNICIPALITIES" && selected?.level === "state"
         ? selected.code
         : selected?.level === "municipality" ? selected.code : selected?.municipalityCode),
+    staleTime: Infinity,
+  });
+  const municipalityCode = selected?.level === "municipality" ? selected.code : selected?.municipalityCode;
+  const local = LOCAL_MAP_LEVELS.includes(level);
+  const healthUnits = useQuery({
+    queryKey: ["health-units", municipalityCode],
+    queryFn: () => loadHealthUnits(municipalityCode ?? ""),
+    enabled: LOCAL_MAP_LEVELS.includes(level) && Boolean(municipalityCode),
+    staleTime: Infinity,
+  });
+  const municipalityMap = useQuery({
+    queryKey: ["municipality-map", municipalityCode],
+    queryFn: () => loadMunicipalityMap(municipalityCode ?? ""),
+    enabled: local && Boolean(municipalityCode),
     staleTime: Infinity,
   });
   useEffect(() => {
@@ -83,13 +214,52 @@ export function GeographicMap({
       document.removeEventListener("keydown", escape);
     };
   }, [expanded]);
+  const district = selected?.level === "district" ? selected.code : selected?.districtCode;
+  const mapData = useMemo(() => {
+    if (!district || !map.data || !["CAMPOS_NEIGHBORHOODS", "MUNICIPALITY_NEIGHBORHOODS"].includes(level)) return map.data;
+    return { ...map.data, features: map.data.features.filter(({ properties }) =>
+      (properties?.parentDistrictId ?? (properties?.CD_DIST != null ? `IBGE_DIST_${properties.CD_DIST}` : undefined)) === district) };
+  }, [district, level, map.data]);
   const view = mapViews[level];
-  const mapCenter = ["NATIONAL_STATES", "NATIONAL_MUNICIPALITIES", "MUNICIPALITY_DISTRICTS", "MUNICIPALITY_NEIGHBORHOODS"].includes(level)
-    ? geometryCenter(map.data ?? { type: "FeatureCollection", features: [] }) ?? view.center
-    : view.center;
-  const mapKey = `${level}:${selected?.code ?? selected?.municipalityCode ?? ""}`;
-  const mapViewportCenter = centerKey === mapKey ? center : mapCenter;
-  if (map.isPending)
+  const localBaseMap = local ? municipalityMap.data : undefined;
+  const dynamicBounds = local || level === "NATIONAL_STATES" || level === "NATIONAL_MUNICIPALITIES";
+  const { center: mapCenter, scale } = useMemo(
+    // Frame the selected district's neighborhood layer, not the whole municipality.
+    // The filtered collection is the effective district footprint for both the
+    // Campos catalog and the national catalog.
+    () => dynamicBounds && mapData
+      ? fitMap((local && district && ["CAMPOS_NEIGHBORHOODS", "MUNICIPALITY_NEIGHBORHOODS"].includes(level)) ? mapData : (localBaseMap ?? mapData), level)
+      : mapViews[level],
+    [district, dynamicBounds, level, local, localBaseMap, mapData],
+  );
+  const mapKey = `${level}:${selected?.municipalityCode ?? selected?.code ?? ""}:${["CAMPOS_NEIGHBORHOODS", "MUNICIPALITY_NEIGHBORHOODS"].includes(level) ? district ?? "" : ""}`;
+  const current = viewport?.key === mapKey
+    ? viewport
+    : { key: mapKey, center: mapCenter, zoom: 1, displayZoom: 1 };
+  const visibleHealthUnits = useMemo(
+    () => district ? (healthUnits.data ?? []).filter((unit) => unit.d === district) : healthUnits.data ?? [],
+    [district, healthUnits.data],
+  );
+  const renderedHealthUnits = useMemo(
+    () => clusterHealthUnits(visibleHealthUnits, current.displayZoom),
+    [current.displayZoom, visibleHealthUnits],
+  );
+  const selectedClusterUnits = selectedHealthUnits?.mapKey === mapKey ? selectedHealthUnits.units : [];
+  const centerTerritory = useMemo(
+    () => mapData?.features.find((feature) => geometryContainsPoint(feature, current.center)),
+    [current.center, mapData],
+  );
+  const centerTerritoryName = String(centerTerritory?.properties?.name
+    ?? centerTerritory?.properties?.NM_BAIRRO
+    ?? centerTerritory?.properties?.name_muni
+    ?? centerTerritory?.properties?.name_state
+    ?? selected?.name
+    ?? view.title);
+  const centerTerritoryLabel = `${territoryLevel(level)}: ${centerTerritoryName}`;
+  const showHint = (value: string) => {
+    if (!isMovingRef.current) setHint(value);
+  };
+  if (map.isPending || (local && municipalityMap.isPending))
     return (
       <div className={`geographic-map${expanded ? " map-expanded" : ""}`} ref={mapContainerRef}>
         <div className="map-placeholder" role="status">
@@ -97,7 +267,7 @@ export function GeographicMap({
         </div>
       </div>
     );
-  if (map.isError)
+  if (map.isError || (local && municipalityMap.isError))
     return (
       <div className={`geographic-map${expanded ? " map-expanded" : ""}`} ref={mapContainerRef}>
         <div className="map-placeholder" role="alert">
@@ -106,7 +276,7 @@ export function GeographicMap({
         </div>
       </div>
     );
-  if (!map.data?.features?.length)
+  if (!mapData?.features?.length)
     return (
       <div className={`geographic-map${expanded ? " map-expanded" : ""}`} ref={mapContainerRef}>
         <div className="map-placeholder" role="status">
@@ -118,21 +288,16 @@ export function GeographicMap({
     );
   const byCode = new Map(items.map((item) => [item.code, item]));
   const visibleMaximum = Math.max(1, ...items.map((item) => item.notificationsTotal));
-  const minZoom = initialZoom;
-  const maxZoom = initialZoom * 3;
-  const zoomStep = initialZoom * 0.5;
-  const changeZoom = (value: number) => {
-    const next = Math.max(minZoom, Math.min(maxZoom, value));
-    setZoom(next);
-    setDisplayZoom(next);
+  const minZoom = local ? 0.5 : 1;
+  const maxZoom = 3;
+  const clampZoom = (value: number) => Math.max(minZoom, Math.min(maxZoom, value));
+  const changeZoom = (value: number, center = current.center) => {
+    const zoom = clampZoom(value);
+    setViewport({ key: mapKey, center, zoom, displayZoom: zoom });
   };
-  const zoomIn = () => changeZoom(displayZoom + zoomStep);
-  const zoomOut = () => changeZoom(displayZoom - zoomStep);
-  const resetZoom = () => {
-    setCenterKey(mapKey);
-    setCenter(mapCenter);
-    changeZoom(initialZoom);
-  };
+  const zoomIn = () => changeZoom(current.displayZoom + 0.5);
+  const zoomOut = () => changeZoom(current.displayZoom - 0.5);
+  const resetZoom = () => changeZoom(1, mapCenter);
   const toggleFullscreen = async () => {
     const container = mapContainerRef.current;
     if (!container) return;
@@ -179,21 +344,27 @@ export function GeographicMap({
         >
           {isFullscreen || expanded ? "Sair da tela cheia" : "⛶ Tela cheia"}
         </button>
-        <span>Zoom {Math.round((displayZoom / initialZoom) * 100)}%</span>
+        <span>Zoom {Math.round(current.displayZoom * 100)}%</span>
       </div>
       <div
         className="map-viewport"
       >
+        <div className="map-crosshair" aria-hidden="true">
+          <span className="map-crosshair-label">{centerTerritoryLabel}</span>
+          <span className="map-crosshair-horizontal" />
+          <span className="map-crosshair-vertical" />
+          <span className="map-crosshair-center" />
+        </div>
         <ComposableMap
-          width={800}
-          height={540}
+          width={MAP_WIDTH}
+          height={MAP_HEIGHT}
           projection={["NATIONAL_STATES", "NATIONAL_MUNICIPALITIES"].includes(level) ? "geoEquirectangular" : "geoMercator"}
-          projectionConfig={{ center: mapCenter, scale: view.scale }}
+          projectionConfig={{ center: mapCenter, scale }}
           aria-label={`Mapa interativo: ${view.title}`}
         >
           <ZoomableGroup
-            center={mapViewportCenter}
-            zoom={zoom}
+            center={current.center}
+            zoom={current.zoom}
             minZoom={minZoom}
             maxZoom={maxZoom}
             // D3 handles wheel deltas, trackpad pinch (ctrl+wheel), and the
@@ -202,16 +373,30 @@ export function GeographicMap({
               const pointer = event as MouseEvent;
               return (!pointer.ctrlKey || event.type === "wheel") && !pointer.button;
             }}
-            onMove={({ zoom: nextZoom }) => setDisplayZoom(nextZoom ?? minZoom)}
-            onMoveEnd={({ coordinates, zoom: nextZoom }) => {
-              if (coordinates) {
-                setCenterKey(mapKey);
-                setCenter(coordinates);
-              }
-              changeZoom(nextZoom ?? minZoom);
+            onMoveStart={() => {
+              isMovingRef.current = true;
+              setHint("");
+            }}
+            onMoveEnd={({ coordinates, zoom }) => {
+              isMovingRef.current = false;
+              changeZoom(zoom ?? current.zoom, coordinates ?? current.center);
             }}
           >
-            <Geographies geography={map.data}>
+            {localBaseMap && (
+              <Geographies geography={localBaseMap}>
+                {({ geographies }) => geographies.map((geo) => (
+                  <Geography
+                    key={`municipality-base:${geo.rsmKey}`}
+                    geography={geo}
+                    fill="none"
+                    stroke="#607d8b"
+                    strokeWidth={1.25}
+                    pointerEvents="none"
+                  />
+                ))}
+              </Geographies>
+            )}
+            <Geographies geography={mapData}>
             {({ geographies }) =>
               geographies.map((geo) => {
               const p = geo.properties ?? {};
@@ -225,7 +410,7 @@ export function GeographicMap({
                   : level === "SOUTHEAST_STATES" || level === "NATIONAL_STATES"
                     ? {
                         level: "state",
-                        code: String(p.code_state),
+                        code: level === "SOUTHEAST_STATES" && isDemo ? String(p.abbrev_state) : String(p.code_state),
                         name: String(p.name_state),
                       }
                     : level === "RJ_MUNICIPALITIES" || level === "NATIONAL_MUNICIPALITIES"
@@ -287,12 +472,13 @@ export function GeographicMap({
                           ? "#b8d9d2"
                           : "#dce2e6"
                   }
-                  stroke="#fff"
-                  strokeWidth={1}
-                  onMouseEnter={() => setHint(label)}
-                  onMouseLeave={() => setHint("")}
-                  onFocus={() => setHint(label)}
-                  onBlur={() => setHint("")}
+                  fillOpacity={local ? 0.72 : 1}
+                  stroke={local ? "#638693" : "#fff"}
+                  strokeWidth={local ? 0.7 : 1}
+                  onMouseEnter={() => showHint(label)}
+                  onMouseLeave={() => showHint("")}
+                  onFocus={() => showHint(label)}
+                  onBlur={() => showHint("")}
                   onClick={() => onSelect(geography)}
                   onKeyDown={(event) => {
                     if (event.key === "Enter" || event.key === " ") {
@@ -307,15 +493,94 @@ export function GeographicMap({
               })
             }
             </Geographies>
+            {renderedHealthUnits.map((point) => {
+              const unit = point.units[0];
+              const clustered = point.units.length > 1;
+              const label = clustered
+                ? `${point.units.length} estabelecimentos CNES nesta área`
+                : `${unit.n} · CNES ${unit.c}${unit.b ? ` · Bairro informado: ${unit.b}` : ""}`;
+              const activatePoint = () => {
+                setSelectedHealthUnits({ mapKey, units: point.units, visibleCount: Math.min(100, point.units.length) });
+                if (clustered) changeZoom(current.displayZoom + 0.75, point.coordinates);
+              };
+              return (
+                <Marker
+                  key={point.key}
+                  coordinates={point.coordinates}
+                  data-cnes={clustered ? undefined : unit.c}
+                  role={clustered ? "button" : "img"}
+                  tabIndex={clustered ? 0 : undefined}
+                  aria-label={label}
+                  onMouseEnter={() => showHint(label)}
+                  onMouseLeave={() => showHint("")}
+                  onFocus={() => showHint(label)}
+                  onBlur={() => showHint("")}
+                  onClick={activatePoint}
+                  onKeyDown={(event) => {
+                    if (clustered && (event.key === "Enter" || event.key === " ")) {
+                      event.preventDefault();
+                      activatePoint();
+                    }
+                  }}
+                >
+                  <circle
+                    r={clustered ? 3.25 : local && ["CAMPOS_NEIGHBORHOODS", "MUNICIPALITY_NEIGHBORHOODS"].includes(level) ? 1.15 : local ? 1.55 : 3}
+                    fill="#b42318"
+                    fillOpacity={local && ["CAMPOS_NEIGHBORHOODS", "MUNICIPALITY_NEIGHBORHOODS"].includes(level) ? 0.58 : 0.8}
+                    stroke="#fff"
+                    strokeWidth={local && ["CAMPOS_NEIGHBORHOODS", "MUNICIPALITY_NEIGHBORHOODS"].includes(level) ? 0.3 : 0.6}
+                  >
+                    <title>{label}</title>
+                  </circle>
+                  {clustered && <text textAnchor="middle" y={1.5} fontSize={3.5} fill="#fff">{point.units.length}</text>}
+                </Marker>
+              );
+            })}
           </ZoomableGroup>
         </ComposableMap>
       </div>
       <p className="map-hint" aria-live="polite">
         {hint ||
           (selected
-            ? selected.name
+            ? selected.geometryAvailable === false
+              ? `${selected.name}: sem polígono cartográfico; o ranking continua disponível.`
+              : selected.name
             : "Selecione uma área no mapa para explorar.")}
       </p>
+      {selected?.geometryAvailable === false && (
+        <p className="mx-5 mb-3 rounded border border-[#e4c98a] bg-[#fff8e6] px-3 py-2 text-sm text-[#765b1f]" role="status">
+          Este bairro aparece porque o nome veio na unidade notificadora, mas não há geometria oficial para desenhar. Nenhum ponto foi deslocado artificialmente para este polígono.
+        </p>
+      )}
+      {LOCAL_MAP_LEVELS.includes(level) && visibleHealthUnits.length > 0 && (
+        <p className="px-5 pb-2 text-center text-xs text-[#6b7f8c]">
+          Pontos vermelhos: {visibleHealthUnits.length.toLocaleString("pt-BR")} estabelecimentos CNES com coordenadas válidas.
+        </p>
+      )}
+      {selectedClusterUnits.length > 0 && (
+        <section className="mx-5 mb-3 rounded border border-[#b7c8d2] bg-white p-3" aria-label="Estabelecimentos no agrupamento selecionado">
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <strong>{selectedClusterUnits.length === 1 ? "1 estabelecimento selecionado" : `${selectedClusterUnits.length.toLocaleString("pt-BR")} estabelecimentos no agrupamento`}</strong>
+            <button type="button" onClick={() => setSelectedHealthUnits(null)}>Fechar</button>
+          </div>
+          <ul className="max-h-48 overflow-y-auto text-sm">
+            {selectedClusterUnits.slice(0, selectedHealthUnits?.visibleCount ?? 100).map((unit) => (
+              <li key={unit.c}>{unit.n} · CNES {unit.c}{unit.b ? ` · ${unit.b}` : ""}</li>
+            ))}
+          </ul>
+          {(selectedHealthUnits?.visibleCount ?? 0) < selectedClusterUnits.length && (
+            <button
+              type="button"
+              className="mt-2"
+              onClick={() => setSelectedHealthUnits((currentSelection) => currentSelection
+                ? { ...currentSelection, visibleCount: currentSelection.visibleCount + 100 }
+                : null)}
+            >
+              Mostrar mais 100
+            </button>
+          )}
+        </section>
+      )}
     </div>
   );
 }

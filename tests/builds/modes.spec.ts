@@ -36,7 +36,13 @@ test.describe("prod-mock sem backend", () => {
 
 test("production mantém autenticação real mesmo com flags mock", async ({ page }) => {
   const refresh = page.waitForRequest("**/api/v1/auth/refresh");
-  await page.route("**/api/**", route => route.fulfill({ status: 401, json: {} }));
+  await page.route("**/api/**", route => {
+    const url = new URL(route.request().url());
+    if (route.request().method() === "GET" && url.pathname === "/api/v1/auth/first-access") {
+      return route.fulfill({ json: { email: "representative@nss.test" } });
+    }
+    return route.fulfill({ status: 401, json: {} });
+  });
   await page.goto("http://127.0.0.1:5184/login");
   await refresh;
   await expect(page.getByLabel("E-mail", { exact: true })).toHaveValue("");
@@ -45,7 +51,7 @@ test("production mantém autenticação real mesmo com flags mock", async ({ pag
   await expect(page.getByRole("button", { name: "Entrar na demonstração" })).toHaveCount(0);
   const loginPassword = page.getByLabel("Senha", { exact: true });
   await expect(loginPassword).toHaveAttribute("type", "password");
-  await page.getByRole("button", { name: "Mostrar senha" }).click();
+  await page.getByRole("button", { name: "Mostrar senha" }).first().click();
   await expect(loginPassword).toHaveAttribute("type", "text");
   await page.getByRole("button", { name: "Esconder senha" }).click();
   await expect(loginPassword).toHaveAttribute("type", "password");
@@ -53,6 +59,6 @@ test("production mantém autenticação real mesmo com flags mock", async ({ pag
   await page.goto("http://127.0.0.1:5184/primeiro-acesso?token=test-token");
   const firstAccessPassword = page.getByLabel("Senha", { exact: true });
   await expect(firstAccessPassword).toHaveAttribute("type", "password");
-  await page.getByRole("button", { name: "Mostrar senha" }).click();
+  await page.getByRole("button", { name: "Mostrar senha" }).first().click();
   await expect(firstAccessPassword).toHaveAttribute("type", "text");
 });
