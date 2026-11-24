@@ -1,0 +1,7 @@
+# Dados cartográficos e snapshots são volumosos e não representam chamadas
+public/maps/
+data/static-snapshot/
+data/raw/
+*.pdf
+playwright-report/
+test-results/
